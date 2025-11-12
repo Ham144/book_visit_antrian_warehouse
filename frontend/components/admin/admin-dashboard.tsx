@@ -12,7 +12,7 @@ import VehicleManagement from "@/components/admin/vehicle-management";
 
 type AdminPage =
   | "dashboard"
-  | "slots"
+  | "docks"
   | "busy-times"
   | "queue"
   | "reports"
@@ -40,11 +40,6 @@ export default function AdminDashboard() {
               <SlotGrid />
             </div>
           )}
-          {currentPage === "slots" && <SlotManagement />}
-          {currentPage === "busy-times" && <BusyTimeManagement />}
-          {currentPage === "queue" && <LiveQueueBoard />}
-          {currentPage === "reports" && <Reports />}
-          {currentPage === "vehicles" && <VehicleManagement />}
         </main>
       </div>
     </div>

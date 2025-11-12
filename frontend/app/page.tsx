@@ -114,8 +114,8 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Sistem Antrian & Manajemen Dock
-            <span className="block text-teal-200">Gudang</span>
+            Sistem Antrian Gudang & Manajemen
+            <span className="block text-teal-200">Unload Muatan</span>
           </h1>
 
           <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-8 leading-relaxed">

@@ -1,19 +1,40 @@
-"use client"
+"use client";
 
-import { Phone, CheckCircle, AlertTriangle } from "lucide-react"
-import { toast } from "sonner"
-import SideNav from "@/components/shared-common/side-nav"
+import { Phone, CheckCircle, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import SideNav from "@/components/shared-common/side-nav";
 
 const mockQueue = [
-  { id: "b-1", slot: "Dock A", vendor: "PT ABC", plate: "B1234CD", status: "occupied", timeRemaining: "15 min" },
-  { id: "b-2", slot: "Dock B", vendor: "PT XYZ", plate: "B5678EF", status: "delayed", timeRemaining: "+25 min" },
-  { id: "b-3", slot: "Gate 1", vendor: "PT DEF", plate: "B9012GH", status: "booked", timeRemaining: "45 min" },
-]
+  {
+    id: "b-1",
+    slot: "Dock A",
+    vendor: "PT ABC",
+    plate: "B1234CD",
+    status: "occupied",
+    timeRemaining: "15 min",
+  },
+  {
+    id: "b-2",
+    slot: "Dock B",
+    vendor: "PT XYZ",
+    plate: "B5678EF",
+    status: "delayed",
+    timeRemaining: "+25 min",
+  },
+  {
+    id: "b-3",
+    slot: "Gate 1",
+    vendor: "PT DEF",
+    plate: "B9012GH",
+    status: "booked",
+    timeRemaining: "45 min",
+  },
+];
 
 export default function QueuePage() {
   const handleAction = (action: string, vendorName: string) => {
-    toast.success(`${action} - ${vendorName}`)
-  }
+    toast.success(`${action} - ${vendorName}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,22 +51,46 @@ export default function QueuePage() {
               {/* Main Queue */}
               <div className="lg:col-span-2 space-y-3">
                 {mockQueue.map((item) => {
-                  const isDelayed = item.status === "delayed"
+                  const isDelayed = item.status === "delayed";
                   return (
-                    <div key={item.id} className={`card ${isDelayed ? "border-2 border-red-300 bg-red-50" : "bg-white"}`}>
+                    <div
+                      key={item.id}
+                      className={`card ${
+                        isDelayed
+                          ? "border-2 border-red-300 bg-red-50"
+                          : "bg-white"
+                      }`}
+                    >
                       <div className="card-body p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-lg">{item.slot}</span>
-                              {isDelayed && <AlertTriangle className="text-red-600" size={20} />}
+                              <span className="font-bold text-lg">
+                                {item.slot}
+                              </span>
+                              {isDelayed && (
+                                <AlertTriangle
+                                  className="text-red-600"
+                                  size={20}
+                                />
+                              )}
                             </div>
                             <p className="font-semibold">{item.vendor}</p>
-                            <p className="text-sm text-gray-600">{item.plate}</p>
+                            <p className="text-sm text-gray-600">
+                              {item.plate}
+                            </p>
                           </div>
-                          <div className={`text-right ${isDelayed ? "text-red-600 font-bold" : ""}`}>
-                            <p className="text-2xl font-bold">{item.timeRemaining}</p>
-                            <p className="text-sm capitalize text-gray-600">{item.status}</p>
+                          <div
+                            className={`text-right ${
+                              isDelayed ? "text-red-600 font-bold" : ""
+                            }`}
+                          >
+                            <p className="text-2xl font-bold">
+                              {item.timeRemaining}
+                            </p>
+                            <p className="text-sm capitalize text-gray-600">
+                              {item.status}
+                            </p>
                           </div>
                         </div>
 
@@ -53,13 +98,17 @@ export default function QueuePage() {
                           <div className="flex gap-2">
                             <button
                               className="btn btn-sm btn-primary flex-1"
-                              onClick={() => handleAction("Called", item.vendor)}
+                              onClick={() =>
+                                handleAction("Called", item.vendor)
+                              }
                             >
                               <Phone size={16} /> Call
                             </button>
                             <button
                               className="btn btn-sm btn-success flex-1"
-                              onClick={() => handleAction("Completed", item.vendor)}
+                              onClick={() =>
+                                handleAction("Completed", item.vendor)
+                              }
                             >
                               <CheckCircle size={16} /> Complete
                             </button>
@@ -67,7 +116,7 @@ export default function QueuePage() {
                         )}
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
 
@@ -97,6 +146,5 @@ export default function QueuePage() {
         </main>
       </div>
     </div>
-  )
+  );
 }
-

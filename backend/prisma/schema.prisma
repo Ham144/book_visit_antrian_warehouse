@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  username     String @id
+  description  String
+  isActive     Boolean  @default(true)
+  displayName  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  warehouseId  String?
+  warehouse    Warehouse?    @relation(fields: [warehouseId], references: [id])
+  subscription Subscription?
+  organizations Organization[]
+}
+
+
+model Subscription {
+  id            String @id
+  user          User   @relation(fields: [userusername], references: [username])
+  userusername  String @unique
+  start DateTime
+  plan SubscriptionPlan @default(TRIAL)
+  organizationId String?
+  organizations Organization @relation(fields: [organizationId], references: [subscriptionId]) 
+} 
+
+enum AuthMethod {
+  LDAP
+} 
+
+model Warehouse {
+  id String @id @default(uuid())
+  name        String @unique
+  location    String?
+  description String?
+  docks Dock[]
+  members User[]
+  isActive Boolean
+}
+
+model Dock { //slot
+  id    String   @id @default(cuid())
+  name  String
+  warehouseId String
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  photos String[]
+  availableFrom DateTime
+  availableUntil DateTime
+}
+
+model Vehicle {
+   id          String   @default(cuid())
+   merk         String
+   jenisKendaraan String?
+   durasiBongkar Int
+   description String
+   isActive Boolean
+}
+
+model BusyTime {
+  id String @id @default(cuid())
+  title String
+  recurring Recurring  
+  startTime DateTime
+  endTime DateTime
+}
+
+/*************  ✨ Windsurf Command 🌟  *************/
+model Booking {
+  id          String   @id @default(cuid())
+  queue       Int
+  date        DateTime
+  day         String
+  driverId   String
+  startTime   DateTime
+  endTime     DateTime
+  koridorId String
+  loadingTime Int
+  plat       String
+  slotId    String
+  vehicleId  String
+  warehouseId String
+  status     Status
+}
+    private String id;
+    private int queue; //antrian, dimulai dari 100 biar bisa nikung antrian
+    private Date date; // "2025-04-18"
+    private String day; // "JUMAT"
+    private String driverId; // "67f9c6e338438c5ba548aaad"
+    private LocalTime startTime; // "10:18:00"
+    private LocalTime endTime; // "11:48:00"
+    private String koridorId; // "67fcbedfe905dd52e1fe3d78"
+    private int loadingTime; // 90
+    private String plat; // "345"
+    private String slotId; // "67fc836d5e5b667a04aaaf52"
+    private String vehicleId; // "67fcc5ade905dd52e1fe3d89"
+    private String warehouseId; // "67fca739e905dd52e1fe3d67"
+    private Status status; // Add this field to store the booking status
+
+/*******  bfe9bcc2-47ad-4dc8-8586-2413a46f8bc1  *******/
+}
+
+enum Recurring {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+
+enum SubscriptionPlan {
+  TRIAL
+  PRO
+  PREMIUM
+}
+
+model Organization {
+  name String @id @unique
+  members User[]
+  subscriptionId String? @unique
+  subscription Subscription?
+  globalSetting String?
+  GlobalSetting Globalsetting @relation(fields: [globalSetting], references: [settingName])
+}
+
+model Globalsetting {
+  settingName String @id @default(uuid())
+  AD_HOST String
+  AD_PORT String
+  AD_DOMAIN String
+  AD_BASE_DN String
+
+  SOAP_CUSTOMER_URL String
+  SOAP_CUSTOMER_SOAPACTION String 
+  SOAP_CUSTOMER_USERNAME String
+  SOAP_CUSTOMER_PASSWORD String
+  
+  inUse Boolean @default(true)
+  createdById String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizations Organization[]
+}
