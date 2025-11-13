@@ -2,3 +2,14 @@ start 12/11/2025
 [x] add: setup 
 [x] add: frontend mock design
 [x] add: system design
+
+belajar: 
+@Exclude()
+extends PartialType
+extends PickType(targetClass, ['pick1','pick2'] as const)
+extends OmitType(targetClass, ['pick1','pick2'] as const)
+app.useGlobalPipes(new (require('@nestjs/common').ValidationPipe)({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),) //untuk validation

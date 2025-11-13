@@ -6,6 +6,7 @@ import { RedisModule } from './redis/redis.module';
 import { HttpExceptionFilter } from './common/http-exception-filter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
+import { VehicleModule } from './vehicle/vehicle.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import * as path from 'path';
         index: false,
       },
     }),
+    VehicleModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

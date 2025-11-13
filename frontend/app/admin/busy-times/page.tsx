@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import SideNav from "@/components/shared-common/side-nav";
 
 const mockBusyTimes = [
   {
@@ -55,7 +54,6 @@ export default function BusyTimesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        <SideNav role="admin" currentPage="busy-times" />
         <main className="flex-1 p-6">
           <div className="space-y-6">
             <div className="flex justify-between items-center">

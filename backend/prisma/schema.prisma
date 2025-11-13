@@ -20,15 +20,14 @@ model User {
   organizations Organization[]
 }
 
-
 model Subscription {
   id            String @id
   user          User   @relation(fields: [userusername], references: [username])
   userusername  String @unique
   start DateTime
   plan SubscriptionPlan @default(TRIAL)
-  organizationId String?
-  organizations Organization @relation(fields: [organizationId], references: [subscriptionId]) 
+  organizationId String? @unique
+  organizations Organization? @relation(fields: [organizationId], references: [subscriptionId]) 
 } 
 
 enum AuthMethod {
@@ -42,7 +41,7 @@ model Warehouse {
   description String?
   docks Dock[]
   members User[]
-  isActive Boolean
+  isActive Boolean @default(true)
 }
 
 model Dock { //slot
@@ -56,12 +55,12 @@ model Dock { //slot
 }
 
 model Vehicle {
-   id          String   @default(cuid())
-   merk         String
+   id          String @id   @default(cuid())
+   brand         String?
    jenisKendaraan String?
-   durasiBongkar Int
-   description String
-   isActive Boolean
+   durasiBongkar Int?
+   description String?
+   isActive Boolean @default(true)
 }
 
 model BusyTime {
@@ -72,7 +71,6 @@ model BusyTime {
   endTime DateTime
 }
 
-/*************  ✨ Windsurf Command 🌟  *************/
 model Booking {
   id          String   @id @default(cuid())
   queue       Int
@@ -87,24 +85,6 @@ model Booking {
   slotId    String
   vehicleId  String
   warehouseId String
-  status     Status
-}
-    private String id;
-    private int queue; //antrian, dimulai dari 100 biar bisa nikung antrian
-    private Date date; // "2025-04-18"
-    private String day; // "JUMAT"
-    private String driverId; // "67f9c6e338438c5ba548aaad"
-    private LocalTime startTime; // "10:18:00"
-    private LocalTime endTime; // "11:48:00"
-    private String koridorId; // "67fcbedfe905dd52e1fe3d78"
-    private int loadingTime; // 90
-    private String plat; // "345"
-    private String slotId; // "67fc836d5e5b667a04aaaf52"
-    private String vehicleId; // "67fcc5ade905dd52e1fe3d89"
-    private String warehouseId; // "67fca739e905dd52e1fe3d67"
-    private Status status; // Add this field to store the booking status
-
-/*******  bfe9bcc2-47ad-4dc8-8586-2413a46f8bc1  *******/
 }
 
 enum Recurring {
@@ -125,26 +105,17 @@ model Organization {
   members User[]
   subscriptionId String? @unique
   subscription Subscription?
-  globalSetting String?
-  GlobalSetting Globalsetting @relation(fields: [globalSetting], references: [settingName])
+  AD_HOST String?
+  AD_PORT String?
+  AD_DOMAIN String?
+  AD_BASE_DN String?
 }
 
-model Globalsetting {
+model Globalsetting {//ini hanya satu di pakai di semua Organization
   settingName String @id @default(uuid())
-  AD_HOST String
-  AD_PORT String
-  AD_DOMAIN String
-  AD_BASE_DN String
-
-  SOAP_CUSTOMER_URL String
-  SOAP_CUSTOMER_SOAPACTION String 
-  SOAP_CUSTOMER_USERNAME String
-  SOAP_CUSTOMER_PASSWORD String
   
   inUse Boolean @default(true)
   createdById String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  organizations Organization[]
 }

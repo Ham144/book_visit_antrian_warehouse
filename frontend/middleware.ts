@@ -7,10 +7,10 @@ export function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   const wl_IT_only = ["/admin", "/setup", "/warehouse"];
-  const kasir_IT_only = ["/"];
+  const kasir_IT_only = ["/admin/all-warehouse-management"];
 
   // Jika di halaman login, biarkan lewat (tidak perlu check token)
-  if (pathname === "/login") {
+  if (pathname === "/") {
     return NextResponse.next();
   }
 
@@ -22,7 +22,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.next();
     }
     // Jika tidak ada keduanya, redirect ke login
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   try {
@@ -40,7 +40,7 @@ export function middleware(req: NextRequest) {
         return NextResponse.next();
       }
       // Token expired dan tidak ada refresh_token, redirect ke login
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL("/", req.url));
     }
 
     const description = decoded?.description;
@@ -70,7 +70,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.next();
     }
     // Token invalid dan tidak ada refresh_token, redirect ke login
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 }
 export const config = {

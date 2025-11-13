@@ -1,6 +1,7 @@
 export interface LoginRequestLdapDto {
   username: string;
   password: string;
+  organization: string;
 }
 
 export interface LoginResponseDto {

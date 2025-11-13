@@ -1,4 +1,4 @@
-export class TokenPayload {
+export interface TokenPayload {
   username: string;
   description: string;
   warehouseId: string;

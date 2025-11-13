@@ -15,31 +15,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loadingUser, setloadingUser] = useState(true);
 
-  // useEffect(() => {
-  //   async function fetchUser() {
-  //     try {
-  //       const res = await AuthApi.getUserInfo();
-  //       setUserInfo(res);
-  //     } catch (err: any) {
-  //       // Silent fail jika 403/401 (user belum login)
-  //       if (err?.response?.status === 403 || err?.response?.status === 401) {
-  //         setUserInfo(null);
-  //       } else {
-  //         setUserInfo(null);
-  //       }
-  //     } finally {
-  //       setloadingUser(false);
-  //     }
-  //   }
-  //   fetchUser();
-  // }, []);
-
   useEffect(() => {
-    setUserInfo(
-      localStorage.getItem("userInfo")
-        ? JSON.parse(localStorage.getItem("userInfo")!)
-        : null
-    );
+    async function fetchUser() {
+      try {
+        const res = await AuthApi.getUserInfo();
+        setUserInfo(res);
+      } catch (err: any) {
+        // Silent fail jika 403/401 (user belum login)
+        if (err?.response?.status === 403 || err?.response?.status === 401) {
+          setUserInfo(null);
+        } else {
+          setUserInfo(null);
+        }
+      } finally {
+        setloadingUser(false);
+      }
+    }
+    fetchUser();
   }, []);
 
   return (

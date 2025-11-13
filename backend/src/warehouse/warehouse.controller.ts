@@ -9,23 +9,20 @@ import {
   Query,
 } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
-import {
-  WarehouseCreateDto,
-  WarehouseUpdateDto,
-} from 'src/models/warehouse.model';
 import { Auth } from 'src/common/auth.decorator';
+import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 
 @Controller('/api/warehouse')
 export class WarehouseController {
   constructor(private readonly warehouseService: WarehouseService) {}
 
   @Post()
-  createWarehouse(@Body() body: WarehouseCreateDto) {
+  createWarehouse(@Body() body: CreateWarehouseDto) {
     return this.warehouseService.createWarehouse(body);
   }
 
   @Post('/create')
-  createWarehouseLegacy(@Body() body: WarehouseCreateDto) {
+  createWarehouseLegacy(@Body() body: CreateWarehouseDto) {
     return this.warehouseService.createWarehouse(body);
   }
 
@@ -35,7 +32,7 @@ export class WarehouseController {
   }
 
   @Patch(':id')
-  updateWarehouse(@Param('id') id: string, @Body() body: WarehouseUpdateDto) {
+  updateWarehouse(@Param('id') id: string, @Body() body: CreateWarehouseDto) {
     return this.warehouseService.updateWarehouse(id, body);
   }
 

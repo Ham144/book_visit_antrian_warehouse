@@ -2,43 +2,46 @@
 
 import { LogIn, LogOut, Settings, Truck, User2 } from "lucide-react";
 import { useUserInfo } from "../UserContext";
-import { useEffect } from "react";
+import { useState } from "react";
 import { redirect } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { AuthApi } from "@/api/auth";
+import { toast, Toaster } from "sonner";
 
 export default function Navigation() {
   const { userInfo, setUserInfo } = useUserInfo();
 
-  const handeLogin = () => {
-    localStorage.setItem(
-      "userInfo",
-      JSON.stringify({
-        id: "user-1",
-        description: "IT",
-        username: "ham",
-        warehouse: "mg23",
-        displayName: "ham",
-        isActive: true,
-        warehouseId: "000",
-      })
-    );
-  };
+  const [formData, setFormData] = useState({
+    username: "yafizham",
+    password: "Catur2025!",
+    organization: "Catur Sukses Internasional",
+  });
 
-  const handleLogout = () => {
-    localStorage.removeItem("userInfo");
-    setUserInfo(null);
-  };
-
-  useEffect(() => {
-    if (userInfo?.description == "IT") {
-      setTimeout(() => {
+  const { mutateAsync: handeLogin } = useMutation({
+    mutationKey: ["userInfo"],
+    mutationFn: async () => {
+      const res = await AuthApi.loginUserLdap(formData);
+      return res;
+    },
+    onSuccess: (res: any) => {
+      setUserInfo(res);
+      document.getElementById("login_modal")?.click();
+      if (res?.description) {
         redirect("/admin/dashboard");
-      }, 2000);
-    } else if (userInfo?.description && userInfo?.description != "IT") {
-      setTimeout(() => {
-        redirect("/vendor/dashboard");
-      }, 2000);
-    }
-  }, [userInfo]);
+      } else {
+        redirect("/admin/dashboard");
+      }
+    },
+    onError: (er: any) =>
+      toast.error(er.response?.data?.message || "Gagal login"),
+  });
+
+  const { mutateAsync: handleLogout } = useMutation({
+    mutationKey: ["userInfo"],
+    mutationFn: AuthApi.logout,
+    onSuccess: () => toast.success("Logout berhasil"),
+    onError: (er: any) => toast.error(er.response?.data?.message),
+  });
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -189,13 +192,23 @@ export default function Navigation() {
             <p className="text-teal-100 mt-1">Masuk ke portal Antrian Gudang</p>
           </div>
 
-          <form onSubmit={() => handeLogin()} className="p-6 space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handeLogin();
+            }}
+            className="p-6 space-y-4"
+          >
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 Username
               </label>
               <input
                 type="text"
+                value={formData.username}
+                onChange={(e) =>
+                  setFormData({ ...formData, username: e.target.value })
+                }
                 placeholder="ham"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
               />
@@ -208,6 +221,10 @@ export default function Navigation() {
               <input
                 type="password"
                 placeholder="******"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
               />
             </div>
@@ -234,6 +251,7 @@ export default function Navigation() {
             </form>
           </div>
         </div>
+        <Toaster />
       </dialog>
 
       <dialog id="profile_modal" className="modal">

@@ -2,7 +2,6 @@
 
 import { Download, TrendingUp } from "lucide-react"
 import { toast } from "sonner"
-import SideNav from "@/components/shared-common/side-nav"
 
 const mockReports = [
   { metric: "On-Time Delivery Rate", value: "92%", trend: "+5%", period: "Last 7 days" },
@@ -26,7 +25,6 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        <SideNav role="admin" currentPage="reports" />
         <main className="flex-1 p-6">
           <div className="space-y-6">
             <div className="flex justify-between items-center">

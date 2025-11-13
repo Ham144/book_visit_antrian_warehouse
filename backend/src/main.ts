@@ -1,7 +1,8 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/http-exception-filter';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 
 async function bootstrap() {
   try {
@@ -10,7 +11,7 @@ async function bootstrap() {
       bodyParser: false,
     });
 
-    app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalFilters(new HttpExceptionFilter()); //agar error ga dalam banget
 
     // Configure body parser with increased limit (15MB)
     const express = require('express');
@@ -19,8 +20,6 @@ async function bootstrap() {
 
     // Enable cookie parser
     app.use(cookieParser());
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('FRONTEND_URL_PROD:', process.env.FRONTEND_URL_PROD);
 
     // Enable CORS
     app.enableCors({
@@ -32,6 +31,16 @@ async function bootstrap() {
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     });
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
+    app.useGlobalPipes(
+      new (require('@nestjs/common').ValidationPipe)({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
 
     await app.listen(3001);
     console.log('✓ Server listening on port 3001');

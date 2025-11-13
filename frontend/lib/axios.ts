@@ -95,17 +95,16 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
         onRefreshed(); // Clear subscribers even on failure
 
-        // Jika refresh token gagal, redirect ke login (hindari loop di /login)
+        // Jika refresh token gagal, redirect ke halaman login (hindari loop saat sudah di '/')
         const isOnLogin =
-          typeof window !== "undefined" &&
-          window.location.pathname === "/login";
+          typeof window !== "undefined" && window.location.pathname === "/";
         // Clear any stale cookies and redirect to login
         if (!isOnLogin) {
           try {
             // Clear cookies if refresh failed
             document.cookie = "access_token=; path=/; max-age=0";
             document.cookie = "refresh_token=; path=/; max-age=0";
-            window.location.href = "/login";
+            window.location.href = "/";
           } catch (_) {}
         }
         return Promise.reject(refreshError);

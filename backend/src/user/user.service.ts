@@ -1,56 +1,43 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { ValidationService } from 'src/common/validation.service';
-import { LoginRequestLdapDto, LoginResponseDto } from 'src/models/user.model';
-import { UserValidation } from './user.validation';
 import * as LdapClient from 'ldapjs-client';
-import { ErrorResponse } from 'src/models/error.model';
 import * as jwt from 'jsonwebtoken';
-import { TokenPayload } from 'src/models/tokenPayload.model';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
+import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
+import { TokenPayload } from './dto/token-payload.dto';
 
 @Injectable()
 export class UserService {
   constructor(
-    private validationService: ValidationService,
     private prismaService: PrismaService,
     private redis: RedisService,
   ) {}
 
-  async loginUser(
-    body: LoginRequestLdapDto,
-    req: any,
-  ): Promise<LoginResponseDto | ErrorResponse> {
-    this.validationService.validate(UserValidation.LOGIN, body);
+  async loginUser(body: LoginRequestLdapDto, req: any) {
+    const organizationSetting =
+      await this.prismaService.organization.findUnique({
+        where: {
+          name: body.organization,
+        },
+      });
 
-    const globalSetting = await this.prismaService.globalsetting.findFirst({
-      where: { inUse: true },
-    });
-
-    // Cek apakah globalSetting ada
-    if (!globalSetting) {
-      return {
-        statusCode: 500,
-        message:
-          'Global setting tidak ditemukan. Silakan setup konfigurasi LDAP terlebih dahulu.',
-        error: 'GLOBAL_SETTING_NOT_FOUND',
-      };
+    if (!organizationSetting) {
+      throw new BadRequestException('Organization Setting tidak ditemukna.');
     }
 
     //LDAP/ AD
     const client = new LdapClient({
-      url: `ldap://${globalSetting.AD_HOST}:${globalSetting.AD_PORT}`,
+      url: `ldap://${organizationSetting.AD_HOST}:${organizationSetting.AD_PORT}`,
     });
 
-    const bindDn = `${globalSetting.AD_DOMAIN}\\${body.username}`;
+    const bindDn = `${organizationSetting.AD_DOMAIN}\\${body.username}`;
     // const baseDN = "dc=catur,dc=co,dc=id";
-    const baseDN = globalSetting.AD_BASE_DN;
+    const baseDN = organizationSetting.AD_BASE_DN;
 
     let userLDAP: any;
     try {
@@ -202,7 +189,15 @@ export class UserService {
       username: user.username,
       displayName: user.displayName,
       description: user.description,
-      warehouse: user.warehouse,
+      warehouse: user.warehouse
+        ? {
+            id: user.warehouse.id,
+            name: user.warehouse.name,
+            location: user.warehouse.location,
+            description: user.warehouse.description,
+            isActive: user.warehouse.isActive,
+          }
+        : null,
       refresh_token: refresh_token,
       access_token: access_token,
     };
@@ -286,26 +281,38 @@ export class UserService {
   }
 
   async getAllAccount(page: number, searchKey: string) {
-    const accounts: LoginResponseDto[] = await this.prismaService.user.findMany(
-      {
-        where: {
-          username: {
-            contains: searchKey,
-          },
+    const accounts = await this.prismaService.user.findMany({
+      where: {
+        username: {
+          contains: searchKey,
         },
-        include: {
-          warehouse: true,
-        },
-        skip: (page - 1) * 10,
-        take: 10,
       },
-    );
+      include: {
+        warehouse: true,
+      },
+      skip: (page - 1) * 10,
+      take: 10,
+    });
 
-    return accounts;
+    return accounts.map((account) => ({
+      username: account.username,
+      displayName: account.displayName,
+      description: account.description,
+      isActive: account.isActive,
+      warehouse: account.warehouse
+        ? {
+            id: account.warehouse.id,
+            name: account.warehouse.name,
+            location: account.warehouse.location,
+            description: account.warehouse.description,
+            isActive: account.warehouse.isActive,
+          }
+        : null,
+    }));
   }
 
   async updateAccount(body: LoginResponseDto) {
-    return this.prismaService.user.update({
+    const updated = await this.prismaService.user.update({
       where: {
         username: body.username,
       },
@@ -314,6 +321,12 @@ export class UserService {
         isActive: body.isActive,
       },
     });
+    return {
+      username: updated.username,
+      displayName: updated.displayName,
+      description: updated.description,
+      isActive: updated.isActive,
+    };
   }
 
   async getUserInfo(req: any) {
@@ -327,9 +340,7 @@ export class UserService {
   }
 
   async logout(access_token: string, req: any) {
-    if (!access_token) {
-      console.log('delete refresh_token dan access_token');
-    }
+    // if no access_token, continue to clear any session if exists
     const oldPayload: TokenPayload = await jwt.verify(
       access_token,
       process.env.JWT_SECRET,
@@ -340,7 +351,6 @@ export class UserService {
       message: 'redis jti deleted',
     };
   }
-  // Reusable token generator
   // Reusable token generator
   private generateToken(
     payload: TokenPayload,

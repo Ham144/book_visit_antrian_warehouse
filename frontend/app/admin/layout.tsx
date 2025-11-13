@@ -1,11 +1,11 @@
-import SideNav from "@/components/shared-common/side-nav";
+import SideNav from "@/components/admin/side-nav";
 import React from "react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div>
+    <div className="flex w-full ">
       <SideNav />
-      {children}
+      <main className="w-full overflow-y-auto">{children}</main>
     </div>
   );
 };

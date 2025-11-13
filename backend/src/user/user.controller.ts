@@ -9,12 +9,12 @@ import {
   Res,
   Query,
   ParseIntPipe,
+  HttpException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { LoginRequestLdapDto, LoginResponseDto } from 'src/models/user.model';
 import { Response, Request } from 'express';
 import { refreshTokenOption, accessTokenOption } from './tokenCookieOptions';
-import { ErrorResponse } from 'src/models/error.model';
+import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
 
 @Controller('/api/user')
 export class UserController {
@@ -23,40 +23,34 @@ export class UserController {
   @Post('/login/ldap')
   async loginUserLdap(
     @Body() body: LoginRequestLdapDto,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
-    const response: LoginResponseDto | ErrorResponse =
-      await this.userService.loginUser(body, req);
+    const response = await this.userService.loginUser(body, req);
 
-    if (response instanceof ErrorResponse) {
-      // berarti ini ErrorResponse
-      console.error('Login gagal:', response.message);
-      return res.status(response.statusCode).json(response);
-    } else {
-      const hasTokens = response.refresh_token && response.access_token;
+    const hasTokens = response.refresh_token && response.access_token;
 
-      if (hasTokens) {
-        res.cookie('refresh_token', response.refresh_token, refreshTokenOption);
-        res.cookie('access_token', response.access_token, accessTokenOption);
-      } else {
-        console.log('NO TOKENS TO SET - tokens are missing!');
-      }
-
-      // Hapus token dari response body
-      const { refresh_token, access_token, ...responseWithoutTokens } =
-        response;
-
-      return res.status(200).json(responseWithoutTokens);
+    if (hasTokens) {
+      res.cookie('refresh_token', response.refresh_token, refreshTokenOption);
+      res.cookie('access_token', response.access_token, accessTokenOption);
     }
+
+    // Hapus token dari response body
+    const { refresh_token, access_token, ...responseWithoutTokens } = response;
+
+    return responseWithoutTokens;
   }
 
   @Post('/refresh-token')
-  async refreshToken(@Req() req: Request, @Res() res: Response) {
+  async refreshToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refreshToken = req?.cookies['refresh_token'];
 
     if (!refreshToken) {
-      return res.status(401).json({ message: 'No refresh token' });
+      res.status(401);
+      return { message: 'No refresh token' };
     }
     const { access_token, refresh_token: new_refresh_token } =
       await this.userService.refreshToken(refreshToken);
@@ -64,9 +58,9 @@ export class UserController {
     res.cookie('refresh_token', new_refresh_token, refreshTokenOption);
     res.cookie('access_token', access_token, accessTokenOption);
 
-    return res.status(200).json({
+    return {
       message: 'Refresh token updated',
-    });
+    };
   }
 
   @Get('/get-user-info')
@@ -88,11 +82,11 @@ export class UserController {
   }
 
   @Delete('/logout')
-  async logout(@Req() req: Request, @Res() res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const access_token = req?.cookies['access_token'];
     await this.userService.logout(access_token, req);
     res.clearCookie('access_token', { path: '/' });
     res.clearCookie('refresh_token', { path: '/' });
-    return res.status(200).json({ message: 'Logout success' });
+    return { message: 'Logout success' };
   }
 }

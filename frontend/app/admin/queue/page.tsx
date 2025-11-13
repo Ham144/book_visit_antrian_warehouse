@@ -2,7 +2,6 @@
 
 import { Phone, CheckCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import SideNav from "@/components/shared-common/side-nav";
 
 const mockQueue = [
   {
@@ -39,7 +38,6 @@ export default function QueuePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        <SideNav role="admin" currentPage="queue" />
         <main className="flex-1 p-6">
           <div className="space-y-6">
             <div>

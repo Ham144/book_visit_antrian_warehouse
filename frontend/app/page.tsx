@@ -1,5 +1,6 @@
 "use client";
 
+import { useUserInfo } from "@/components/UserContext";
 import {
   Building,
   Truck,
@@ -17,6 +18,7 @@ import {
 import Link from "next/link";
 
 export default function HomePage() {
+  const { userInfo } = useUserInfo();
   const stats = [
     {
       label: "Total Warehouse",
@@ -125,23 +127,17 @@ export default function HomePage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
-              href="/booking"
+              href={
+                userInfo?.description ? "/admin/dashboard" : "/vendor/booking"
+              }
               className="btn btn-lg bg-white text-blue-700 hover:bg-gray-100 border-0 font-semibold px-8 gap-2"
             >
               <PlayCircle className="w-5 h-5" />
-              Mulai Booking
-            </Link>
-            <Link
-              href="/queue"
-              className="btn btn-lg btn-outline text-white border-white hover:bg-white hover:text-blue-700 font-semibold px-8 gap-2"
-            >
-              <BarChart3 className="w-5 h-5" />
-              Lihat Antrian Live
+              {userInfo?.description ? "Lihat Dashboard Admin" : "Mulai Order"}
             </Link>
           </div>
         </div>
       </section>
-
       {/* Stats Section */}
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -202,7 +198,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
       {/* Features Grid */}
       <section className="py-12 md:py-16 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -217,7 +212,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
+            {features.map((feature) => (
               <Link
                 key={feature.title}
                 href={feature.href}
@@ -258,7 +253,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
       {/* Queue Summary */}
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -335,7 +329,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

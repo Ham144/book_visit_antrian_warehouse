@@ -10,7 +10,6 @@ import {
   getBrandName,
 } from "@/lib/mock-data";
 import { toast } from "sonner";
-import SideNav from "@/components/shared-common/side-nav";
 
 interface FormData {
   merkId: string;
@@ -106,7 +105,6 @@ export default function VehiclesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        <SideNav role="admin" currentPage="vehicles" />
         <main className="flex-1 p-6">
           <div>
             <div className="flex items-center justify-between mb-6">
@@ -116,7 +114,10 @@ export default function VehiclesPage() {
                   Kelola jenis dan spesifikasi kendaraan di gudang
                 </p>
               </div>
-              <button onClick={() => handleOpen()} className="btn btn-primary gap-2">
+              <button
+                onClick={() => handleOpen()}
+                className="btn btn-primary gap-2"
+              >
                 <Plus size={20} />
                 Tambah Kendaraan
               </button>
@@ -174,7 +175,10 @@ export default function VehiclesPage() {
                         placeholder="Contoh: Truck Box, Wing Box, Pick Up"
                         value={formData.jenisKendaraan}
                         onChange={(e) =>
-                          setFormData({ ...formData, jenisKendaraan: e.target.value })
+                          setFormData({
+                            ...formData,
+                            jenisKendaraan: e.target.value,
+                          })
                         }
                         className="input input-bordered w-full"
                       />
@@ -214,7 +218,10 @@ export default function VehiclesPage() {
                         placeholder="Contoh: 10 ton, 5000 kg"
                         value={formData.maxWeight}
                         onChange={(e) =>
-                          setFormData({ ...formData, maxWeight: e.target.value })
+                          setFormData({
+                            ...formData,
+                            maxWeight: e.target.value,
+                          })
                         }
                         className="input input-bordered w-full"
                       />
@@ -232,7 +239,10 @@ export default function VehiclesPage() {
                         placeholder="Contoh: 7m x 2.5m x 3m"
                         value={formData.dimension}
                         onChange={(e) =>
-                          setFormData({ ...formData, dimension: e.target.value })
+                          setFormData({
+                            ...formData,
+                            dimension: e.target.value,
+                          })
                         }
                         className="input input-bordered w-full"
                       />
@@ -249,7 +259,10 @@ export default function VehiclesPage() {
                         placeholder="Deskripsi tambahan tentang kendaraan"
                         value={formData.description}
                         onChange={(e) =>
-                          setFormData({ ...formData, description: e.target.value })
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
                         }
                         className="textarea textarea-bordered w-full"
                         rows={3}
@@ -259,12 +272,17 @@ export default function VehiclesPage() {
                     {/* Status */}
                     <div className="form-control">
                       <label className="label cursor-pointer">
-                        <span className="label-text font-semibold">Status Aktif</span>
+                        <span className="label-text font-semibold">
+                          Status Aktif
+                        </span>
                         <input
                           type="checkbox"
                           checked={formData.isActive}
                           onChange={(e) =>
-                            setFormData({ ...formData, isActive: e.target.checked })
+                            setFormData({
+                              ...formData,
+                              isActive: e.target.checked,
+                            })
                           }
                           className="checkbox"
                         />
@@ -347,4 +365,3 @@ export default function VehiclesPage() {
     </div>
   );
 }
-
