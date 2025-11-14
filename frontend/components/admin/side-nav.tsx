@@ -13,10 +13,6 @@ import {
   Settings,
 } from "lucide-react";
 
-interface SideNavProps {
-  role: "admin" | "vendor";
-  currentPage?: string;
-}
 
 const adminMenuItems = [
   {

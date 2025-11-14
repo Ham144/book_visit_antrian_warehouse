@@ -1,11 +1,6 @@
 // Mock data for warehouse queue management system in Indonesian
 
-export interface VehicleType {
-  id: string;
-  name: string;
-  description: string; // e.g., "IT", "Cargo", "Container"
-  defaultUnloadMinutes: number;
-}
+import { VehicleType } from "@/types/vehicle";
 
 export interface Warehouse {
   id: string;
@@ -53,36 +48,22 @@ export interface VehicleBrand {
   country?: string;
 }
 
-export interface AdminVehicle {
-  id: string;
-  merkId: string;
-  jenisKendaraan: string;
-  unloadDuration: number;
-  description?: string;
-  maxWeight?: string;
-  dimension?: string;
-  isActive: boolean;
-  createdBy: string;
-}
-
-// Mock vehicle types
 export const mockVehicleTypes: VehicleType[] = [
   {
-    id: "vt-1",
     name: "Truk Kecil",
-    description: "IT",
+    description:
+      "Kendaraan pengangkut berkapasitas kecil, cocok untuk distribusi dalam kota.",
     defaultUnloadMinutes: 30,
   },
   {
-    id: "vt-2",
     name: "Truk Sedang",
-    description: "Cargo",
+    description:
+      "Truk dengan kapasitas sedang untuk pengiriman jarak menengah.",
     defaultUnloadMinutes: 45,
   },
   {
-    id: "vt-3",
     name: "Truk Besar",
-    description: "Container",
+    description: "Truk berkapasitas besar untuk kontainer atau muatan berat.",
     defaultUnloadMinutes: 60,
   },
 ];
@@ -179,49 +160,25 @@ export const mockBookings: Booking[] = [
 ];
 
 // Mock vehicle brands data
-export const mockVehicleBrands: VehicleBrand[] = [
-  { id: "brand-1", name: "Hino", country: "Jepang" },
-  { id: "brand-2", name: "Mitsubishi Fuso", country: "Jepang" },
-  { id: "brand-3", name: "Isuzu", country: "Jepang" },
-  { id: "brand-4", name: "Mercedes Benz", country: "Jerman" },
-  { id: "brand-5", name: "Volvo", country: "Swedia" },
-];
+export const mockVehicleBrands: string[] = [
+  // Small / light trucks
+  "Suzuki",
+  "Daihatsu",
+  "Toyota",
+  "Hyundai",
 
-// Mock admin vehicles database with new spec
-export const mockAdminVehicles: AdminVehicle[] = [
-  {
-    id: "v-001",
-    merkId: "brand-1",
-    jenisKendaraan: "Truck Box",
-    unloadDuration: 45,
-    description: "Truck besar dengan lift belakang",
-    maxWeight: "10 ton",
-    dimension: "7m x 2.5m x 3m",
-    isActive: true,
-    createdBy: "admin-1",
-  },
-  {
-    id: "v-002",
-    merkId: "brand-2",
-    jenisKendaraan: "Wing Box",
-    unloadDuration: 50,
-    description: "Truck dengan sayap samping",
-    maxWeight: "12 ton",
-    dimension: "8m x 2.8m x 3.5m",
-    isActive: true,
-    createdBy: "admin-1",
-  },
-  {
-    id: "v-003",
-    merkId: "brand-3",
-    jenisKendaraan: "Pick Up",
-    unloadDuration: 20,
-    description: "Kendaraan pickup ringan",
-    maxWeight: "2 ton",
-    dimension: "5m x 1.8m x 1.8m",
-    isActive: true,
-    createdBy: "admin-1",
-  },
+  // Medium trucks (most common in Indonesia)
+  "Mitsubishi Fuso",
+  "Hino",
+  "Isuzu",
+
+  // Heavy duty / container
+  "Mercedes Benz",
+  "Volvo",
+  "Scania",
+  "MAN",
+  "FAW",
+  "Foton",
 ];
 
 // Utility functions

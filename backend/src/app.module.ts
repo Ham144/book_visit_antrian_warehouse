@@ -7,6 +7,10 @@ import { HttpExceptionFilter } from './common/http-exception-filter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { VehicleModule } from './vehicle/vehicle.module';
+import { DockModule } from './dock/dock.module';
+import { BusyTimeModule } from './busy-time/busy-time.module';
+import { BookingModule } from './booking/booking.module';
+import { MyOrganizationModule } from './my-organization/my-organization.module';
 
 @Module({
   imports: [
@@ -22,6 +26,10 @@ import { VehicleModule } from './vehicle/vehicle.module';
       },
     }),
     VehicleModule,
+    DockModule,
+    BusyTimeModule,
+    BookingModule,
+    MyOrganizationModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

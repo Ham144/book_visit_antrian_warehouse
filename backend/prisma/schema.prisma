@@ -7,22 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  username     String @id
-  description  String
-  isActive     Boolean  @default(true)
-  displayName  String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  warehouseId  String?
-  warehouse    Warehouse?    @relation(fields: [warehouseId], references: [id])
-  subscription Subscription?
-  organizations Organization[]
-}
 
 model Subscription {
   id            String @id
-  user          User   @relation(fields: [userusername], references: [username])
   userusername  String @unique
   start DateTime
   plan SubscriptionPlan @default(TRIAL)
@@ -30,79 +17,9 @@ model Subscription {
   organizations Organization? @relation(fields: [organizationId], references: [subscriptionId]) 
 } 
 
-enum AuthMethod {
-  LDAP
-} 
-
-model Warehouse {
-  id String @id @default(uuid())
-  name        String @unique
-  location    String?
-  description String?
-  docks Dock[]
-  members User[]
-  isActive Boolean @default(true)
-}
-
-model Dock { //slot
-  id    String   @id @default(cuid())
-  name  String
-  warehouseId String
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
-  photos String[]
-  availableFrom DateTime
-  availableUntil DateTime
-}
-
-model Vehicle {
-   id          String @id   @default(cuid())
-   brand         String?
-   jenisKendaraan String?
-   durasiBongkar Int?
-   description String?
-   isActive Boolean @default(true)
-}
-
-model BusyTime {
-  id String @id @default(cuid())
-  title String
-  recurring Recurring  
-  startTime DateTime
-  endTime DateTime
-}
-
-model Booking {
-  id          String   @id @default(cuid())
-  queue       Int
-  date        DateTime
-  day         String
-  driverId   String
-  startTime   DateTime
-  endTime     DateTime
-  koridorId String
-  loadingTime Int
-  plat       String
-  slotId    String
-  vehicleId  String
-  warehouseId String
-}
-
-enum Recurring {
-  DAILY
-  WEEKLY
-  MONTHLY
-}
-
-
-enum SubscriptionPlan {
-  TRIAL
-  PRO
-  PREMIUM
-}
 
 model Organization {
   name String @id @unique
-  members User[]
   subscriptionId String? @unique
   subscription Subscription?
   AD_HOST String?
@@ -113,9 +30,156 @@ model Organization {
 
 model Globalsetting {//ini hanya satu di pakai di semua Organization
   settingName String @id @default(uuid())
-  
   inUse Boolean @default(true)
   createdById String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+
+enum Recurring {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum SubscriptionPlan {
+  TRIAL
+  PRO
+  PREMIUM
+}
+
+model Warehouse {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  location    String?
+  description String?
+  isActive    Boolean  @default(true)
+
+  docks       Dock[]
+  members     User[]   @relation("UserHomeWarehouse")
+  bookings    Booking[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userWarehouseAccesses UserWarehouseAccess[]
+}
+
+model Dock {
+  id                     String    @id @default(cuid())
+  name                   String
+  warehouseId            String
+  warehouse              Warehouse @relation(fields: [warehouseId], references: [id])
+
+  photos                 String[]
+  dockType               String?   // forklift, manual, side, reefer
+  supportedVehicleTypes  String[]  // ["CDD","Tronton","Wingbox"]
+
+  maxLength              Float?
+  maxWidth               Float?
+  maxHeight              Float?
+
+  availableFrom          DateTime
+  availableUntil         DateTime
+
+  isActive               Boolean   @default(true)
+  status                 String?   // available, closed, maintenance
+  priority               Int?
+
+  bookings               Booking[]
+  busyTimes              DockBusyTime[]
+
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+}
+
+model Vehicle {
+  id              String  @id @default(cuid())
+  brand           String
+  jenisKendaraan  String
+  plateNumber     String  @unique
+  productionYear  Int?
+
+  maxCapacity     String?
+  dimensionLength Float?
+  dimensionWidth  Float?
+  dimensionHeight Float?
+
+  durasiBongkar   Int
+  isReefer        Boolean @default(false)
+  requiresDock    String? // forklift, manual, side-load, etc.
+
+  driverName      String?
+  driverPhone     String?
+  driverLicense   String?
+
+  description     String?
+  isActive        Boolean @default(true)
+
+  bookings        Booking[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DockBusyTime {
+  id        String   @id @default(cuid())
+  dockId    String
+  from      DateTime
+  to        DateTime
+  reason    String?
+  dock      Dock     @relation(fields: [dockId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id                  String    @id @default(cuid())
+  vehicleId           String
+  warehouseId         String
+  dockId              String?
+
+  arrivalTime         DateTime
+  estimatedFinishTime DateTime?
+  finishTime          DateTime?
+  status              String    // waiting, in_progress, finished, canceled
+  notes               String?
+
+  Vehicle             Vehicle   @relation(fields: [vehicleId], references: [id])
+  Warehouse           Warehouse @relation(fields: [warehouseId], references: [id])
+  Dock                Dock?     @relation(fields: [dockId], references: [id])
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model User {
+  username         String   @id
+  passwordHash     String?  // kalau pakai auth lokal
+  description      String?
+  isActive         Boolean  @default(true)
+  displayName      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // homeWarehouse = staff biasa (nullable)
+  homeWarehouseId  String? 
+  homeWarehouse    Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
+
+  // many-to-many access (admin area)
+  warehouseAccess  UserWarehouseAccess[]
+}
+
+model UserWarehouseAccess {
+  id          String   @id @default(cuid())
+  userId      String
+  warehouseId String
+
+  user        User     @relation(fields: [userId], references: [username])
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, warehouseId])
 }

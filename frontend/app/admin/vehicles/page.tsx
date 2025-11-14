@@ -4,49 +4,109 @@ import type React from "react";
 
 import { useState } from "react";
 import { Plus, Edit, Trash2, X } from "lucide-react";
-import {
-  mockAdminVehicles,
-  mockVehicleBrands,
-  getBrandName,
-} from "@/lib/mock-data";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { VehicleApi } from "@/api/vehicle";
+import type { IVehicle } from "@/types/vehicle";
+import { mockVehicleBrands, mockVehicleTypes } from "@/lib/mock-data";
 
-interface FormData {
-  merkId: string;
-  jenisKendaraan: string;
-  unloadDuration: number;
-  description: string;
-  maxWeight: string;
-  dimension: string;
-  isActive: boolean;
-}
-
-const initialFormData: FormData = {
-  merkId: "",
+const initialFormData: IVehicle = {
+  brand: "",
   jenisKendaraan: "",
-  unloadDuration: 30,
+  durasiBongkar: 30,
   description: "",
-  maxWeight: "",
+  maxCapacity: "",
   dimension: "",
   isActive: true,
 };
 
 export default function VehiclesPage() {
-  const [vehicles, setVehicles] = useState(mockAdminVehicles);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<IVehicle>(initialFormData);
+  const queryClient = useQueryClient();
 
-  const handleOpen = (vehicle?: (typeof mockAdminVehicles)[0]) => {
-    if (vehicle) {
+  const {
+    data: vehicles = [],
+    isLoading,
+    error: fetchError,
+  } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: () => VehicleApi.getVehicles(),
+    retry: 1,
+    staleTime: 30000,
+  });
+
+  const handleClose = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData(initialFormData);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (body: Omit<IVehicle, "id">) =>
+      await VehicleApi.createVehicle(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      toast.success("Kendaraan berhasil ditambahkan");
+      handleClose();
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Gagal menambahkan kendaraan";
+      toast.error(errorMessage);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<Omit<IVehicle, "id">>;
+    }) => await VehicleApi.updateVehicle(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      toast.success("Kendaraan berhasil diperbarui");
+      handleClose();
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Gagal memperbarui kendaraan";
+      toast.error(errorMessage);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => await VehicleApi.deleteVehicle(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      toast.success("Kendaraan berhasil dihapus");
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Gagal menghapus kendaraan";
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleOpenEdit = (vehicle?: IVehicle) => {
+    if (vehicle && vehicle.id) {
       setFormData({
-        merkId: vehicle.merkId,
-        jenisKendaraan: vehicle.jenisKendaraan,
-        unloadDuration: vehicle.unloadDuration,
+        brand: vehicle.brand || "",
+        jenisKendaraan: vehicle.jenisKendaraan || "",
+        durasiBongkar: vehicle.durasiBongkar,
         description: vehicle.description || "",
-        maxWeight: vehicle.maxWeight || "",
+        maxCapacity: vehicle.maxCapacity || "",
         dimension: vehicle.dimension || "",
-        isActive: vehicle.isActive,
+        isActive: vehicle.isActive ?? true,
       });
       setEditingId(vehicle.id);
     } else {
@@ -56,49 +116,47 @@ export default function VehiclesPage() {
     setIsModalOpen(true);
   };
 
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData(initialFormData);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.merkId || !formData.jenisKendaraan) {
-      toast.error("Merk dan Jenis Kendaraan harus diisi");
+    if (!formData.durasiBongkar) {
+      toast.error("Durasi bongkar muat harus diisi");
       return;
     }
 
     if (editingId) {
-      setVehicles(
-        vehicles.map((v) =>
-          v.id === editingId
-            ? {
-                ...v,
-                ...formData,
-              }
-            : v
-        )
-      );
-      toast.success("Kendaraan berhasil diperbarui");
+      updateMutation.mutate({
+        id: editingId,
+        data: {
+          brand: formData.brand || undefined,
+          jenisKendaraan: formData.jenisKendaraan || undefined,
+          durasiBongkar: formData.durasiBongkar,
+          description: formData.description || undefined,
+          maxCapacity: formData.maxCapacity || undefined,
+          dimension: formData.dimension || undefined,
+          isActive: formData.isActive,
+        },
+      });
     } else {
-      const newVehicle = {
-        id: `v-${Date.now()}`,
-        ...formData,
-        createdBy: "admin-1",
-      };
-      setVehicles([...vehicles, newVehicle]);
-      toast.success("Kendaraan berhasil ditambahkan");
+      createMutation.mutate({
+        brand: formData.brand || undefined,
+        jenisKendaraan: formData.jenisKendaraan || undefined,
+        durasiBongkar: formData.durasiBongkar,
+        description: formData.description || undefined,
+        maxCapacity: formData.maxCapacity || undefined,
+        dimension: formData.dimension || undefined,
+        isActive: formData.isActive ?? true,
+      });
     }
-
-    handleClose();
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Yakin ingin menghapus kendaraan ini?")) {
-      setVehicles(vehicles.filter((v) => v.id !== id));
-      toast.success("Kendaraan berhasil dihapus");
+    if (
+      window.confirm(
+        "Apakah Anda yakin ingin menghapus kendaraan ini? Tindakan ini tidak dapat dibatalkan."
+      )
+    ) {
+      deleteMutation.mutate(id);
     }
   };
 
@@ -115,7 +173,7 @@ export default function VehiclesPage() {
                 </p>
               </div>
               <button
-                onClick={() => handleOpen()}
+                onClick={() => handleOpenEdit()}
                 className="btn btn-primary gap-2"
               >
                 <Plus size={20} />
@@ -144,20 +202,23 @@ export default function VehiclesPage() {
                     <div className="form-control">
                       <label className="label">
                         <span className="label-text font-semibold">
-                          Merk Kendaraan *
+                          Merk Kendaraan (opsional)
                         </span>
                       </label>
                       <select
-                        value={formData.merkId}
+                        value={formData.brand || ""}
                         onChange={(e) =>
-                          setFormData({ ...formData, merkId: e.target.value })
+                          setFormData({
+                            ...formData,
+                            brand: e.target.value || undefined,
+                          })
                         }
                         className="select select-bordered w-full"
                       >
                         <option value="">Pilih Merk</option>
                         {mockVehicleBrands.map((brand) => (
-                          <option key={brand.id} value={brand.id}>
-                            {brand.name}
+                          <option key={brand} value={brand}>
+                            {brand}
                           </option>
                         ))}
                       </select>
@@ -167,39 +228,51 @@ export default function VehiclesPage() {
                     <div className="form-control">
                       <label className="label">
                         <span className="label-text font-semibold">
-                          Jenis Kendaraan *
+                          Jenis Kendaraaan(opsional)
                         </span>
                       </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: Truck Box, Wing Box, Pick Up"
-                        value={formData.jenisKendaraan}
+                      <select
+                        value={formData.brand || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            jenisKendaraan: e.target.value,
+                            jenisKendaraan: e.target.value || undefined,
+                            durasiBongkar:
+                              mockVehicleTypes.find(
+                                (vt) => vt.name === e.target.value
+                              )?.defaultUnloadMinutes || 30,
                           })
                         }
-                        className="input input-bordered w-full"
-                      />
+                        className="select select-bordered w-full"
+                      >
+                        <option value="">Pilih Jenis Kendaraan</option>
+                        {mockVehicleTypes.map((vehicleType) => (
+                          <option
+                            key={vehicleType.name}
+                            value={vehicleType.name}
+                          >
+                            {`${vehicleType.name} - ${vehicleType.defaultUnloadMinutes} menit`}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* Unload Duration */}
                     <div className="form-control">
                       <label className="label">
                         <span className="label-text font-semibold">
-                          Durasi Bongkar Muat (menit) *
+                          Durasi Bongkar Muat (menit) (max 5 jam)
                         </span>
                       </label>
                       <input
                         type="number"
                         min="5"
-                        max="300"
-                        value={formData.unloadDuration}
+                        max="300" //max 5 jam
+                        value={formData.durasiBongkar || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            unloadDuration: Number.parseInt(e.target.value),
+                            durasiBongkar: Number.parseInt(e.target.value) || 0,
                           })
                         }
                         className="input input-bordered w-full"
@@ -216,11 +289,11 @@ export default function VehiclesPage() {
                       <input
                         type="text"
                         placeholder="Contoh: 10 ton, 5000 kg"
-                        value={formData.maxWeight}
+                        value={formData.maxCapacity || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            maxWeight: e.target.value,
+                            maxCapacity: e.target.value || undefined,
                           })
                         }
                         className="input input-bordered w-full"
@@ -237,11 +310,11 @@ export default function VehiclesPage() {
                       <input
                         type="text"
                         placeholder="Contoh: 7m x 2.5m x 3m"
-                        value={formData.dimension}
+                        value={formData.dimension || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            dimension: e.target.value,
+                            dimension: e.target.value || undefined,
                           })
                         }
                         className="input input-bordered w-full"
@@ -257,11 +330,11 @@ export default function VehiclesPage() {
                       </label>
                       <textarea
                         placeholder="Deskripsi tambahan tentang kendaraan"
-                        value={formData.description}
+                        value={formData.description || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            description: e.target.value,
+                            description: e.target.value || undefined,
                           })
                         }
                         className="textarea textarea-bordered w-full"
@@ -277,7 +350,7 @@ export default function VehiclesPage() {
                         </span>
                         <input
                           type="checkbox"
-                          checked={formData.isActive}
+                          checked={formData.isActive ?? true}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
@@ -298,8 +371,21 @@ export default function VehiclesPage() {
                       >
                         Batal
                       </button>
-                      <button type="submit" className="btn btn-primary">
-                        {editingId ? "Perbarui" : "Tambah"}
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={
+                          createMutation.isPending || updateMutation.isPending
+                        }
+                      >
+                        {createMutation.isPending ||
+                        updateMutation.isPending ? (
+                          <span className="loading loading-spinner"></span>
+                        ) : editingId ? (
+                          "Perbarui"
+                        ) : (
+                          "Tambah"
+                        )}
                       </button>
                     </div>
                   </form>
@@ -309,55 +395,70 @@ export default function VehiclesPage() {
 
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="table table-zebra w-full">
-                <thead>
-                  <tr>
-                    <th>Merk</th>
-                    <th>Jenis Kendaraan</th>
-                    <th>Durasi Bongkar (menit)</th>
-                    <th>Kapasitas</th>
-                    <th>Dimensi</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vehicles.map((vehicle) => (
-                    <tr key={vehicle.id}>
-                      <td className="font-semibold">
-                        {getBrandName(vehicle.merkId)}
-                      </td>
-                      <td>{vehicle.jenisKendaraan}</td>
-                      <td>{vehicle.unloadDuration}</td>
-                      <td>{vehicle.maxWeight || "-"}</td>
-                      <td className="text-sm">{vehicle.dimension || "-"}</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            vehicle.isActive ? "badge-success" : "badge-error"
-                          }`}
-                        >
-                          {vehicle.isActive ? "Aktif" : "Tidak Aktif"}
-                        </span>
-                      </td>
-                      <td className="flex gap-2">
-                        <button
-                          onClick={() => handleOpen(vehicle)}
-                          className="btn btn-sm btn-outline gap-1"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(vehicle.id)}
-                          className="btn btn-sm btn-outline btn-error gap-1"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <span className="loading loading-spinner loading-lg"></span>
+                </div>
+              ) : fetchError ? (
+                <div className="alert alert-error">
+                  <span>Gagal memuat data kendaraan</span>
+                </div>
+              ) : vehicles.length === 0 ? (
+                <div className="alert alert-info">
+                  <span>Belum ada data kendaraan</span>
+                </div>
+              ) : (
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Merk</th>
+                      <th>Jenis Kendaraan</th>
+                      <th>Durasi Bongkar (menit)</th>
+                      <th>Kapasitas</th>
+                      <th>Dimensi</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vehicles.map((vehicle) => (
+                      <tr key={vehicle.id}>
+                        <td className="font-semibold">
+                          {vehicle.brand || "-"}
+                        </td>
+                        <td>{vehicle.jenisKendaraan || "-"}</td>
+                        <td>{vehicle.durasiBongkar}</td>
+                        <td>{vehicle.maxCapacity || "-"}</td>
+                        <td className="text-sm">{vehicle.dimension || "-"}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              vehicle.isActive ? "badge-success" : "badge-error"
+                            }`}
+                          >
+                            {vehicle.isActive ? "Aktif" : "Tidak Aktif"}
+                          </span>
+                        </td>
+                        <td className="flex gap-2">
+                          <button
+                            onClick={() => handleOpenEdit(vehicle)}
+                            className="btn btn-sm btn-outline gap-1"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(vehicle.id!)}
+                            className="btn btn-sm btn-outline btn-error gap-1"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </main>

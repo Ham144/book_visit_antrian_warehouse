@@ -16,7 +16,7 @@ import { Response, Request } from 'express';
 import { refreshTokenOption, accessTokenOption } from './tokenCookieOptions';
 import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
 
-@Controller('/api/user')
+@Controller('/user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

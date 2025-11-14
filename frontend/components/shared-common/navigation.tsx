@@ -33,7 +33,7 @@ export default function Navigation() {
       }
     },
     onError: (er: any) =>
-      toast.error(er.response?.data?.message || "Gagal login"),
+      toast.error(er?.response?.data?.message || "Gagal login"),
   });
 
   const { mutateAsync: handleLogout } = useMutation({
@@ -251,7 +251,7 @@ export default function Navigation() {
             </form>
           </div>
         </div>
-        <Toaster />
+        <Toaster key={"login"}/>
       </dialog>
 
       <dialog id="profile_modal" className="modal">

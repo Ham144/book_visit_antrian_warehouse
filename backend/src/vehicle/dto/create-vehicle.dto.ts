@@ -1,20 +1,37 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateVehicleDto {
+  @IsOptional()
   @IsString()
-  brand: string;
+  brand?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  jenisKendaraan: string;
+  jenisKendaraan?: string;
 
   @IsNotEmpty()
   @IsNumber()
   durasiBongkar: number;
 
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
+  @IsOptional()
+  @IsString()
+  maxCapacity?: string;
+
+  @IsOptional()
+  @IsString()
+  dimension?: string;
+
+  @IsOptional()
   @IsBoolean()
-  isActive: boolean;
+  isActive?: boolean;
 }

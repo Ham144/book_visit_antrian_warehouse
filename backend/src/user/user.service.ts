@@ -68,7 +68,7 @@ export class UserService {
           'User terkait tidak memiliki warehouse:physicalDeliveryOfficeName',
       });
     }
-    let user = await this.prismaService.user.findFirst({
+    let user = await this.prismaService.user.findUnique({
       where: {
         username: body.username,
       },
@@ -108,6 +108,11 @@ export class UserService {
           description: userLDAP['description'],
           displayName: userLDAP['displayName'],
           warehouseId: warehouseId,
+          organizations: {
+            connect: {
+              name: body.organization,
+            }
+          }
         },
         include: {
           warehouse: true,
@@ -135,6 +140,11 @@ export class UserService {
               warehouseId: warehouse.id,
               displayName:
                 userLDAP['displayName'] || userLDAP['name'] || body.username,
+              organizations: {
+                connect: {
+                  name: body.organization,
+                }
+              }
             },
             include: {
               warehouse: true,
@@ -218,8 +228,7 @@ export class UserService {
       try {
         isJtiFound = await this.redis.get(oldPayload.jti);
       } catch (redisError) {
-        // Fallback: jika Redis tidak tersedia, tetap lanjutkan validasi token
-        // Ini untuk development, di production sebaiknya Redis harus tersedia
+        console.log("continue, redis error: ", redisError);
       }
 
       // Jika JTI tidak ditemukan di Redis, session mungkin sudah expired/dicabut
