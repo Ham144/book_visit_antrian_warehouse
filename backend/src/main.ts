@@ -10,7 +10,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
       bodyParser: false,
     });
-    app.setGlobalPrefix('api'); 
+    app.setGlobalPrefix('api');
 
     app.useGlobalFilters(new HttpExceptionFilter()); //agar error ga dalam banget
 

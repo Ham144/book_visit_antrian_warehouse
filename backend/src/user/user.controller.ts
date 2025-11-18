@@ -9,7 +9,6 @@ import {
   Res,
   Query,
   ParseIntPipe,
-  HttpException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Response, Request } from 'express';
@@ -26,8 +25,11 @@ export class UserController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
-    const response = await this.userService.loginUser(body, req);
-
+    const response: LoginResponseDto = await this.userService.loginUser(
+      body,
+      req,
+    );
+    console.log(response);
     const hasTokens = response.refresh_token && response.access_token;
 
     if (hasTokens) {

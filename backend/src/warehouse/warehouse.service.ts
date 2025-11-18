@@ -42,21 +42,11 @@ export class WarehouseService {
   }
 
   async createWarehouse(body: CreateWarehouseDto) {
-    const members = await this.resolveMembers(body.members);
-    body = {
-      ...body,
-      members: members.map((member) => member.username),
-    };
-
     const warehouse = await this.prismaService.warehouse.create({
       data: {
-        name: body.name,
-        description: body.description,
-        docks: {
-          connectOrCreate: body.docks,
-        },
+        ...body,
         members: {
-          connect: members,
+          connect: body.members.map((username) => ({ username })),
         },
       },
       include: {
@@ -68,11 +58,6 @@ export class WarehouseService {
   }
 
   async updateWarehouse(id: string, body: UpdateWarehouseDto) {
-    const members = await this.resolveMembers(body.members);
-    body = {
-      ...body,
-      members: members.map((member) => member.username),
-    };
     const existingWarehouse = await this.prismaService.warehouse.findUnique({
       where: { id },
     });
@@ -85,13 +70,9 @@ export class WarehouseService {
         id,
       },
       data: {
-        name: body.name,
-        description: body.description,
-        docks: {
-          connectOrCreate: body.docks,
-        },
+        ...body,
         members: {
-          connect: members,
+          connect: body.members.map((username) => ({ username })),
         },
       },
       include: {

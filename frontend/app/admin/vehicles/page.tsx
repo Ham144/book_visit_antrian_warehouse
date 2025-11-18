@@ -9,18 +9,54 @@ import { toast } from "sonner";
 import { VehicleApi } from "@/api/vehicle";
 import type { IVehicle } from "@/types/vehicle";
 import { mockVehicleBrands, mockVehicleTypes } from "@/lib/mock-data";
+import VehilcleModalForm from "@/components/admin/vehicleModelForm";
 
 const initialFormData: IVehicle = {
   brand: "",
   jenisKendaraan: "",
+  plateNumber: "",
+  productionYear: undefined,
   durasiBongkar: 30,
   description: "",
   maxCapacity: "",
-  dimension: "",
+  dimensionLength: undefined,
+  dimensionWidth: undefined,
+  dimensionHeight: undefined,
+  isReefer: false,
+  requiresDock: "",
+  driverName: "",
+  driverPhone: "",
+  driverLicense: "",
   isActive: true,
 };
 
 export default function VehiclesPage() {
+  const sanitizeString = (value?: string | null) => {
+    if (!value) return undefined;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  };
+
+  const sanitizeNumber = (value?: number | null) =>
+    typeof value === "number" && !Number.isNaN(value) ? value : undefined;
+
+  const formatDimension = (vehicle: IVehicle) => {
+    const length = sanitizeNumber(vehicle.dimensionLength);
+    const width = sanitizeNumber(vehicle.dimensionWidth);
+    const height = sanitizeNumber(vehicle.dimensionHeight);
+
+    if (length === undefined && width === undefined && height === undefined) {
+      return "-";
+    }
+
+    const formatPart = (val?: number) =>
+      val === undefined ? "-" : `${val}`.replace(/\.0+$/, "");
+
+    return `${formatPart(length)} x ${formatPart(width)} x ${formatPart(
+      height
+    )} m`;
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<IVehicle>(initialFormData);
@@ -40,7 +76,7 @@ export default function VehiclesPage() {
   const handleClose = () => {
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData(initialFormData);
+    setFormData({ ...initialFormData });
   };
 
   const createMutation = useMutation({
@@ -102,51 +138,80 @@ export default function VehiclesPage() {
       setFormData({
         brand: vehicle.brand || "",
         jenisKendaraan: vehicle.jenisKendaraan || "",
+        plateNumber: vehicle.plateNumber || "",
+        productionYear: vehicle.productionYear,
         durasiBongkar: vehicle.durasiBongkar,
-        description: vehicle.description || "",
         maxCapacity: vehicle.maxCapacity || "",
-        dimension: vehicle.dimension || "",
+        dimensionLength: vehicle.dimensionLength ?? undefined,
+        dimensionWidth: vehicle.dimensionWidth ?? undefined,
+        dimensionHeight: vehicle.dimensionHeight ?? undefined,
+        isReefer: vehicle.isReefer ?? false,
+        requiresDock: vehicle.requiresDock || "",
+        driverName: vehicle.driverName || "",
+        driverPhone: vehicle.driverPhone || "",
+        driverLicense: vehicle.driverLicense || "",
+        description: vehicle.description || "",
         isActive: vehicle.isActive ?? true,
       });
       setEditingId(vehicle.id);
     } else {
-      setFormData(initialFormData);
+      setFormData({ ...initialFormData });
       setEditingId(null);
     }
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!formData.brand) {
+      toast.error("Merk kendaraan harus diisi");
+      return;
+    }
+
+    if (!formData.jenisKendaraan) {
+      toast.error("Jenis kendaraan harus diisi");
+      return;
+    }
+
+    const plateNumber = formData.plateNumber?.trim();
+
+    if (!plateNumber) {
+      toast.error("Nomor polisi harus diisi");
+      return;
+    }
 
     if (!formData.durasiBongkar) {
       toast.error("Durasi bongkar muat harus diisi");
       return;
     }
 
+    const payload = {
+      brand: formData.brand.trim(),
+      jenisKendaraan: formData.jenisKendaraan.trim(),
+      plateNumber: plateNumber.toUpperCase(),
+      productionYear: sanitizeNumber(formData.productionYear),
+      maxCapacity: sanitizeString(formData.maxCapacity),
+      dimensionLength: sanitizeNumber(formData.dimensionLength),
+      dimensionWidth: sanitizeNumber(formData.dimensionWidth),
+      dimensionHeight: sanitizeNumber(formData.dimensionHeight),
+      durasiBongkar: formData.durasiBongkar,
+      isReefer: Boolean(formData.isReefer),
+      requiresDock: sanitizeString(formData.requiresDock),
+      driverName: sanitizeString(formData.driverName),
+      driverPhone: sanitizeString(formData.driverPhone),
+      driverLicense: sanitizeString(formData.driverLicense),
+      description: sanitizeString(formData.description),
+      isActive: formData.isActive ?? true,
+    };
+
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
-        data: {
-          brand: formData.brand || undefined,
-          jenisKendaraan: formData.jenisKendaraan || undefined,
-          durasiBongkar: formData.durasiBongkar,
-          description: formData.description || undefined,
-          maxCapacity: formData.maxCapacity || undefined,
-          dimension: formData.dimension || undefined,
-          isActive: formData.isActive,
-        },
+        data: payload,
       });
     } else {
-      createMutation.mutate({
-        brand: formData.brand || undefined,
-        jenisKendaraan: formData.jenisKendaraan || undefined,
-        durasiBongkar: formData.durasiBongkar,
-        description: formData.description || undefined,
-        maxCapacity: formData.maxCapacity || undefined,
-        dimension: formData.dimension || undefined,
-        isActive: formData.isActive ?? true,
-      });
+      createMutation.mutate(payload);
     }
   };
 
@@ -174,292 +239,26 @@ export default function VehiclesPage() {
               </div>
               <button
                 onClick={() => handleOpenEdit()}
-                className="btn btn-primary gap-2"
+                className="btn btn-primary gap-2 px-3"
               >
                 <Plus size={20} />
                 Tambah Kendaraan
               </button>
             </div>
 
-            {/* Modal */}
-            {isModalOpen && (
-              <div className="modal modal-open">
-                <div className="modal-box w-full max-w-2xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg">
-                      {editingId ? "Edit Kendaraan" : "Tambah Kendaraan Baru"}
-                    </h3>
-                    <button
-                      onClick={handleClose}
-                      className="btn btn-sm btn-circle btn-ghost"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
+            <VehilcleModalForm
+              createMutation={createMutation}
+              editingId={editingId}
+              formData={formData}
+              handleClose={handleClose}
+              handleSubmit={handleSubmit}
+              isModalOpen={isModalOpen}
+              setFormData={setFormData}
+              updateMutation={updateMutation}
+              key={"vehicle-modal"}
+            />
 
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Merk */}
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">
-                          Merk Kendaraan (opsional)
-                        </span>
-                      </label>
-                      <select
-                        value={formData.brand || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            brand: e.target.value || undefined,
-                          })
-                        }
-                        className="select select-bordered w-full"
-                      >
-                        <option value="">Pilih Merk</option>
-                        {mockVehicleBrands.map((brand) => (
-                          <option key={brand} value={brand}>
-                            {brand}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Jenis Kendaraan */}
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">
-                          Jenis Kendaraaan(opsional)
-                        </span>
-                      </label>
-                      <select
-                        value={formData.brand || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            jenisKendaraan: e.target.value || undefined,
-                            durasiBongkar:
-                              mockVehicleTypes.find(
-                                (vt) => vt.name === e.target.value
-                              )?.defaultUnloadMinutes || 30,
-                          })
-                        }
-                        className="select select-bordered w-full"
-                      >
-                        <option value="">Pilih Jenis Kendaraan</option>
-                        {mockVehicleTypes.map((vehicleType) => (
-                          <option
-                            key={vehicleType.name}
-                            value={vehicleType.name}
-                          >
-                            {`${vehicleType.name} - ${vehicleType.defaultUnloadMinutes} menit`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Unload Duration */}
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">
-                          Durasi Bongkar Muat (menit) (max 5 jam)
-                        </span>
-                      </label>
-                      <input
-                        type="number"
-                        min="5"
-                        max="300" //max 5 jam
-                        value={formData.durasiBongkar || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            durasiBongkar: Number.parseInt(e.target.value) || 0,
-                          })
-                        }
-                        className="input input-bordered w-full"
-                      />
-                    </div>
-
-                    {/* Max Weight */}
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">
-                          Kapasitas Maksimum (opsional)
-                        </span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: 10 ton, 5000 kg"
-                        value={formData.maxCapacity || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            maxCapacity: e.target.value || undefined,
-                          })
-                        }
-                        className="input input-bordered w-full"
-                      />
-                    </div>
-
-                    {/* Dimension */}
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">
-                          Dimensi (opsional)
-                        </span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: 7m x 2.5m x 3m"
-                        value={formData.dimension || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            dimension: e.target.value || undefined,
-                          })
-                        }
-                        className="input input-bordered w-full"
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text font-semibold">
-                          Deskripsi (opsional)
-                        </span>
-                      </label>
-                      <textarea
-                        placeholder="Deskripsi tambahan tentang kendaraan"
-                        value={formData.description || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description: e.target.value || undefined,
-                          })
-                        }
-                        className="textarea textarea-bordered w-full"
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Status */}
-                    <div className="form-control">
-                      <label className="label cursor-pointer">
-                        <span className="label-text font-semibold">
-                          Status Aktif
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={formData.isActive ?? true}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              isActive: e.target.checked,
-                            })
-                          }
-                          className="checkbox"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="modal-action">
-                      <button
-                        type="button"
-                        onClick={handleClose}
-                        className="btn btn-ghost"
-                      >
-                        Batal
-                      </button>
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={
-                          createMutation.isPending || updateMutation.isPending
-                        }
-                      >
-                        {createMutation.isPending ||
-                        updateMutation.isPending ? (
-                          <span className="loading loading-spinner"></span>
-                        ) : editingId ? (
-                          "Perbarui"
-                        ) : (
-                          "Tambah"
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <span className="loading loading-spinner loading-lg"></span>
-                </div>
-              ) : fetchError ? (
-                <div className="alert alert-error">
-                  <span>Gagal memuat data kendaraan</span>
-                </div>
-              ) : vehicles.length === 0 ? (
-                <div className="alert alert-info">
-                  <span>Belum ada data kendaraan</span>
-                </div>
-              ) : (
-                <table className="table table-zebra w-full">
-                  <thead>
-                    <tr>
-                      <th>Merk</th>
-                      <th>Jenis Kendaraan</th>
-                      <th>Durasi Bongkar (menit)</th>
-                      <th>Kapasitas</th>
-                      <th>Dimensi</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vehicles.map((vehicle) => (
-                      <tr key={vehicle.id}>
-                        <td className="font-semibold">
-                          {vehicle.brand || "-"}
-                        </td>
-                        <td>{vehicle.jenisKendaraan || "-"}</td>
-                        <td>{vehicle.durasiBongkar}</td>
-                        <td>{vehicle.maxCapacity || "-"}</td>
-                        <td className="text-sm">{vehicle.dimension || "-"}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              vehicle.isActive ? "badge-success" : "badge-error"
-                            }`}
-                          >
-                            {vehicle.isActive ? "Aktif" : "Tidak Aktif"}
-                          </span>
-                        </td>
-                        <td className="flex gap-2">
-                          <button
-                            onClick={() => handleOpenEdit(vehicle)}
-                            className="btn btn-sm btn-outline gap-1"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(vehicle.id!)}
-                            className="btn btn-sm btn-outline btn-error gap-1"
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            {/* here */}
           </div>
         </main>
       </div>

@@ -11,4 +11,12 @@ export class responseWarehouseDto {
   flowLogs?: object[];
   @Exclude()
   members?: object[];
+  @Exclude()
+  docks?: object[];
+  @Exclude()
+  bookings?: object[];
+  @Exclude()
+  createdAt?: Date;
+  @Exclude()
+  updatedAt?: Date;
 }

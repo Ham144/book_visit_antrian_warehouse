@@ -14,11 +14,11 @@ model Subscription {
   start DateTime
   plan SubscriptionPlan @default(TRIAL)
   organizationId String? @unique
-  organizations Organization? @relation(fields: [organizationId], references: [subscriptionId]) 
+  organizations Organization? @relation(fields: [organizationId], references: [name]) 
 } 
 
 
-model Organization {
+model Organization { 
   name String @id @unique
   subscriptionId String? @unique
   subscription Subscription?
@@ -26,6 +26,7 @@ model Organization {
   AD_PORT String?
   AD_DOMAIN String?
   AD_BASE_DN String?
+  warehouses Warehouse[]
 }
 
 model Globalsetting {//ini hanya satu di pakai di semua Organization
@@ -59,11 +60,10 @@ model Warehouse {
   docks       Dock[]
   members     User[]   @relation("UserHomeWarehouse")
   bookings    Booking[]
-
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
   userWarehouseAccesses UserWarehouseAccess[]
+  organizationName String?
+  organization Organization? @relation(fields: [organizationName], references: [name])
 }
 
 model Dock {

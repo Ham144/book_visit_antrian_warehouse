@@ -1,6 +1,6 @@
 export interface TokenPayload {
   username: string;
   description: string;
-  warehouseId: string;
+  homeWarehouseId: string;
   jti: string;
 }

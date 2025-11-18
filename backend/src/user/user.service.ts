@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
@@ -10,6 +11,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
 import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
 import { TokenPayload } from './dto/token-payload.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class UserService {
@@ -39,6 +41,7 @@ export class UserService {
     // const baseDN = "dc=catur,dc=co,dc=id";
     const baseDN = organizationSetting.AD_BASE_DN;
 
+    let userInfo: LoginResponseDto;
     let userLDAP: any;
     try {
       // Langkah 1: Bind dulu
@@ -73,18 +76,17 @@ export class UserService {
         username: body.username,
       },
       include: {
-        warehouse: true, //populate
+        homeWarehouse: true,
       },
     });
-
     //jika user sebelumnya memiliki description yg berbeda dengan ldap :ganti
     if (user) {
       //bagian pemeriksaan field yg berubah
-      let warehouseId = user.warehouseId;
+      let warehouseId = user.homeWarehouseId;
 
       if (
         String(userLDAP['physicalDeliveryOfficeName']).toUpperCase() !==
-        user.warehouse.name
+        user?.homeWarehouse?.name
       ) {
         //rumah baru - upsert warehouse dulu
         const newWarehouse = await this.prismaService.warehouse.upsert({
@@ -107,15 +109,10 @@ export class UserService {
         data: {
           description: userLDAP['description'],
           displayName: userLDAP['displayName'],
-          warehouseId: warehouseId,
-          organizations: {
-            connect: {
-              name: body.organization,
-            }
-          }
+          homeWarehouseId: warehouseId,
         },
         include: {
-          warehouse: true,
+          homeWarehouse: true,
         },
       });
     } else {
@@ -137,17 +134,12 @@ export class UserService {
             create: {
               username: body.username,
               description: userLDAP['description'],
-              warehouseId: warehouse.id,
+              homeWarehouseId: warehouse.id,
               displayName:
                 userLDAP['displayName'] || userLDAP['name'] || body.username,
-              organizations: {
-                connect: {
-                  name: body.organization,
-                }
-              }
             },
             include: {
-              warehouse: true,
+              homeWarehouse: true,
             },
           });
 
@@ -156,7 +148,7 @@ export class UserService {
       );
       //tambah kan user baru itu sbg first member
       await this.prismaService.warehouse.update({
-        where: { id: transactionResult.warehouseId },
+        where: { id: transactionResult.homeWarehouseId },
         data: {
           members: {
             connect: {
@@ -172,7 +164,7 @@ export class UserService {
     const payload: TokenPayload = {
       username: user.username,
       description: user.description,
-      warehouseId: user.warehouseId,
+      homeWarehouseId: user.homeWarehouseId,
       jti: randomUUID(),
     };
 
@@ -195,22 +187,16 @@ export class UserService {
       604800, // 1 minggu
     );
 
-    return {
-      username: user.username,
-      displayName: user.displayName,
-      description: user.description,
-      warehouse: user.warehouse
-        ? {
-            id: user.warehouse.id,
-            name: user.warehouse.name,
-            location: user.warehouse.location,
-            description: user.warehouse.description,
-            isActive: user.warehouse.isActive,
-          }
-        : null,
-      refresh_token: refresh_token,
-      access_token: access_token,
+    userInfo = {
+      access_token,
+      refresh_token,
+      organizationName: organizationSetting.name,
+      ...user,
     };
+    return plainToInstance(LoginResponseDto, userInfo, {
+      excludeExtraneousValues: true,
+      groups: ['login'],
+    });
   }
 
   async refreshToken(refresh_token: string) {
@@ -228,7 +214,7 @@ export class UserService {
       try {
         isJtiFound = await this.redis.get(oldPayload.jti);
       } catch (redisError) {
-        console.log("continue, redis error: ", redisError);
+        console.log('continue, redis error: ', redisError);
       }
 
       // Jika JTI tidak ditemukan di Redis, session mungkin sudah expired/dicabut
@@ -241,7 +227,7 @@ export class UserService {
           username: oldPayload.username,
         },
         include: {
-          warehouse: true,
+          homeWarehouse: true,
         },
       });
 
@@ -251,7 +237,7 @@ export class UserService {
       const newPayload: TokenPayload = {
         username: userDB.username,
         description: userDB?.description,
-        warehouseId: userDB.warehouseId,
+        homeWarehouseId: userDB.homeWarehouseId,
         jti: newJti as unknown as string,
       };
 
@@ -297,7 +283,7 @@ export class UserService {
         },
       },
       include: {
-        warehouse: true,
+        homeWarehouse: true,
       },
       skip: (page - 1) * 10,
       take: 10,
@@ -308,13 +294,13 @@ export class UserService {
       displayName: account.displayName,
       description: account.description,
       isActive: account.isActive,
-      warehouse: account.warehouse
+      warehouse: account.homeWarehouse
         ? {
-            id: account.warehouse.id,
-            name: account.warehouse.name,
-            location: account.warehouse.location,
-            description: account.warehouse.description,
-            isActive: account.warehouse.isActive,
+            id: account.homeWarehouse.id,
+            name: account.homeWarehouse.name,
+            location: account.homeWarehouse.location,
+            description: account.homeWarehouse.description,
+            isActive: account.homeWarehouse.isActive,
           }
         : null,
     }));
@@ -341,23 +327,50 @@ export class UserService {
   async getUserInfo(req: any) {
     //ubah payload sedikit agar bisa langsung dipakai
     const myWarehouse = await this.prismaService.warehouse.findUnique({
-      where: { id: req.user.warehouseId },
+      where: { id: req.user.homeWarehouseId },
     });
-    req.user.warehouse = myWarehouse?.name || null;
+    req.homeWarehouse = myWarehouse;
+    const myOrg = await this.prismaService.organization.findFirst({
+      where: {
+        warehouses: {
+          some: {
+            id: req.user.homeWarehouse.id,
+          },
+        },
+      },
+    });
+    if (!myOrg) {
+      throw new NotFoundException('Organization not found');
+    }
+    req.organization = myOrg;
+
     delete req.user.jti;
-    return req.user;
+    return plainToInstance(LoginResponseDto, req.user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   async logout(access_token: string, req: any) {
     // if no access_token, continue to clear any session if exists
-    const oldPayload: TokenPayload = await jwt.verify(
-      access_token,
-      process.env.JWT_SECRET,
-    );
+    let oldPayload: TokenPayload;
 
+    try {
+      if (!access_token) {
+        return { message: 'Access token missing' };
+      }
+      oldPayload = jwt.verify(
+        access_token,
+        process.env.JWT_SECRET,
+      ) as TokenPayload;
+    } catch (err) {
+      console.log('JWT verify error:', err.message);
+      return {
+        message: 'Token invalid or expired',
+      };
+    }
     await this.redis.del(oldPayload.jti);
     return {
-      message: 'redis jti deleted',
+      message: 'Redis jti deleted',
     };
   }
   // Reusable token generator

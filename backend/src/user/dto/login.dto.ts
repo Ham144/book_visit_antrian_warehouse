@@ -1,23 +1,46 @@
+import { Exclude } from 'class-transformer';
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
-export interface LoginResponseDto {
+import { Expose } from 'class-transformer';
+
+export class LoginResponseDto {
+  @Expose()
   description: string;
+
+  @Expose()
   username: string;
+
+  @Expose()
   displayName: string;
-  warehouse: object;
+
+  @Expose()
+  homeWarehouse: responseWarehouseDto;
+
+  @Expose()
   isActive?: boolean;
+
+  @Expose()
+  organizationName: string;
+
+  @Expose({ groups: ['login'] })
   refresh_token?: string;
+
+  @Expose({ groups: ['login'] })
   access_token?: string;
 }
 
 export class LoginRequestLdapDto {
   @IsString()
+  @IsNotEmpty()
   username: string;
 
   @IsString()
   @MinLength(5)
+  @IsNotEmpty()
   password: string;
 
   @IsNotEmpty()
+  @IsString()
   organization: string;
 }

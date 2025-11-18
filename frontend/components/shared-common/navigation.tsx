@@ -25,26 +25,33 @@ export default function Navigation() {
     },
     onSuccess: (res: any) => {
       setUserInfo(res);
-      document.getElementById("login_modal")?.click();
+      (document.getElementById("login_modal") as any)?.close();
       if (res?.description) {
-        redirect("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
       } else {
-        redirect("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
       }
     },
-    onError: (er: any) =>
-      toast.error(er?.response?.data?.message || "Gagal login"),
+    onError: (er: any) => {
+      console.log(er);
+      toast.error(er?.response?.data?.message || "Gagal login");
+    },
   });
 
   const { mutateAsync: handleLogout } = useMutation({
     mutationKey: ["userInfo"],
     mutationFn: AuthApi.logout,
-    onSuccess: () => toast.success("Logout berhasil"),
-    onError: (er: any) => toast.error(er.response?.data?.message),
+    onSuccess: () => {
+      setUserInfo(null);
+      window.location.href = "/";
+    },
+    onError: (er: any) => {
+      window.location.href = "/";
+    },
   });
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
+    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50 ">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Brand */}
@@ -251,7 +258,7 @@ export default function Navigation() {
             </form>
           </div>
         </div>
-        <Toaster key={"login"}/>
+        <Toaster key={"login"} />
       </dialog>
 
       <dialog id="profile_modal" className="modal">

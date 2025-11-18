@@ -50,21 +50,61 @@ export interface VehicleBrand {
 
 export const mockVehicleTypes: VehicleType[] = [
   {
-    name: "Truk Kecil",
-    description:
-      "Kendaraan pengangkut berkapasitas kecil, cocok untuk distribusi dalam kota.",
-    defaultUnloadMinutes: 30,
+    name: "Pick Up / Engkel",
+    description: "Kendaraan kecil untuk distribusi lokal.",
+    defaultUnloadMinutes: 20,
   },
   {
-    name: "Truk Sedang",
-    description:
-      "Truk dengan kapasitas sedang untuk pengiriman jarak menengah.",
+    name: "CDD (Colt Diesel Double)",
+    description: "Truk ukuran sedang, banyak dipakai distribusi area.",
+    defaultUnloadMinutes: 35,
+  },
+  {
+    name: "Fuso",
+    description: "Truk besar untuk muatan lebih berat.",
     defaultUnloadMinutes: 45,
   },
   {
-    name: "Truk Besar",
-    description: "Truk berkapasitas besar untuk kontainer atau muatan berat.",
+    name: "Tronton",
+    description: "Truk besar 3-axle, cocok untuk muatan besar.",
     defaultUnloadMinutes: 60,
+  },
+  {
+    name: "Wingbox",
+    description: "Truk besar dengan pintu samping model sayap.",
+    defaultUnloadMinutes: 50,
+  },
+  {
+    name: "Container 20ft",
+    description: "Kontainer sedang untuk pengiriman jarak jauh.",
+    defaultUnloadMinutes: 70,
+  },
+  {
+    name: "Container 40ft",
+    description: "Kontainer besar, sering untuk ekspor-impor.",
+    defaultUnloadMinutes: 90,
+  },
+];
+
+// Mock user vehicles
+export const mockUserVehicles: UserVehicle[] = [
+  {
+    id: "uv-1",
+    vendorId: "vendor-1",
+    brand: "Hino 500",
+    licensePlate: "B1234CD",
+    vehicleTypeId: "vt-2",
+    description: "Cargo",
+    status: "active",
+  },
+  {
+    id: "uv-2",
+    vendorId: "vendor-1",
+    brand: "Mitsubishi Fuso",
+    licensePlate: "B5678EF",
+    vehicleTypeId: "vt-3",
+    description: "Container",
+    status: "active",
   },
 ];
 
@@ -118,28 +158,6 @@ export const mockSlots: Slot[] = [
     name: "Dock C",
     type: "dock",
     maxVehicle: "medium",
-    status: "active",
-  },
-];
-
-// Mock user vehicles
-export const mockUserVehicles: UserVehicle[] = [
-  {
-    id: "uv-1",
-    vendorId: "vendor-1",
-    brand: "Hino 500",
-    licensePlate: "B1234CD",
-    vehicleTypeId: "vt-2",
-    description: "Cargo",
-    status: "active",
-  },
-  {
-    id: "uv-2",
-    vendorId: "vendor-1",
-    brand: "Mitsubishi Fuso",
-    licensePlate: "B5678EF",
-    vehicleTypeId: "vt-3",
-    description: "Container",
     status: "active",
   },
 ];

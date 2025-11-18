@@ -1,4 +1,10 @@
-import { Global, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import {
+  Global,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
 import { AuthMiddleware } from './auth.middleware';
@@ -29,6 +35,12 @@ import { GenerateCsvService } from './generateCsv.service';
 })
 export class CommonModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('/api/*');
+    consumer
+      .apply(AuthMiddleware)
+      .exclude(
+        { path: '/api/user/login/ldap', method: RequestMethod.POST },
+        { path: '/api/user/refresh-token', method: RequestMethod.POST },
+      )
+      .forRoutes('*');
   }
 }

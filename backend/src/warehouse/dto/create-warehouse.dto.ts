@@ -1,17 +1,18 @@
-import { IsArray, IsObject, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsString } from 'class-validator';
 
 export class CreateWarehouseDto {
   @IsString()
   name: string;
   @IsString()
-  location?: string;
-  @IsString()
-  description?: string;
+  location: string;
 
-  @IsString({ each: true })
-  members?: string[]; //username
+  @IsString()
+  description: string;
+
+  @IsBoolean()
+  isActive: boolean;
 
   @IsArray()
-  @IsObject({ each: true })
-  docks?: [];
+  @IsString({ each: true })
+  members: string[];
 }

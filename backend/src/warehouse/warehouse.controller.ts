@@ -11,6 +11,7 @@ import {
 import { WarehouseService } from './warehouse.service';
 import { Auth } from 'src/common/auth.decorator';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
+import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
 
 @Controller('/warehouse')
 export class WarehouseController {
@@ -32,7 +33,7 @@ export class WarehouseController {
   }
 
   @Patch(':id')
-  updateWarehouse(@Param('id') id: string, @Body() body: CreateWarehouseDto) {
+  updateWarehouse(@Param('id') id: string, @Body() body: UpdateWarehouseDto) {
     return this.warehouseService.updateWarehouse(id, body);
   }
 

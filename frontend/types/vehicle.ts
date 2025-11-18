@@ -2,11 +2,22 @@ export interface IVehicle {
   id?: string;
   brand?: string;
   jenisKendaraan?: string;
-  durasiBongkar: number;
-  description?: string;
+  plateNumber?: string;
+  productionYear?: number;
   maxCapacity?: string;
-  dimension?: string;
+  dimensionLength?: number;
+  dimensionWidth?: number;
+  dimensionHeight?: number;
+  durasiBongkar: number;
+  isReefer?: boolean;
+  requiresDock?: string;
+  driverName?: string;
+  driverPhone?: string;
+  driverLicense?: string;
+  description?: string;
   isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface VehicleType {

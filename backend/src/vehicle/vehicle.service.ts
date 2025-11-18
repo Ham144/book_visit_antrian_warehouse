@@ -13,30 +13,13 @@ import { plainToInstance } from 'class-transformer';
 export class VehicleService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(createVehicleDto: CreateVehicleDto): Promise<ResponseVehicleDto> {
+  async create(createVehicleDto: CreateVehicleDto) {
     try {
       const vehicle = await this.prismaService.vehicle.create({
-        data: {
-          brand: createVehicleDto.brand,
-          jenisKendaraan: createVehicleDto.jenisKendaraan,
-          durasiBongkar: createVehicleDto.durasiBongkar,
-          description: createVehicleDto.description,
-          maxCapacity: createVehicleDto.maxCapacity,
-          Dimension: createVehicleDto.dimension,
-          isActive: createVehicleDto.isActive ?? true,
-        },
+        data: createVehicleDto,
       });
 
-      return plainToInstance(ResponseVehicleDto, {
-        id: vehicle.id,
-        brand: vehicle.brand,
-        jenisKendaraan: vehicle.jenisKendaraan,
-        durasiBongkar: vehicle.durasiBongkar,
-        description: vehicle.description,
-        maxCapacity: vehicle.maxCapacity,
-        dimension: vehicle.Dimension,
-        isActive: vehicle.isActive,
-      });
+      return plainToInstance(ResponseVehicleDto, vehicle);
     } catch (error) {
       throw new InternalServerErrorException('Gagal membuat vehicle');
     }
@@ -51,16 +34,7 @@ export class VehicleService {
       });
 
       return vehicles.map((vehicle) =>
-        plainToInstance(ResponseVehicleDto, {
-          id: vehicle.id,
-          brand: vehicle.brand,
-          jenisKendaraan: vehicle.jenisKendaraan,
-          durasiBongkar: vehicle.durasiBongkar,
-          description: vehicle.description,
-          maxCapacity: vehicle.maxCapacity,
-          dimension: vehicle.Dimension,
-          isActive: vehicle.isActive,
-        }),
+        plainToInstance(ResponseVehicleDto, vehicle),
       );
     } catch (error) {
       throw new InternalServerErrorException('Gagal mengambil daftar vehicle');
@@ -77,15 +51,8 @@ export class VehicleService {
         throw new NotFoundException(`Vehicle dengan id ${id} tidak ditemukan`);
       }
 
-      return plainToInstance(ResponseVehicleDto, {
-        id: vehicle.id,
-        brand: vehicle.brand,
-        jenisKendaraan: vehicle.jenisKendaraan,
-        durasiBongkar: vehicle.durasiBongkar,
-        description: vehicle.description,
-        maxCapacity: vehicle.maxCapacity,
-        dimension: vehicle.Dimension,
-        isActive: vehicle.isActive,
+      return plainToInstance(ResponseVehicleDto, vehicle, {
+        excludeExtraneousValues: false,
       });
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -95,10 +62,7 @@ export class VehicleService {
     }
   }
 
-  async update(
-    id: string,
-    updateVehicleDto: UpdateVehicleDto,
-  ): Promise<ResponseVehicleDto> {
+  async update(id: string, updateVehicleDto: UpdateVehicleDto) {
     try {
       const existingVehicle = await this.prismaService.vehicle.findUnique({
         where: { id },
@@ -113,24 +77,24 @@ export class VehicleService {
         data: {
           brand: updateVehicleDto.brand,
           jenisKendaraan: updateVehicleDto.jenisKendaraan,
-          durasiBongkar: updateVehicleDto.durasiBongkar,
-          description: updateVehicleDto.description,
+          plateNumber: updateVehicleDto.plateNumber,
+          productionYear: updateVehicleDto.productionYear,
           maxCapacity: updateVehicleDto.maxCapacity,
-          Dimension: updateVehicleDto.dimension,
+          dimensionLength: updateVehicleDto.dimensionLength,
+          dimensionWidth: updateVehicleDto.dimensionWidth,
+          dimensionHeight: updateVehicleDto.dimensionHeight,
+          durasiBongkar: updateVehicleDto.durasiBongkar,
+          isReefer: updateVehicleDto.isReefer,
+          requiresDock: updateVehicleDto.requiresDock,
+          driverName: updateVehicleDto.driverName,
+          driverPhone: updateVehicleDto.driverPhone,
+          driverLicense: updateVehicleDto.driverLicense,
+          description: updateVehicleDto.description,
           isActive: updateVehicleDto.isActive,
         },
       });
 
-      return plainToInstance(ResponseVehicleDto, {
-        id: vehicle.id,
-        brand: vehicle.brand,
-        jenisKendaraan: vehicle.jenisKendaraan,
-        durasiBongkar: vehicle.durasiBongkar,
-        description: vehicle.description,
-        maxCapacity: vehicle.maxCapacity,
-        dimension: vehicle.Dimension,
-        isActive: vehicle.isActive,
-      });
+      return plainToInstance(ResponseVehicleDto, vehicle);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

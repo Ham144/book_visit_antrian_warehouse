@@ -1,4 +1,4 @@
-import { HttpException, Injectable, NestMiddleware } from '@nestjs/common';
+import { Injectable, NestMiddleware } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
@@ -13,21 +13,29 @@ export class AuthMiddleware implements NestMiddleware {
       return next();
     }
 
-    const access_token = req?.cookies['access_token'];
+    const access_token = req?.cookies?.['access_token'];
 
     if (!access_token) {
       return res.status(403).json({ message: 'Route is forbidden' });
     }
 
     try {
-      let decoded: TokenPayload;
       // Verify web token
-      decoded = await jwt.verify(access_token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(
+        access_token,
+        process.env.JWT_SECRET,
+      ) as TokenPayload;
 
-      req.user = decoded;
+      // Pastikan req.user ter-set dengan payload yang lengkap
+      req.user = {
+        username: decoded.username,
+        description: decoded.description,
+        homeWarehouseId: decoded.homeWarehouseId,
+        jti: decoded.jti,
+      };
+
       next();
     } catch (error) {
-      console.log('authentication failed : ', req.originalUrl, error.message);
       // Jangan clear cookie di sini, biarkan frontend yang handle refresh
       // res.clearCookie('access_token', { path: '/' });
       return res.status(401).json({ message: 'Invalid or expired token' });

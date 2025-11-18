@@ -1,15 +1,17 @@
 import axiosInstance from "@/lib/axios";
 import type { IVehicle } from "@/types/vehicle";
 
+type VehiclePayload = Omit<IVehicle, "id" | "createdAt" | "updatedAt">;
+
 export const VehicleApi = {
-  createVehicle: async (data: Omit<IVehicle, "id">): Promise<IVehicle> => {
+  createVehicle: async (data: VehiclePayload): Promise<IVehicle> => {
     const response = await axiosInstance.post<IVehicle>("/api/vehicle", data);
     return response.data;
   },
 
   updateVehicle: async (
     id: string,
-    data: Partial<Omit<IVehicle, "id">>
+    data: Partial<VehiclePayload>
   ): Promise<IVehicle> => {
     const response = await axiosInstance.patch<IVehicle>(
       `/api/vehicle/${id}`,

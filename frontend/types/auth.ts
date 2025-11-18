@@ -1,3 +1,6 @@
+import { Organization } from "./organization";
+import { Warehouse } from "./warehouse";
+
 export interface LoginRequestLdapDto {
   username: string;
   password: string;
@@ -15,9 +18,9 @@ export interface UserInfo {
   description: string;
   username: string;
   displayName?: string;
-  warehouse: string;
-  warehouseId?: string;
+  homeWarehouse: Warehouse; //ini adalah warehouse yang sedang di login-in
   isActive?: boolean;
+  organizationName: Organization;
   // Tambahkan field lain sesuai kebutuhan
 }
 

@@ -5,33 +5,69 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateVehicleDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  brand?: string;
-
-  @IsOptional()
+  brand: string;
+  @IsNotEmpty()
   @IsString()
-  jenisKendaraan?: string;
+  jenisKendaraan: string;
 
   @IsNotEmpty()
-  @IsNumber()
-  durasiBongkar: number;
-
-  @IsOptional()
   @IsString()
-  description?: string;
+  plateNumber: string;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  productionYear?: number;
 
   @IsOptional()
   @IsString()
   maxCapacity?: string;
 
+  @IsNumber()
   @IsOptional()
-  @IsString()
-  dimension?: string;
+  @Type(() => Number)
+  dimensionLength?: number;
 
+  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
+  dimensionWidth?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  dimensionHeight?: number;
+
+  @IsNotEmpty()
+  @Type(() => Number)
+  @IsNumber()
+  durasiBongkar: number;
   @IsBoolean()
+  @IsOptional()
+  isReefer?: boolean;
+  @IsString()
+  @IsOptional()
+  requiresDock?: string;
+
+  @IsString()
+  @IsOptional()
+  driverName?: string;
+  @IsString()
+  @IsOptional()
+  driverPhone?: string;
+  @IsString()
+  @IsOptional()
+  driverLicense?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsBoolean()
+  @IsOptional()
   isActive?: boolean;
 }
