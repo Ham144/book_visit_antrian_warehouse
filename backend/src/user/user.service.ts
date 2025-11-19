@@ -165,6 +165,7 @@ export class UserService {
       username: user.username,
       description: user.description,
       homeWarehouseId: user.homeWarehouseId,
+      organizationName: organizationSetting.name,
       jti: randomUUID(),
     };
 
@@ -238,6 +239,7 @@ export class UserService {
         username: userDB.username,
         description: userDB?.description,
         homeWarehouseId: userDB.homeWarehouseId,
+        organizationName: oldPayload.organizationName,
         jti: newJti as unknown as string,
       };
 
@@ -326,26 +328,14 @@ export class UserService {
 
   async getUserInfo(req: any) {
     //ubah payload sedikit agar bisa langsung dipakai
+    let userInfo: LoginResponseDto = req.user;
+
     const myWarehouse = await this.prismaService.warehouse.findUnique({
       where: { id: req.user.homeWarehouseId },
     });
-    req.homeWarehouse = myWarehouse;
-    const myOrg = await this.prismaService.organization.findFirst({
-      where: {
-        warehouses: {
-          some: {
-            id: req.user.homeWarehouse.id,
-          },
-        },
-      },
-    });
-    if (!myOrg) {
-      throw new NotFoundException('Organization not found');
-    }
-    req.organization = myOrg;
+    userInfo.homeWarehouse = myWarehouse;
 
-    delete req.user.jti;
-    return plainToInstance(LoginResponseDto, req.user, {
+    return plainToInstance(LoginResponseDto, userInfo, {
       excludeExtraneousValues: true,
     });
   }

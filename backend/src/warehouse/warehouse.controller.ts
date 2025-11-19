@@ -28,8 +28,12 @@ export class WarehouseController {
   }
 
   @Get()
-  list(@Query('searchKey') searchKey?: string, @Auth() userInfo?: any) {
-    return this.warehouseService.getWarehouses(searchKey, userInfo);
+  list(@Query() filter: any, @Auth() userInfo: any) {
+    return this.warehouseService.getWarehouses(
+      userInfo,
+      filter.searchKey,
+      filter.page,
+    );
   }
 
   @Patch(':id')

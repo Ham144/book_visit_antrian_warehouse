@@ -21,3 +21,8 @@ export interface Warehouse {
   members?: string[];
   budgetsCount?: number;
 }
+
+export interface GetWarehouseFilter {
+  searchKey?: string;
+  page?: number;
+}

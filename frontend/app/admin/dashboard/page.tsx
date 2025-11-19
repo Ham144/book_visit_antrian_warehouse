@@ -7,7 +7,13 @@ import { useUserInfo } from "@/components/UserContext";
 export default function AdminDashboard() {
   const { userInfo } = useUserInfo();
 
-  console.log(userInfo);
+  if (!userInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -15,8 +21,10 @@ export default function AdminDashboard() {
         <main className="flex-1 p-6">
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <p className="text-gray-600">{userInfo.homeWarehouse.name}</p>
+              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+              <p className="text-gray-600">
+                {userInfo.homeWarehouse.name} warehouse
+              </p>
             </div>
             <KPICards />
             <SlotGrid />

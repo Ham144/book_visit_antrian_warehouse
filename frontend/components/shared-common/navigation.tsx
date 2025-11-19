@@ -3,7 +3,7 @@
 import { LogIn, LogOut, Settings, Truck, User2 } from "lucide-react";
 import { useUserInfo } from "../UserContext";
 import { useState } from "react";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
 import { toast, Toaster } from "sonner";
@@ -17,6 +17,8 @@ export default function Navigation() {
     organization: "Catur Sukses Internasional",
   });
 
+  const router = useRouter();
+
   const { mutateAsync: handeLogin } = useMutation({
     mutationKey: ["userInfo"],
     mutationFn: async () => {
@@ -27,9 +29,9 @@ export default function Navigation() {
       setUserInfo(res);
       (document.getElementById("login_modal") as any)?.close();
       if (res?.description) {
-        window.location.href = "/admin/dashboard";
+        router.push("/admin/dashboard");
       } else {
-        window.location.href = "/admin/dashboard";
+        router.push("/vendor/dashboard");
       }
     },
     onError: (er: any) => {

@@ -47,7 +47,7 @@ const adminMenuItems = [
     id: "my warehouse",
     label: "My Warehouse",
     icon: WarehouseIcon,
-    href: "/admin/vehicles",
+    href: "/admin/my-warehouse",
   },
   {
     id: "members management",
@@ -119,12 +119,12 @@ export default function SideNav() {
         {/* Expand / Collapse Button */}
         <button
           onClick={() => setIsOpen((v) => !v)}
-          className="btn btn-ghost w-full flex items-center justify-between px-4 py-3"
+          className="btn btn-ghost w-full flex items-center justify-between px-2 py-3"
         >
           {isOpen ? (
             <>
-              <span className="font-semibold">
-                {userInfo?.organization?.name || "Org's name"}
+              <span className="font-semibold text-sm flex items-center ">
+                {String(userInfo?.organizationName) || "Org's name"}
               </span>
               <ChevronLeft size={20} />
             </>

@@ -14,33 +14,6 @@ import { plainToInstance } from 'class-transformer';
 export class WarehouseService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  private async resolveMembers(usernames?: string[]) {
-    if (!usernames || usernames.length === 0) {
-      return [];
-    }
-
-    const users = await this.prismaService.user.findMany({
-      where: {
-        username: {
-          in: usernames,
-        },
-      },
-    });
-
-    const foundUsernames = new Set(users.map((user) => user.username));
-
-    const missingUsers = usernames.filter(
-      (username) => !foundUsernames.has(username),
-    );
-    if (missingUsers.length > 0) {
-      throw new NotFoundException(
-        `User${missingUsers.length > 1 ? 's' : ''} ${missingUsers.join(', ')} tidak ditemukan`,
-      );
-    }
-
-    return users.map((user: User) => ({ username: user.username }));
-  }
-
   async createWarehouse(body: CreateWarehouseDto) {
     const warehouse = await this.prismaService.warehouse.create({
       data: {
@@ -83,47 +56,43 @@ export class WarehouseService {
     return plainToInstance(responseWarehouseDto, warehouse);
   }
 
-  async getWarehouses(searchKey?: string, userInfo?: any) {
-    const isSuperAdmin = userInfo?.description === 'IT';
+  async getWarehouses(userInfo: any, searchKey?: string, page: number = 1) {
+    let where: any = {
+      organization: {
+        name: userInfo.organizationName,
+      },
+    };
 
-    let where: any = {};
-
-    if (isSuperAdmin) {
-      // Bentuk where dasar
+    if (searchKey) {
       where = {
-        ...(searchKey && {
-          name: {
-            contains: searchKey,
-            mode: 'insensitive',
+        AND: [
+          {
+            organization: {
+              name: userInfo.organizationName,
+            },
           },
-        }),
+          {
+            OR: [
+              { name: { contains: searchKey } },
+              { description: { contains: searchKey } },
+            ],
+          },
+        ],
       };
     }
 
-    // Jika bukan superadmin, tampilkan hanya warehouse miliknya
-    if (!isSuperAdmin) {
-      where.members = {
-        some: {
-          username: userInfo.username,
-        },
-      };
-    }
-
-    // Query prisma
     const warehouses = await this.prismaService.warehouse.findMany({
       where,
       include: {
         members: true,
         docks: true,
       },
-      orderBy: {
-        name: 'asc',
-      },
+      orderBy: { name: 'asc' },
+      take: 10,
+      skip: (page - 1) * 10, // sekarang page = 1 kalau undefined
     });
 
-    return warehouses.map((warehouse) =>
-      plainToInstance(responseWarehouseDto, warehouse),
-    );
+    return warehouses.map((w) => plainToInstance(responseWarehouseDto, w));
   }
 
   async deleteWarehouse(id: string) {

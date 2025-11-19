@@ -31,6 +31,7 @@ export class AuthMiddleware implements NestMiddleware {
         username: decoded.username,
         description: decoded.description,
         homeWarehouseId: decoded.homeWarehouseId,
+        organizationName: decoded.organizationName,
         jti: decoded.jti,
       };
 

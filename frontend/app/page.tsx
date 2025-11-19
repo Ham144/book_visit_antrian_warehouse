@@ -1,6 +1,8 @@
 "use client";
 
+import { AuthApi } from "@/api/auth";
 import { useUserInfo } from "@/components/UserContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   Building,
   Truck,
@@ -18,7 +20,16 @@ import {
 import Link from "next/link";
 
 export default function HomePage() {
-  const { userInfo } = useUserInfo();
+  const { setUserInfo } = useUserInfo();
+  const { data: userInfo } = useQuery({
+    queryKey: ["user-info"],
+    queryFn: async () => {
+      {
+        const res = await AuthApi.getUserInfo();
+        setUserInfo(res);
+      }
+    },
+  });
   const stats = [
     {
       label: "Total Warehouse",

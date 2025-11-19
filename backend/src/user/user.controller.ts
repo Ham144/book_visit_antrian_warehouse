@@ -29,7 +29,6 @@ export class UserController {
       body,
       req,
     );
-    console.log(response);
     const hasTokens = response.refresh_token && response.access_token;
 
     if (hasTokens) {

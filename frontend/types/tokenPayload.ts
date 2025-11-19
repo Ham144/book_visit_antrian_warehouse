@@ -3,4 +3,5 @@ interface TokenPayload {
   description: string;
   isOperator: boolean;
   homeWarehouseId: string;
+  organizationName: string;
 }
