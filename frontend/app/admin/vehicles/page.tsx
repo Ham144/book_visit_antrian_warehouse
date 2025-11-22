@@ -3,13 +3,25 @@
 import type React from "react";
 
 import { useState } from "react";
-import { Plus, Edit, Trash2, X } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Users,
+  Snowflake,
+  IdCard,
+  Car,
+  Search,
+  Filter,
+  Phone,
+  Clock,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { VehicleApi } from "@/api/vehicle";
+import { VehicleApi } from "@/api/vehicle.api";
 import type { IVehicle } from "@/types/vehicle";
-import { mockVehicleBrands, mockVehicleTypes } from "@/lib/mock-data";
 import VehilcleModalForm from "@/components/admin/vehicleModelForm";
+import { AuthApi } from "@/api/auth";
 
 const initialFormData: IVehicle = {
   brand: "",
@@ -30,12 +42,21 @@ const initialFormData: IVehicle = {
   isActive: true,
 };
 
+export interface FilterVehicle {
+  searchKey?: string;
+  page?: number;
+}
+
 export default function VehiclesPage() {
   const sanitizeString = (value?: string | null) => {
     if (!value) return undefined;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
   };
+  const [filter, setFilter] = useState<FilterVehicle>({
+    searchKey: "",
+    page: 1,
+  });
 
   const sanitizeNumber = (value?: number | null) =>
     typeof value === "number" && !Number.isNaN(value) ? value : undefined;
@@ -62,13 +83,9 @@ export default function VehiclesPage() {
   const [formData, setFormData] = useState<IVehicle>(initialFormData);
   const queryClient = useQueryClient();
 
-  const {
-    data: vehicles = [],
-    isLoading,
-    error: fetchError,
-  } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: () => VehicleApi.getVehicles(),
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["vehicles", filter],
+    queryFn: () => VehicleApi.getVehicles(filter),
     retry: 1,
     staleTime: 30000,
   });
@@ -229,39 +246,280 @@ export default function VehiclesPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         <main className="flex-1 p-6">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">Kelola Kendaraan</h2>
-                <p className="text-gray-600">
-                  Kelola jenis dan spesifikasi kendaraan di gudang
-                </p>
+          <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Header */}
+              <div className="mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                      Manajemen Kendaraan
+                    </h1>
+                    <p className="text-gray-600">
+                      Kelola armada kendaraan dan informasi pengemudi
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="mt-4 sm:mt-0 btn bg-leaf-green-500 border-leaf-green-500 text-white hover:bg-leaf-green-600 hover:border-leaf-green-600 transition-colors"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Tambah Kendaraan
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => handleOpenEdit()}
-                className="btn btn-primary gap-2 px-3"
-              >
-                <Plus size={20} />
-                Tambah Kendaraan
-              </button>
+
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 items-center">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">
+                        Total Kendaraan
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {vehicles.length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-leaf-green-100 rounded-lg">
+                      <Car className="w-6 h-6 text-leaf-green-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Aktif</p>
+                      <p className="text-2xl font-bold text-leaf-green-600">
+                        {vehicles.filter((v) => v.isActive).length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <Users className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">
+                        Kendaraan Reefer
+                      </p>
+                      <p className="text-2xl font-bold text-cyan-600">
+                        {vehicles.filter((v) => v.isReefer).length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-cyan-100 rounded-lg">
+                      <Snowflake className="w-6 h-6 text-cyan-600" />
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleOpenEdit()}
+                  className="btn flex items-center gap-2 px-4 py-2.5 bg-leaf-green-500 hover:bg-leaf-green-600 text-white border-none shadow-lg shadow-leaf-green-200 hover:shadow-leaf-green-300 transition-all duration-300 rounded-full hover:scale-105 active:scale-95 group"
+                >
+                  <Plus className="w-5 h-5 transition-transform text-black group-hover:scale-110" />
+                  <span className="font-semibold tracking-wide text-black">
+                    New
+                  </span>
+                </button>
+              </div>
+
+              {/* Filters and Search */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Cari merk, nomor polisi, atau nama pengemudi..."
+                        className="input input-bordered w-full pl-10 bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100"
+                        value={filter.searchKey}
+                        onChange={(e) =>
+                          setFilter((f) => ({
+                            ...f,
+                            searchKey: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                {vehicles.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <Car className="w-16 h-16 text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-sm max-w-md">
+                      {filter.searchKey
+                        ? "Coba ubah kata kunci pencarian atau filter yang digunakan"
+                        : "Mulai dengan menambahkan kendaraan pertama Anda"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="table w-full">
+                      <thead>
+                        <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Merk & No. Polisi
+                          </th>
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Jenis Kendaraan
+                          </th>
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Durasi Bongkar
+                          </th>
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Kapasitas & Dimensi
+                          </th>
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Pengemudi
+                          </th>
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Status
+                          </th>
+                          <th className="font-semibold text-gray-700 py-4 px-4">
+                            Aksi
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vehicles.map((vehicle, index) => (
+                          <tr
+                            key={vehicle.id}
+                            className={`hover:bg-gray-50 transition-colors ${
+                              index % 2 === 0 ? "bg-gray-25" : "bg-white"
+                            }`}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center space-x-2">
+                                  <Car className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
+                                  <span className="font-semibold text-gray-800">
+                                    {vehicle.brand}
+                                  </span>
+                                </div>
+                                {vehicle.plateNumber && (
+                                  <div className="text-sm text-gray-600">
+                                    {vehicle.plateNumber}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-700">
+                              {vehicle.jenisKendaraan}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center space-x-1 text-gray-700">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span>{vehicle.durasiBongkar} menit</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-1">
+                                {vehicle.maxCapacity && (
+                                  <div className="text-sm text-gray-700">
+                                    {vehicle.maxCapacity}
+                                  </div>
+                                )}
+                                <div className="text-xs text-gray-500 font-mono">
+                                  {formatDimension(vehicle)}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-1">
+                                {vehicle.driverName ? (
+                                  <>
+                                    <div className="text-sm font-medium text-gray-800">
+                                      {vehicle.driverName}
+                                    </div>
+                                    {vehicle.driverPhone && (
+                                      <div className="text-xs text-gray-500 flex items-center">
+                                        <Phone className="w-3 h-3 mr-1" />
+                                        {vehicle.driverPhone}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">
+                                    -
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-2">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    vehicle.isActive
+                                      ? "bg-leaf-green-100 text-leaf-green-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                      vehicle.isActive
+                                        ? "bg-leaf-green-500"
+                                        : "bg-red-500"
+                                    }`}
+                                  ></div>
+                                  {vehicle.isActive ? "Aktif" : "Tidak Aktif"}
+                                </span>
+                                {vehicle.isReefer && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-cyan-100 text-cyan-800">
+                                    <Snowflake className="w-3 h-3 mr-1" />
+                                    Reefer
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleOpenEdit(vehicle)}
+                                  className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
+                                  title="Edit kendaraan"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(vehicle.id)}
+                                  className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
+                                  title="Hapus kendaraan"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
-
-            <VehilcleModalForm
-              createMutation={createMutation}
-              editingId={editingId}
-              formData={formData}
-              handleClose={handleClose}
-              handleSubmit={handleSubmit}
-              isModalOpen={isModalOpen}
-              setFormData={setFormData}
-              updateMutation={updateMutation}
-              key={"vehicle-modal"}
-            />
-
-            {/* here */}
           </div>
         </main>
       </div>
+      <VehilcleModalForm
+        createMutation={createMutation}
+        editingId={editingId}
+        formData={formData}
+        handleClose={handleClose}
+        handleSubmit={handleSubmit}
+        isModalOpen={isModalOpen}
+        setFormData={setFormData}
+        updateMutation={updateMutation}
+        key={"vehicle-modal"}
+      />
     </div>
   );
 }

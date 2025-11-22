@@ -3,6 +3,7 @@ import type {
   WarehouseCreateDto,
   WarehouseUpdateDto,
   Warehouse,
+  GetWarehouseFilter,
 } from "@/types/warehouse";
 
 export const WarehouseApi = {
@@ -19,10 +20,13 @@ export const WarehouseApi = {
     return response.data;
   },
 
-  getWarehouses: async (searchKey?: string): Promise<Warehouse[]> => {
+  getWarehouses: async (filter?: GetWarehouseFilter): Promise<Warehouse[]> => {
     const params = new URLSearchParams();
-    if (searchKey) {
-      params.set("searchKey", searchKey);
+    if (filter?.searchKey) {
+      params.set("searchKey", filter.searchKey);
+    }
+    if (filter?.page) {
+      params.set("page", filter.page.toString());
     }
     const response = await axiosInstance.get<Warehouse[]>("/api/warehouse", {
       params,

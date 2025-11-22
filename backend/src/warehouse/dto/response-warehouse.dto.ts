@@ -1,22 +1,28 @@
-import { Exclude } from 'class-transformer';
+import { Expose } from 'class-transformer';
+import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 export class responseWarehouseDto {
-  id: string;
-  name: string;
-  location?: string | null;
-  description?: string | null;
-  @Exclude() //dipakai untuk menyembunyikan field dgn excludeExtraneousValues:true
-  budgets?: object[];
-  @Exclude()
-  flowLogs?: object[];
-  @Exclude()
-  members?: object[];
-  @Exclude()
+  @Expose()
+  id: String;
+  @Expose()
+  name: String;
+  @Expose()
+  location: String;
+  @Expose()
+  description: String;
+  @Expose()
+  isActive: Boolean;
+  @Expose()
+  members?: LoginResponseDto[];
+  @Expose()
   docks?: object[];
-  @Exclude()
+
+  @Expose({ groups: ['detail'] })
   bookings?: object[];
-  @Exclude()
+  @Expose({ groups: ['detail'] })
   createdAt?: Date;
-  @Exclude()
-  updatedAt?: Date;
+  @Expose({ groups: ['detail'] })
+  userWarehouseAccesses?: object[];
+  @Expose({ groups: ['detail'] })
+  organizationName?: String;
 }

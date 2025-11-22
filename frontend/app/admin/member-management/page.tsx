@@ -1,199 +1,88 @@
 "use client";
-
-import type React from "react";
-
-import { useState } from "react";
+import { AuthApi } from "@/api/auth";
+import UserEditModalForm from "@/components/admin/UserEditModalForm";
+import { UserInfo } from "@/types/auth";
+import { UserApp } from "@/types/user.type";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  Plus,
+  Building2,
   Edit,
-  Trash2,
-  WarehouseIcon,
-  MapPin,
-  Users,
+  IdCardIcon,
+  Plus,
   Search,
+  Trash2,
+  User,
+  User2,
 } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useState } from "react";
 import { toast } from "sonner";
-import { WarehouseApi } from "@/api/warehouse.api";
-import type {
-  Warehouse,
-  WarehouseCreateDto,
-  WarehouseUpdateDto,
-  GetWarehouseFilter,
-} from "@/types/warehouse";
-import WarehouseModalForm from "@/components/admin/warehouseModalForm";
 
-const initialFormData: WarehouseCreateDto = {
-  name: "",
-  location: "",
-  description: "",
-  warehouseAccess: [],
-  isActive: true,
-};
+interface MemberManagementFilter {
+  searchKey: string;
+  page: number;
+}
 
-export default function AllWarehousePage() {
-  const sanitizeString = (value?: string | null) => {
-    if (!value) return undefined;
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
-  };
-
-  const [filter, setFilter] = useState<GetWarehouseFilter>({
+const MemberManagementPage = () => {
+  const [formData, setFormData] = useState<UserApp>({
+    username: "",
+    password: "",
+    passwordConfirm: "",
+    description: "",
+    homeWarehouseId: "",
+    displayName: "",
+    driverLicense: "",
+    driverPhone: "",
+    isActive: true,
+  });
+  const [filter, setFilter] = useState<MemberManagementFilter>({
     searchKey: "",
     page: 1,
   });
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<WarehouseCreateDto>(initialFormData);
-  const queryClient = useQueryClient();
-
-  const { data: warehouses = [], isLoading } = useQuery({
-    queryKey: ["all-warehouse", filter],
-    queryFn: () => WarehouseApi.getWarehouses(filter),
-    retry: 1,
-    staleTime: 30000,
+  const { data: accounts, isLoading } = useQuery({
+    queryKey: ["member-management", filter],
+    queryFn: () =>
+      AuthApi.getAllAccountForMemberManagement(filter.page, filter.searchKey),
   });
 
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({ ...initialFormData });
-  };
-
-  const createMutation = useMutation({
-    mutationFn: async (body: WarehouseCreateDto) =>
-      await WarehouseApi.createWarehouse(body),
+  const { mutateAsync: handleCreateAppUser } = useMutation({
+    mutationKey: ["member-management"],
+    mutationFn: async () => {
+      const { passwordConfirm, ...res } = formData;
+      const data = AuthApi.createAppUser(res);
+      return data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-warehouse"] });
-      toast.success("Warehouse berhasil ditambahkan");
-      handleClose();
+      (document.getElementById("UserEditModalForm") as any)?.close();
     },
     onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal menambahkan warehouse";
-      toast.error(errorMessage);
+      toast.error(error?.response?.data?.message);
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async (data: WarehouseUpdateDto) =>
-      await WarehouseApi.updateWarehouse(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-warehouse"] });
-      toast.success("Warehouse berhasil diperbarui");
-      handleClose();
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal memperbarui warehouse";
-      toast.error(errorMessage);
-    },
-  });
+  const handleUpdateUser = () => {};
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => await WarehouseApi.deleteWarehouse(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-warehouse"] });
-      toast.success("Warehouse berhasil dihapus");
-    },
-    onError: (error: any) => {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal menghapus warehouse";
-      toast.error(errorMessage);
-    },
-  });
-
-  const handleOpenEdit = (warehouse?: Warehouse) => {
-    if (warehouse && warehouse.id) {
-      setFormData({
-        name: warehouse.name || "",
-        location: warehouse.location || "",
-        description: warehouse.description || "",
-        warehouseAccess: Array.isArray(warehouse.warehouseAccess)
-          ? (warehouse.warehouseAccess as unknown[]).filter(
-              (username): username is string =>
-                typeof username === "string" && username.length > 0
-            )
-          : [],
-        isActive: warehouse.isActive ?? true,
-      });
-      setEditingId(warehouse.id);
-    } else {
-      setFormData({ ...initialFormData });
-      setEditingId(null);
-    }
-    setIsModalOpen(true);
+  const handleOpenEdit = (user?: UserInfo) => {
+    setFormData({
+      id: user?.id || "",
+      username: user?.username || "",
+      password: "",
+      passwordConfirm: "",
+      description: user?.description || "",
+      homeWarehouseId: user?.homeWarehouse.id || "",
+      displayName: user?.displayName || "",
+      driverLicense: user?.driverLicense || "",
+      driverPhone: user?.driverPhone || "",
+      isActive: user?.isActive || false,
+    });
+    (document.getElementById("UserEditModalForm") as any)?.showModal();
   };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!formData.name?.trim()) {
-      toast.error("Nama warehouse harus diisi");
-      return;
-    }
-
-    const payload = {
-      name: formData.name.trim(),
-      location: sanitizeString(formData.location),
-      description: sanitizeString(formData.description),
-      warehouseAccess: formData.warehouseAccess || [],
-      isActive: formData.isActive ?? true,
-    };
-
-    if (editingId) {
-      updateMutation.mutate({
-        id: editingId,
-        ...payload,
-      });
-    } else {
-      createMutation.mutate(payload);
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    if (
-      window.confirm(
-        "Apakah Anda yakin ingin menghapus warehouse ini? Tindakan ini tidak dapat dibatalkan."
-      )
-    ) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const getMembersCount = (warehouse: Warehouse) => {
-    if (!warehouse.members) return 0;
-    if (Array.isArray(warehouse.members)) {
-      return warehouse.members.length;
-    }
-    return 0;
-  };
-
-  const getAccessCount = (warehouse: Warehouse) => {
-    if (!warehouse.members) return 0;
-    if (Array.isArray(warehouse.members)) {
-      return warehouse.warehouseAccess.length;
-    }
-    return 0;
-  };
-
-  const getDocksCount = (warehouse: Warehouse) => {
-    if (!warehouse.docks) return 0;
-    if (Array.isArray(warehouse.docks)) {
-      return warehouse.docks.length;
-    }
-    return 0;
+  const handleDelete = (username: string) => {
+    toast("Sedang dikembangkan");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen ">
       <div className="flex">
         <main className="flex-1 p-6">
           <div className="min-h-screen bg-gray-50 p-6">
@@ -203,18 +92,23 @@ export default function AllWarehousePage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                      Manajemen Warehouse
+                      Manajemen Member and access
                     </h1>
                     <p className="text-gray-600">
-                      Kelola warehouse dan informasi gudang
+                      Kelola member dan hak akses warehouse disini
                     </p>
                   </div>
                   <button
-                    onClick={() => handleOpenEdit()}
-                    className="btn bg-primary text-primary-content px-2"
+                    onClick={() =>
+                      (
+                        document.getElementById(
+                          "UserEditModalForm"
+                        ) as HTMLDialogElement
+                      )?.showModal()
+                    }
+                    className="btn  btn-primary px-3 "
                   >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Tambah Warehouse
+                    <Plus /> Buat Baru
                   </button>
                 </div>
               </div>
@@ -227,7 +121,7 @@ export default function AllWarehousePage() {
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Cari nama warehouse atau deskripsi..."
+                        placeholder="Cari username user"
                         className="input input-bordered w-full pl-10 bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100"
                         value={filter.searchKey}
                         onChange={(e) =>
@@ -241,7 +135,6 @@ export default function AllWarehousePage() {
                   </div>
                 </div>
               </div>
-
               {/* Table */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 {isLoading ? (
@@ -253,9 +146,9 @@ export default function AllWarehousePage() {
                       </p>
                     </div>
                   </div>
-                ) : warehouses.length === 0 ? (
+                ) : accounts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                    <WarehouseIcon className="w-16 h-16 text-gray-300 mb-4" />
+                    <User className="w-16 h-16 text-gray-300 mb-4" />
                     <p className="text-gray-500 text-sm max-w-md">
                       {filter.searchKey
                         ? "Coba ubah kata kunci pencarian atau filter yang digunakan"
@@ -271,16 +164,13 @@ export default function AllWarehousePage() {
                             Nama Warehouse
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4">
-                            Lokasi
-                          </th>
-                          <th className="font-semibold text-gray-700 py-4 px-4">
                             Deskripsi
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4">
-                            Jumlah Dock
+                            Warehouse
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4 ">
-                            Home Member
+                            Home
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4">
                             Access User
@@ -294,27 +184,27 @@ export default function AllWarehousePage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {warehouses.map((warehouse, index) => (
+                        {accounts.map((account: UserInfo, index) => (
                           <tr
-                            key={warehouse.id}
+                            key={account.id}
                             className={`hover:bg-gray-50 transition-colors ${
                               index % 2 === 0 ? "bg-gray-25" : "bg-white"
                             }`}
                           >
                             <td className="px-4 py-3">
                               <div className="flex items-center space-x-2">
-                                <WarehouseIcon className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
+                                <User2 className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
                                 <span className="font-semibold text-gray-800">
-                                  {warehouse.name}
+                                  {account.username}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              {warehouse.location ? (
+                              {account.description ? (
                                 <div className="flex items-center space-x-1 text-gray-700">
-                                  <MapPin className="w-4 h-4 text-gray-400" />
+                                  <IdCardIcon className="w-4 h-4 text-gray-400" />
                                   <span className="text-sm">
-                                    {warehouse.location}
+                                    {account.description}
                                   </span>
                                 </div>
                               ) : (
@@ -322,9 +212,9 @@ export default function AllWarehousePage() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-gray-700 max-w-xs">
-                              {warehouse.description ? (
+                              {account.homeWarehouse ? (
                                 <span className="text-sm line-clamp-2">
-                                  {warehouse.description}
+                                  {account.homeWarehouse.name}
                                 </span>
                               ) : (
                                 <span className="text-gray-400 text-sm">-</span>
@@ -333,55 +223,47 @@ export default function AllWarehousePage() {
                             <td className="px-4 py-3">
                               <div className="flex items-center space-x-1 text-gray-700">
                                 <span className="font-medium text-sm">
-                                  {getDocksCount(warehouse)}
+                                  {account.warehouseAccess.length}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center space-x-1 text-gray-700">
-                                <Users className="w-4 h-4 text-gray-400" />
+                                <Building2 className="w-4 h-4 text-gray-400" />
                                 <span className="font-medium text-sm">
-                                  {getMembersCount(warehouse)}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-1 text-gray-700">
-                                <Users className="w-4 h-4 text-gray-400" />
-                                <span className="font-medium text-sm">
-                                  {getAccessCount(warehouse)}
+                                  {account.warehouseAccess.length}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  warehouse.isActive
+                                  account.isActive
                                     ? "bg-leaf-green-100 text-leaf-green-800"
                                     : "bg-red-100 text-red-800"
                                 }`}
                               >
                                 <div
                                   className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                    warehouse.isActive
+                                    account.isActive
                                       ? "bg-leaf-green-500"
                                       : "bg-red-500"
                                   }`}
                                 ></div>
-                                {warehouse.isActive ? "Aktif" : "Tidak Aktif"}
+                                {account.isActive ? "Aktif" : "Tidak Aktif"}
                               </span>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex gap-1">
                                 <button
-                                  onClick={() => handleOpenEdit(warehouse)}
+                                  onClick={() => handleOpenEdit(account)}
                                   className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
-                                  title="Edit warehouse"
+                                  title="Edit user"
                                 >
                                   <Edit size={16} />
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(warehouse.id)}
+                                  onClick={() => handleDelete(account.username)}
                                   className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
                                   title="Hapus warehouse"
                                 >
@@ -400,17 +282,15 @@ export default function AllWarehousePage() {
           </div>
         </main>
       </div>
-      <WarehouseModalForm
-        createMutation={createMutation}
-        editingId={editingId}
+      <UserEditModalForm
         formData={formData}
-        handleClose={handleClose}
-        handleSubmit={handleSubmit}
-        isModalOpen={isModalOpen}
         setFormData={setFormData}
-        updateMutation={updateMutation}
-        key={"warehouse-modal"}
+        submitCreate={handleCreateAppUser}
+        submitUpdate={handleUpdateUser}
+        key={"UserEditModalForm"}
       />
     </div>
   );
-}
+};
+
+export default MemberManagementPage;

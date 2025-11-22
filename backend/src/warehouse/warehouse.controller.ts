@@ -18,13 +18,8 @@ export class WarehouseController {
   constructor(private readonly warehouseService: WarehouseService) {}
 
   @Post()
-  createWarehouse(@Body() body: CreateWarehouseDto) {
-    return this.warehouseService.createWarehouse(body);
-  }
-
-  @Post('/create')
-  createWarehouseLegacy(@Body() body: CreateWarehouseDto) {
-    return this.warehouseService.createWarehouse(body);
+  createWarehouse(@Body() body: CreateWarehouseDto, @Auth() userInfo: any) {
+    return this.warehouseService.createWarehouse(body, userInfo);
   }
 
   @Get()

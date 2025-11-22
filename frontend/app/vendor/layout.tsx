@@ -1,10 +1,10 @@
-import SideNavVendor from "@/components/vendor/side-nav-vendor";
+import SideNav from "@/components/admin/side-nav";
 import React from "react";
 
 const VendorLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex  ">
-      <SideNavVendor />
+      <SideNav />
       <main className="w-full overflow-y-auto">{children}</main>
     </div>
   );

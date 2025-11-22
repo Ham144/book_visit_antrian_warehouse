@@ -9,14 +9,12 @@ datasource db {
 
 
 model Subscription {
-  id            String @id
-  userusername  String @unique
+  id            String @id @default(uuid())
   start DateTime
   plan SubscriptionPlan @default(TRIAL)
   organizationId String? @unique
   organizations Organization? @relation(fields: [organizationId], references: [name]) 
 } 
-
 
 model Organization { 
   name String @id @unique
@@ -27,6 +25,9 @@ model Organization {
   AD_DOMAIN String?
   AD_BASE_DN String?
   warehouses Warehouse[]
+  docks Dock[]
+  vehicles Vehicle[]
+  bookings Booking[]
 }
 
 model Globalsetting {//ini hanya satu di pakai di semua Organization
@@ -61,7 +62,7 @@ model Warehouse {
   members     User[]   @relation("UserHomeWarehouse")
   bookings    Booking[]
   createdAt   DateTime @default(now())
-  userWarehouseAccesses UserWarehouseAccess[]
+  userWarehouseAccesses User[]
   organizationName String?
   organization Organization? @relation(fields: [organizationName], references: [name])
 }
@@ -76,15 +77,14 @@ model Dock {
   dockType               String?   // forklift, manual, side, reefer
   supportedVehicleTypes  String[]  // ["CDD","Tronton","Wingbox"]
 
-  maxLength              Float?
-  maxWidth               Float?
-  maxHeight              Float?
+  maxLength              Int?
+  maxWidth               Int?
+  maxHeight              Int?
 
   availableFrom          DateTime
   availableUntil         DateTime
 
   isActive               Boolean   @default(true)
-  status                 String?   // available, closed, maintenance
   priority               Int?
 
   bookings               Booking[]
@@ -92,6 +92,8 @@ model Dock {
 
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
+  organizationName String 
+  organization Organization @relation(fields: [organizationName], references: [name])
 }
 
 model Vehicle {
@@ -110,10 +112,8 @@ model Vehicle {
   isReefer        Boolean @default(false)
   requiresDock    String? // forklift, manual, side-load, etc.
 
-  driverName      String?
-  driverPhone     String?
-  driverLicense   String?
-
+  driverName String?
+  Driver User? @relation(fields: [driverName], references: [username])
   description     String?
   isActive        Boolean @default(true)
 
@@ -121,6 +121,8 @@ model Vehicle {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  organizationName String 
+  organization Organization @relation(fields: [organizationName], references: [name])
 }
 
 model DockBusyTime {
@@ -152,6 +154,8 @@ model Booking {
 
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+  organizationName String 
+  organization Organization @relation(fields: [organizationName], references: [name])
 }
 
 model User {
@@ -163,23 +167,16 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  driverPhone     String?
+  driverLicense   String?
+
   // homeWarehouse = staff biasa (nullable)
   homeWarehouseId  String? 
   homeWarehouse    Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
 
   // many-to-many access (admin area)
-  warehouseAccess  UserWarehouseAccess[]
-}
+  warehouseAccess  Warehouse[]
 
-model UserWarehouseAccess {
-  id          String   @id @default(cuid())
-  userId      String
-  warehouseId String
-
-  user        User     @relation(fields: [userId], references: [username])
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
-
-  createdAt   DateTime @default(now())
-
-  @@unique([userId, warehouseId])
+  vehicles Vehicle[]
+  
 }

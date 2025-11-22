@@ -1,4 +1,3 @@
-import { Exclude } from 'class-transformer';
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
@@ -22,6 +21,9 @@ export class LoginResponseDto {
 
   @Expose()
   organizationName: string;
+
+  @Expose()
+  warehouseAccess?: responseWarehouseDto[];
 
   @Expose({ groups: ['login'] })
   refresh_token?: string;

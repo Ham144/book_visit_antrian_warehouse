@@ -2,30 +2,45 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { ResponseVehicleDto } from './dto/response-vehicle.dto';
 import { plainToInstance } from 'class-transformer';
+import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 @Injectable()
 export class VehicleService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(createVehicleDto: CreateVehicleDto) {
+  async create(createVehicleDto: CreateVehicleDto, userInfo: LoginResponseDto) {
     try {
-      const vehicle = await this.prismaService.vehicle.create({
-        data: createVehicleDto,
+      const existingUser = await this.prismaService.user.findUnique({
+        where: { username: createVehicleDto.driverName },
       });
 
-      return plainToInstance(ResponseVehicleDto, vehicle);
+      if (!existingUser) {
+        throw new NotFoundException(
+          `Driver ${createVehicleDto.driverName} tidak ditemukan`,
+        );
+      }
+
+      await this.prismaService.vehicle.create({
+        data: {
+          ...createVehicleDto,
+          organizationName: userInfo.organizationName,
+        },
+      });
+
+      return HttpStatus.CREATED;
     } catch (error) {
-      throw new InternalServerErrorException('Gagal membuat vehicle');
+      throw new InternalServerErrorException(error.message);
     }
   }
 
-  async findAll(): Promise<ResponseVehicleDto[]> {
+  async findAll() {
     try {
       const vehicles = await this.prismaService.vehicle.findMany({
         orderBy: {
@@ -87,14 +102,12 @@ export class VehicleService {
           isReefer: updateVehicleDto.isReefer,
           requiresDock: updateVehicleDto.requiresDock,
           driverName: updateVehicleDto.driverName,
-          driverPhone: updateVehicleDto.driverPhone,
-          driverLicense: updateVehicleDto.driverLicense,
           description: updateVehicleDto.description,
           isActive: updateVehicleDto.isActive,
         },
       });
 
-      return plainToInstance(ResponseVehicleDto, vehicle);
+      return HttpStatus.ACCEPTED;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

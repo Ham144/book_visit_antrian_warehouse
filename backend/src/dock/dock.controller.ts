@@ -1,34 +1,50 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { DockService } from './dock.service';
 import { CreateDockDto } from './dto/create-dock.dto';
 import { UpdateDockDto } from './dto/update-dock.dto';
+import { DockFilter } from './dto/response-dock.dto';
+import { Auth } from 'src/common/auth.decorator';
 
 @Controller('dock')
 export class DockController {
   constructor(private readonly dockService: DockService) {}
 
   @Post()
-  create(@Body() createDockDto: CreateDockDto) {
-    return this.dockService.create(createDockDto);
+  create(@Body() createDockDto: CreateDockDto, @Auth() userInfo) {
+    return this.dockService.create(createDockDto, userInfo);
   }
 
   @Get()
-  findAll() {
-    return this.dockService.findAll();
+  findAll(@Query() filter: any, @Auth() userInfo) {
+    return this.dockService.findAll(filter, userInfo);
+  }
+
+  @Get('/warehouse/:id')
+  findByWarehouseId(@Param('id') id: string) {
+    return this.dockService.findByWarehouseId(id);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.dockService.findOne(+id);
+    return this.dockService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDockDto: UpdateDockDto) {
-    return this.dockService.update(+id, updateDockDto);
+    return this.dockService.update(id, updateDockDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.dockService.remove(+id);
+    return this.dockService.remove(id);
   }
 }

@@ -9,15 +9,21 @@ import {
   Res,
   Query,
   ParseIntPipe,
+  Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Response, Request } from 'express';
 import { refreshTokenOption, accessTokenOption } from './tokenCookieOptions';
 import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
+import { UserAppService } from './userApp.service';
+import { CreateAppUserDto } from './dto/create-user.dto';
 
 @Controller('/user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly userAppService: UserAppService,
+  ) {}
 
   @Post('/login/ldap')
   async loginUserLdap(
@@ -75,6 +81,19 @@ export class UserController {
     @Query('searchKey') searchKey: string,
   ) {
     return this.userService.getAllAccount(page, searchKey);
+  }
+
+  @Get('/list-member-management')
+  async getAllAccountForMemberManagement(
+    @Query('page', ParseIntPipe) page: number,
+    @Query('searchKey') searchKey: string,
+  ) {
+    return this.userService.getAllAccountForMemberManagement(page, searchKey);
+  }
+
+  @Post('/create')
+  async createAppUser(@Body() body: CreateAppUserDto) {
+    return this.userAppService.createAppUser(body);
   }
 
   @Patch('/update')

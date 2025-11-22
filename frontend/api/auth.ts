@@ -4,6 +4,7 @@ import type {
   LoginResponseDto,
   UserInfo,
 } from "@/types/auth";
+import { UserApp } from "@/types/user.type";
 
 export const AuthApi = {
   loginUserLdap: async (
@@ -31,11 +32,30 @@ export const AuthApi = {
     return response.data;
   },
 
-  getAllAccount: async (page: number, searchKey: string) => {
+  getAllAccount: async (page?: number, searchKey?: string) => {
     let params = new URLSearchParams();
     params.set("page", page.toString());
     params.set("searchKey", searchKey);
     const response = await axiosInstance.get("/api/user/list", { params });
+    return response.data;
+  },
+
+  getAllAccountForMemberManagement: async (
+    page?: number,
+    searchKey?: string
+  ) => {
+    let params = new URLSearchParams();
+    params.set("page", page.toString());
+    params.set("searchKey", searchKey);
+    const response = await axiosInstance.get(
+      "/api/user/list-member-management",
+      { params }
+    );
+    return response.data;
+  },
+
+  createAppUser: async (body: UserApp) => {
+    const response = await axiosInstance.post("/api/user/create", body);
     return response.data;
   },
 };

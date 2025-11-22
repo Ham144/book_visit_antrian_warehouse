@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Ruler, Star } from "lucide-react";
 import { toast } from "sonner";
+import DockFormModal from "@/components/admin/DockFormModal";
+import { DockFilter, IDock } from "@/types/dock.type";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DockApi } from "@/api/dock.api";
 
 const mockDocks = [
   {
@@ -29,149 +33,306 @@ const mockDocks = [
 ];
 
 export default function DocksPage() {
-  const [docks, setDocks] = useState(mockDocks);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    type: "dock",
-    maxVehicle: "medium",
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<DockFilter>({
+    page: 1,
+    warehouseId: null,
+  });
+  const [formData, setFormData] = useState<IDock>();
+
+  const formatDockData = (data: IDock): IDock => {
+    return {
+      ...data,
+      photos: data.photos || [],
+      supportedVehicleTypes: data.supportedVehicleTypes || [],
+      maxLength: data.maxLength ? Number(data.maxLength) : undefined,
+      maxWidth: data.maxWidth ? Number(data.maxWidth) : undefined,
+      maxHeight: data.maxHeight ? Number(data.maxHeight) : undefined,
+      priority: data.priority ? Number(data.priority) : undefined,
+      isActive: data.isActive ?? true,
+      availableFrom: data.availableFrom
+        ? new Date(data.availableFrom)
+        : undefined,
+      availableUntil: data.availableUntil
+        ? new Date(data.availableUntil)
+        : undefined,
+    };
+  };
+
+  const { mutateAsync: handleCreate } = useMutation({
+    mutationKey: ["docks"],
+    mutationFn: async () => {
+      const formattedData = formatDockData(formData!);
+      return DockApi.registerDock(formattedData);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Gagal membuat dock baru");
+    },
+    onSuccess: () => {
+      toast.success("Dock berhasil dibuat");
+      queryClient.invalidateQueries({ queryKey: ["docks"] });
+      setFormData(undefined);
+      (document.getElementById("DockFormModal") as HTMLDialogElement).close();
+    },
   });
 
-  const handleAddDock = () => {
-    if (!formData.name) {
-      toast.error("Please enter dock name");
-      return;
-    }
-    const newDock = {
-      id: `d-${docks.length + 1}`,
-      ...formData,
-      status: "active",
-    };
-    setDocks([...docks, newDock]);
-    setFormData({ name: "", type: "dock", maxVehicle: "medium" });
-    setShowForm(false);
-    toast.success("Dock created successfully");
-  };
+  const { mutateAsync: handleUpdate } = useMutation({
+    mutationKey: ["docks"],
+    mutationFn: async () => {
+      const formattedData = formatDockData(formData!);
+      return DockApi.updateDock(formData!.id!, formattedData);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Gagal memperbarui dock");
+    },
+    onSuccess: () => {
+      toast.success("Dock berhasil diperbarui");
+      queryClient.invalidateQueries({ queryKey: ["docks"] });
+      setFormData(undefined);
+      (document.getElementById("DockFormModal") as HTMLDialogElement).close();
+    },
+  });
 
-  const handleDelete = (id: string) => {
-    setDocks(docks.filter((d) => d.id !== id));
-    toast.success("Dock deleted");
-  };
+  const { data: docks } = useQuery({
+    queryKey: ["docks", filter],
+    queryFn: async () => DockApi.getAllDocks(filter),
+  });
+
+  const { mutateAsync: handleDelete } = useMutation({
+    mutationKey: ["docks"],
+    mutationFn: async (dockId: string) => await DockApi.deleteDock(dockId),
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Gagal menghapus dock");
+    },
+    onSuccess: () => {
+      toast.success("Dock berhasil dihapus");
+      queryClient.invalidateQueries({ queryKey: ["docks"] });
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         <main className="flex-1 p-6">
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">Dock Management</h1>
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="btn btn-primary"
-              >
-                <Plus size={20} /> New Dock
-              </button>
-            </div>
-
-            {showForm && (
-              <div className="card bg-white shadow">
-                <div className="card-body">
-                  <h3 className="font-bold text-lg mb-4">Create New Dock</h3>
-                  <div className="space-y-4">
-                    <input
-                      type="text"
-                      placeholder="Dock Name (e.g., Dock A)"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="input input-bordered w-full"
-                    />
-                    <select
-                      value={formData.type}
-                      onChange={(e) =>
-                        setFormData({ ...formData, type: e.target.value })
-                      }
-                      className="select select-bordered w-full"
-                    >
-                      <option value="dock">Dock</option>
-                      <option value="gate">Gate</option>
-                    </select>
-                    <select
-                      value={formData.maxVehicle}
-                      onChange={(e) =>
-                        setFormData({ ...formData, maxVehicle: e.target.value })
-                      }
-                      className="select select-bordered w-full"
-                    >
-                      <option value="small">Small Truck</option>
-                      <option value="medium">Medium Truck</option>
-                      <option value="large">Large Truck</option>
-                    </select>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleAddDock}
-                        className="btn btn-primary flex-1"
-                      >
-                        Create
-                      </button>
-                      <button
-                        onClick={() => setShowForm(false)}
-                        className="btn btn-outline flex-1"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+          <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Header */}
+              <div className="flex justify-between mb-2 items-center">
+                <h1 className="text-3xl font-bold">Dock Management</h1>
+                <button
+                  onClick={() => {
+                    setFormData(undefined);
+                    (
+                      document.getElementById(
+                        "DockFormModal"
+                      ) as HTMLDialogElement
+                    ).showModal();
+                  }}
+                  className="btn px-2 btn-primary"
+                >
+                  <Plus size={20} /> New Dock
+                </button>
+              </div>
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="table w-full">
+                    <thead>
+                      <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Nama Dock
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Tipe Dock
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Dimensi Maks.
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Jenis Kendaraan
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Prioritas
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Status
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
+                          Aksi
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {docks?.length > 0 ? (
+                        docks?.map((dock: IDock, index) => (
+                          <tr
+                            key={dock.id}
+                            className={`hover:bg-gray-50 transition-colors ${
+                              index % 2 === 0 ? "bg-gray-25" : "bg-white"
+                            }`}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center space-x-2">
+                                <MapPin className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
+                                <span className="font-semibold text-gray-800">
+                                  {dock.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {dock.dockType || "-"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-sm text-gray-700 space-y-1">
+                                {dock.maxLength && (
+                                  <div className="flex items-center space-x-1">
+                                    <Ruler className="w-3 h-3 text-gray-400" />
+                                    <span>P: {dock.maxLength}m</span>
+                                  </div>
+                                )}
+                                {dock.maxWidth && (
+                                  <div className="flex items-center space-x-1">
+                                    <Ruler className="w-3 h-3 text-gray-400" />
+                                    <span>L: {dock.maxWidth}m</span>
+                                  </div>
+                                )}
+                                {dock.maxHeight && (
+                                  <div className="flex items-center space-x-1">
+                                    <Ruler className="w-3 h-3 text-gray-400" />
+                                    <span>T: {dock.maxHeight}m</span>
+                                  </div>
+                                )}
+                                {!dock.maxLength &&
+                                  !dock.maxWidth &&
+                                  !dock.maxHeight && (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              {dock.supportedVehicleTypes &&
+                              dock.supportedVehicleTypes.length > 0 ? (
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600">
+                                    {dock.supportedVehicleTypes.length} jenis
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {dock.supportedVehicleTypes
+                                      .slice(0, 2)
+                                      .map((type, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                                        >
+                                          {type.split(" ")[0]}
+                                        </span>
+                                      ))}
+                                    {dock.supportedVehicleTypes.length > 2 && (
+                                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                                        +{dock.supportedVehicleTypes.length - 2}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-sm">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              {dock.priority ? (
+                                <div className="flex items-center space-x-1">
+                                  <Star className="w-4 h-4 text-yellow-500" />
+                                  <span className="font-medium text-gray-700">
+                                    {dock.priority}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  dock.isActive
+                                    ? "bg-leaf-green-100 text-leaf-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                <div
+                                  className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                    dock.isActive
+                                      ? "bg-leaf-green-500"
+                                      : "bg-red-500"
+                                  }`}
+                                ></div>
+                                {dock.isActive ? "Aktif" : "Tidak Aktif"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setFormData(dock);
+                                    (
+                                      document.getElementById(
+                                        "DockFormModal"
+                                      ) as HTMLDialogElement
+                                    ).showModal();
+                                  }}
+                                  className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
+                                  title="Edit dock"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (
+                                      confirm(
+                                        "Apakah Anda yakin ingin menghapus dock ini?"
+                                      )
+                                    ) {
+                                      await handleDelete(dock.id!);
+                                    }
+                                  }}
+                                  className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
+                                  title="Hapus dock"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-8 text-center">
+                            <div className="flex flex-col items-center justify-center text-gray-500">
+                              <MapPin className="w-12 h-12 text-gray-300 mb-2" />
+                              <p className="font-medium">Belum ada data dock</p>
+                              <p className="text-sm mt-1">
+                                Mulai dengan menambahkan dock pertama
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
-
-            <div className="overflow-x-auto">
-              <table className="table w-full bg-white">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th>Doc Name</th>
-                    <th>Type</th>
-                    <th>Max Vehicle</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {docks.map((dock) => (
-                    <tr key={dock.id} className="border-b">
-                      <td className="font-semibold">{dock.name}</td>
-                      <td>
-                        <span className="badge">{dock.type}</span>
-                      </td>
-                      <td>{dock.maxVehicle}</td>
-                      <td>
-                        <span className="badge badge-success">
-                          {dock.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm">
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-sm text-error"
-                            onClick={() => handleDelete(dock.id)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </main>
       </div>
+
+      <DockFormModal
+        formData={formData}
+        setFormData={setFormData}
+        onCreate={handleCreate}
+        onEdit={handleUpdate}
+        key={"DockFormModal"}
+      />
     </div>
   );
 }

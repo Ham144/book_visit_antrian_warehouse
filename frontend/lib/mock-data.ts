@@ -10,15 +10,6 @@ export interface Warehouse {
   openHours: { start: string; end: string };
 }
 
-export interface Slot {
-  id: string;
-  warehouseId: string;
-  name: string;
-  type: "dock" | "gate";
-  maxVehicle: "small" | "medium" | "large";
-  status: "active" | "inactive";
-}
-
 export interface UserVehicle {
   id: string;
   vendorId: string;
@@ -27,18 +18,6 @@ export interface UserVehicle {
   vehicleTypeId: string;
   description?: string;
   status: "active" | "inactive";
-}
-
-export interface Booking {
-  id: string;
-  warehouseId: string;
-  slotId: string;
-  vendorId: string;
-  vehicleId: string;
-  plate: string;
-  start: string;
-  end: string;
-  status: "pending" | "confirmed" | "ongoing" | "completed" | "cancelled";
 }
 
 // New interfaces for vehicle brand and admin vehicle
@@ -159,21 +138,6 @@ export const mockSlots: Slot[] = [
     type: "dock",
     maxVehicle: "medium",
     status: "active",
-  },
-];
-
-// Mock bookings
-export const mockBookings: Booking[] = [
-  {
-    id: "b-1",
-    warehouseId: "w-1",
-    slotId: "s-1",
-    vendorId: "vendor-1",
-    vehicleId: "uv-1",
-    plate: "B1234CD",
-    start: "2025-11-12T09:00:00+07:00",
-    end: "2025-11-12T10:00:00+07:00",
-    status: "completed",
   },
 ];
 

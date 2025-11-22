@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
@@ -24,12 +23,12 @@ export class UserService {
     const organizationSetting =
       await this.prismaService.organization.findUnique({
         where: {
-          name: body.organization,
+          name: String(body.organization),
         },
       });
 
     if (!organizationSetting) {
-      throw new BadRequestException('Organization Setting tidak ditemukna.');
+      throw new BadRequestException('Organization Setting tidak ditemukan.');
     }
 
     //LDAP/ AD
@@ -125,6 +124,7 @@ export class UserService {
               name: String(
                 userLDAP['physicalDeliveryOfficeName'],
               ).toUpperCase(),
+              organizationName: organizationSetting.name,
             },
           });
 
@@ -278,12 +278,16 @@ export class UserService {
   }
 
   async getAllAccount(page: number, searchKey: string) {
+    const where = searchKey
+      ? {
+          username: {
+            contains: searchKey,
+          },
+        }
+      : {};
+
     const accounts = await this.prismaService.user.findMany({
-      where: {
-        username: {
-          contains: searchKey,
-        },
-      },
+      where,
       include: {
         homeWarehouse: true,
       },
@@ -291,21 +295,39 @@ export class UserService {
       take: 10,
     });
 
-    return accounts.map((account) => ({
-      username: account.username,
-      displayName: account.displayName,
-      description: account.description,
-      isActive: account.isActive,
-      warehouse: account.homeWarehouse
-        ? {
-            id: account.homeWarehouse.id,
-            name: account.homeWarehouse.name,
-            location: account.homeWarehouse.location,
-            description: account.homeWarehouse.description,
-            isActive: account.homeWarehouse.isActive,
-          }
-        : null,
-    }));
+    return accounts.map((account) =>
+      plainToInstance(LoginResponseDto, account, {
+        excludeExtraneousValues: true,
+      }),
+    );
+  }
+
+  async getAllAccountForMemberManagement(page: number, searchKey: string) {
+    const where = searchKey
+      ? {
+          username: {
+            contains: searchKey,
+          },
+        }
+      : {};
+
+    const accounts = await this.prismaService.user.findMany({
+      where,
+      include: {
+        homeWarehouse: true,
+        warehouseAccess: {
+          select: { name: true },
+        },
+      },
+      skip: (page - 1) * 10,
+      take: 10,
+    });
+
+    return accounts.map((account) =>
+      plainToInstance(LoginResponseDto, account, {
+        excludeExtraneousValues: true,
+      }),
+    );
   }
 
   async updateAccount(body: LoginResponseDto) {

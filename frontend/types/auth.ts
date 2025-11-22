@@ -21,6 +21,10 @@ export interface UserInfo {
   homeWarehouse: Warehouse; //ini adalah warehouse yang sedang di login-in
   isActive?: boolean;
   organizationName: Organization;
+  warehouseAccess?: Warehouse[];
+  driverLicense?: string;
+  driverPhone?: string;
+
   // Tambahkan field lain sesuai kebutuhan
 }
 

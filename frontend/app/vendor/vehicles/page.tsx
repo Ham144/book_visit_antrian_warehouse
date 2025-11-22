@@ -98,7 +98,8 @@ export default function VehiclesPage() {
 
   const getVehicleTypeName = (vehicleTypeId: string) => {
     return (
-      mockVehicleTypes.find((vt) => vt.id === vehicleTypeId)?.name || "Unknown"
+      mockVehicleTypes.find((vt) => vt.name === vehicleTypeId)?.name ||
+      "Unknown"
     );
   };
 
@@ -157,7 +158,10 @@ export default function VehiclesPage() {
                         placeholder="Contoh: B1234CD"
                         value={formData.licensePlate}
                         onChange={(e) =>
-                          setFormData({ ...formData, licensePlate: e.target.value })
+                          setFormData({
+                            ...formData,
+                            licensePlate: e.target.value,
+                          })
                         }
                         className="input input-bordered w-full uppercase"
                       />
@@ -180,7 +184,7 @@ export default function VehiclesPage() {
                         className="select select-bordered w-full"
                       >
                         {mockVehicleTypes.map((vt) => (
-                          <option key={vt.id} value={vt.id}>
+                          <option key={vt.name} value={vt.name}>
                             {vt.name} ({vt.description})
                           </option>
                         ))}
@@ -195,7 +199,10 @@ export default function VehiclesPage() {
                         placeholder="Contoh: IT, Cargo"
                         value={formData.description}
                         onChange={(e) =>
-                          setFormData({ ...formData, description: e.target.value })
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
                         }
                         className="input input-bordered w-full"
                       />
@@ -303,4 +310,3 @@ export default function VehiclesPage() {
     </div>
   );
 }
-

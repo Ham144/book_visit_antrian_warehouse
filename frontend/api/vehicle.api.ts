@@ -1,3 +1,4 @@
+import { FilterVehicle } from "@/app/admin/vehicles/page";
 import axiosInstance from "@/lib/axios";
 import type { IVehicle } from "@/types/vehicle";
 
@@ -20,8 +21,13 @@ export const VehicleApi = {
     return response.data;
   },
 
-  getVehicles: async (): Promise<IVehicle[]> => {
-    const response = await axiosInstance.get<IVehicle[]>("/api/vehicle");
+  getVehicles: async (filter: FilterVehicle): Promise<IVehicle[]> => {
+    const params = new URLSearchParams();
+    if (filter.searchKey) params.set("searchKey", filter.searchKey);
+    if (filter.page) params.set("page", filter.page.toString());
+    const response = await axiosInstance.get<IVehicle[]>("/api/vehicle", {
+      params,
+    });
     return response.data;
   },
 
@@ -34,4 +40,3 @@ export const VehicleApi = {
     await axiosInstance.delete(`/api/vehicle/${id}`);
   },
 };
-

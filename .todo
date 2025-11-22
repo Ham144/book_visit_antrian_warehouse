@@ -3,10 +3,12 @@ start 12/11/2025
 [x] add: authentication 
 [x] add: frontend mock design
 [x] add: system design
-[x] add: setup vehicles
-[x] add: all warehouse
-[x] add: my warehouse
-[] add: setup 
+[x] add: Menu vehicles management
+[x] add: Menu all-warehouse management
+[70%] add: members management
+[x] add: dock management
+[] add: Menu my-warehouse management
+
 
 belajar: 
 @Exclude()

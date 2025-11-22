@@ -2,7 +2,8 @@ export interface WarehouseCreateDto {
   name: string;
   location?: string;
   description?: string;
-  members?: string[];
+  warehouseAccess?: string[];
+  isActive?: boolean;
 }
 
 export interface WarehouseUpdateDto {
@@ -10,7 +11,8 @@ export interface WarehouseUpdateDto {
   name?: string;
   location?: string;
   description?: string;
-  members?: string[];
+  warehouseAccess?: string[];
+  isActive?: boolean;
 }
 
 export interface Warehouse {
@@ -18,8 +20,15 @@ export interface Warehouse {
   name: string;
   location?: string | null;
   description?: string | null;
-  members?: string[];
-  budgetsCount?: number;
+  isActive?: boolean;
+  budgets?: object[];
+  flowLogs?: object[];
+  members?: object[];
+  warehouseAccess?: string[];
+  docks?: object[];
+  bookings?: object[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface GetWarehouseFilter {

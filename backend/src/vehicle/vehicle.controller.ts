@@ -10,14 +10,15 @@ import {
 import { VehicleService } from './vehicle.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { Auth } from 'src/common/auth.decorator';
 
 @Controller('vehicle')
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
 
   @Post()
-  create(@Body() createVehicleDto: CreateVehicleDto) {
-    return this.vehicleService.create(createVehicleDto);
+  create(@Body() createVehicleDto: CreateVehicleDto, @Auth() userInfo: any) {
+    return this.vehicleService.create(createVehicleDto, userInfo);
   }
 
   @Get()

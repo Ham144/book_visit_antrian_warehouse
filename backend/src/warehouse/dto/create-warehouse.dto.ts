@@ -1,18 +1,27 @@
-import { IsArray, IsBoolean, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateWarehouseDto {
   @IsString()
   name: string;
+  @IsOptional()
   @IsString()
-  location: string;
+  location?: string;
 
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
+  @IsOptional()
   @IsBoolean()
-  isActive: boolean;
+  isActive?: boolean;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  members: string[];
+  members?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  warehouseAccess?: string[];
 }

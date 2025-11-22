@@ -14,7 +14,7 @@ export default function Navigation() {
   const [formData, setFormData] = useState({
     username: "yafizham",
     password: "Catur2025!",
-    organization: "Catur Sukses Internasional",
+    organization: "CATUR SUKSES INTERNASIONAL",
   });
 
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function Navigation() {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
                   Antrian Gudang
                 </h1>
-                <p className="text-xs text-gray-500 font-medium">
+                <p className="max-md:hidden text-xs text-gray-500 font-medium">
                   {userInfo?.description ? "Portal Operator" : "Portal Vendor"}
                 </p>
               </div>
@@ -113,10 +113,10 @@ export default function Navigation() {
                     document.getElementById("login_modal") as HTMLDialogElement
                   ).showModal()
                 }
-                className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2"
+                className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white p-3 btn md:p-2"
               >
                 <LogIn />
-                <span>Login</span>
+                <span className="max-md:hidden">Login</span>
               </button>
             )}
 
@@ -133,7 +133,7 @@ export default function Navigation() {
                       {userInfo?.username}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {userInfo?.description === "admin" ? "Admin" : "Vendor"}
+                      {userInfo?.description ? "operator" : "Vendor"}
                     </p>
                   </div>
                   <div className="relative">

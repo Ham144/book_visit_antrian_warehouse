@@ -1,10 +1,10 @@
 import {
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { User, Warehouse } from '@prisma/client';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
 import { responseWarehouseDto } from './dto/response-warehouse.dto';
@@ -13,21 +13,31 @@ import { plainToInstance } from 'class-transformer';
 @Injectable()
 export class WarehouseService {
   constructor(private readonly prismaService: PrismaService) {}
+  async createWarehouse(body: CreateWarehouseDto, userInfo: any) {
+    const { warehouseAccess = [], members: _members, ...data } = body;
 
-  async createWarehouse(body: CreateWarehouseDto) {
-    const warehouse = await this.prismaService.warehouse.create({
-      data: {
-        ...body,
-        members: {
-          connect: body.members.map((username) => ({ username })),
+    try {
+      await this.prismaService.warehouse.upsert({
+        where: { name: data.name },
+        update: {
+          // kalau mau update sedikit, taruh di sini
+          userWarehouseAccesses: {
+            connect: warehouseAccess.map((username) => ({ username })),
+          },
         },
-      },
-      include: {
-        members: true,
-        docks: true,
-      },
-    });
-    return plainToInstance(responseWarehouseDto, warehouse);
+        create: {
+          ...data,
+          userWarehouseAccesses: {
+            connect: warehouseAccess.map((username) => ({ username })),
+          },
+          organizationName: userInfo?.organizationName,
+        },
+      });
+
+      return HttpStatus.CREATED;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
   async updateWarehouse(id: string, body: UpdateWarehouseDto) {
@@ -38,61 +48,69 @@ export class WarehouseService {
       throw new NotFoundException(`Warehouse ${id} tidak ditemukan`);
     }
 
-    const warehouse = await this.prismaService.warehouse.update({
-      where: {
-        id,
-      },
-      data: {
-        ...body,
-        members: {
-          connect: body.members.map((username) => ({ username })),
-        },
-      },
-      include: {
-        members: true,
-      },
-    });
+    const { warehouseAccess = [], members: _members, ...data } = body;
 
-    return plainToInstance(responseWarehouseDto, warehouse);
+    return this.prismaService.$transaction(async (tx) => {
+      const warehouse = await tx.warehouse.update({
+        where: { id },
+        data,
+        include: {
+          members: { select: { username: true } },
+          docks: true,
+        },
+      });
+
+      const warehouseWithAccess = await tx.warehouse.findUnique({
+        where: { id },
+        include: {
+          members: { select: { username: true } },
+          docks: true,
+          userWarehouseAccesses: { select: { username: true } },
+        },
+      });
+
+      return plainToInstance(responseWarehouseDto, {
+        ...warehouseWithAccess,
+        warehouseAccess:
+          warehouseWithAccess?.userWarehouseAccesses?.map(
+            (access) => access.username,
+          ) ?? [],
+      });
+    });
   }
 
   async getWarehouses(userInfo: any, searchKey?: string, page: number = 1) {
-    let where: any = {
-      organization: {
-        name: userInfo.organizationName,
-      },
+    const where: any = {
+      organizationName: userInfo.organizationName,
     };
 
     if (searchKey) {
-      where = {
-        AND: [
-          {
-            organization: {
-              name: userInfo.organizationName,
-            },
-          },
-          {
-            OR: [
-              { name: { contains: searchKey } },
-              { description: { contains: searchKey } },
-            ],
-          },
-        ],
+      where.name = {
+        contains: searchKey,
+        mode: 'insensitive', // case-insensitive
       };
     }
 
     const warehouses = await this.prismaService.warehouse.findMany({
       where,
       include: {
-        members: true,
-        docks: true,
+        members: { select: { username: true } },
+        docks: { select: { name: true } },
+        userWarehouseAccesses: { select: { username: true } },
       },
       orderBy: { name: 'asc' },
       take: 10,
-      skip: (page - 1) * 10, // sekarang page = 1 kalau undefined
+      skip: (page - 1) * 10,
     });
 
-    return warehouses.map((w) => plainToInstance(responseWarehouseDto, w));
+    return warehouses.map((w) =>
+      plainToInstance(responseWarehouseDto, {
+        ...w,
+        warehouseAccess: w.userWarehouseAccesses?.map(
+          (access) => access.username,
+        ),
+      }),
+    );
   }
 
   async deleteWarehouse(id: string) {
