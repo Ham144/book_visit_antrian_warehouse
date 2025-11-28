@@ -3,7 +3,7 @@ import { AuthApi } from "@/api/auth";
 import UserEditModalForm from "@/components/admin/UserEditModalForm";
 import { UserInfo } from "@/types/auth";
 import { UserApp } from "@/types/user.type";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   Edit,
@@ -39,6 +39,7 @@ const MemberManagementPage = () => {
     page: 1,
   });
 
+  const qc = useQueryClient();
   const { data: accounts, isLoading } = useQuery({
     queryKey: ["member-management", filter],
     queryFn: () =>
@@ -76,9 +77,6 @@ const MemberManagementPage = () => {
       isActive: user?.isActive || false,
     });
     (document.getElementById("UserEditModalForm") as any)?.showModal();
-  };
-  const handleDelete = (username: string) => {
-    toast("Sedang dikembangkan");
   };
 
   return (
@@ -186,7 +184,7 @@ const MemberManagementPage = () => {
                       <tbody>
                         {accounts.map((account: UserInfo, index) => (
                           <tr
-                            key={account.id}
+                            key={index}
                             className={`hover:bg-gray-50 transition-colors ${
                               index % 2 === 0 ? "bg-gray-25" : "bg-white"
                             }`}
@@ -261,13 +259,6 @@ const MemberManagementPage = () => {
                                   title="Edit user"
                                 >
                                   <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(account.username)}
-                                  className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
-                                  title="Hapus warehouse"
-                                >
-                                  <Trash2 size={16} />
                                 </button>
                               </div>
                             </td>

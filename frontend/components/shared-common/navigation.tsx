@@ -1,20 +1,47 @@
 "use client";
 
-import { LogIn, LogOut, Settings, Truck, User2 } from "lucide-react";
+import {
+  ChevronDown,
+  LogIn,
+  LogOut,
+  Settings,
+  Truck,
+  User2,
+  Building,
+  Building2,
+  Check,
+  WarehouseIcon,
+  Search,
+} from "lucide-react";
 import { useUserInfo } from "../UserContext";
-import { useState } from "react";
-import { redirect, useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
 import { toast, Toaster } from "sonner";
+import { OrganizationApi } from "@/api/organization.api";
+import { WarehouseApi } from "@/api/warehouse.api";
+import { Organization } from "@/types/organization";
+import { Warehouse } from "@/types/warehouse";
 
 export default function Navigation() {
   const { userInfo, setUserInfo } = useUserInfo();
+  const searchBar = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
     username: "yafizham",
     password: "Catur2025!",
     organization: "CATUR SUKSES INTERNASIONAL",
+  });
+
+  const { data: warehouseAccess } = useQuery({
+    queryKey: ["my-access-warehouses"],
+    queryFn: WarehouseApi.getMyAccessWarehouses,
+  });
+
+  const { data: myOrganizations } = useQuery({
+    queryKey: ["my-organizations"],
+    queryFn: OrganizationApi.getMyOrganizations,
   });
 
   const router = useRouter();
@@ -52,6 +79,45 @@ export default function Navigation() {
     },
   });
 
+  const { mutateAsync: handleSwitchWarehouse } = useMutation({
+    mutationKey: ["userInfo"],
+    mutationFn: async (id: string) =>
+      await WarehouseApi.switchHomeWarehouse(id),
+    onSuccess: (res) => {
+      setUserInfo(res);
+    },
+    onError: (re: any) => {
+      toast.error(re?.response.data.message);
+    },
+  });
+
+  const { mutateAsync: handleSwitchOrganization } = useMutation({
+    mutationKey: ["userInfo"],
+    mutationFn: async (id: string) =>
+      await OrganizationApi.switchOrganization(id),
+    onSuccess: (res) => {
+      setUserInfo(res);
+    },
+    onError: (re: any) => {
+      toast.error(re?.response.data.message);
+    },
+  });
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key.toLowerCase() === "k") {
+        e.preventDefault(); // cegah Chrome / Edge membuka search bar
+        e.stopPropagation();
+        searchBar.current?.focus();
+      }
+    }
+
+    // pakai capture: true supaya override behaviour browser
+    document.addEventListener("keydown", onKeyDown, { capture: true });
+    return () =>
+      document.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, []);
+
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50 ">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -71,37 +137,31 @@ export default function Navigation() {
                 </p>
               </div>
             </div>
-
-            {/* Navigation Links */}
-            {userInfo && userInfo.description !== "IT" && (
-              <div className="hidden md:flex items-center space-x-1 ml-8">
-                <a
-                  href="/vendor/dashboard"
-                  className="px-4 py-2 text-gray-700 hover:text-teal-600 font-medium rounded-lg transition-all duration-200 hover:bg-teal-50"
-                >
-                  Dashboard
-                </a>
-                <a
-                  href="/vendor/booking"
-                  className="px-4 py-2 text-gray-700 hover:text-teal-600 font-medium rounded-lg transition-all duration-200 hover:bg-teal-50"
-                >
-                  Pemesanan
-                </a>
-                <a
-                  href="/vendor/history"
-                  className="px-4 py-2 text-gray-700 hover:text-teal-600 font-medium rounded-lg transition-all duration-200 hover:bg-teal-50"
-                >
-                  History
-                </a>
-                <a
-                  href="/vendor/vehicles"
-                  className="px-4 py-2 text-gray-700 hover:text-teal-600 font-medium rounded-lg transition-all duration-200 hover:bg-teal-50"
-                >
-                  Kendaraan
-                </a>
-              </div>
-            )}
           </div>
+
+          {userInfo && (
+            <div className="relative group max-md:hidden">
+              <input
+                type="text"
+                ref={searchBar}
+                placeholder="Cari Menu..."
+                className="xl:w-[500px] lg:w-[300px] pl-7 py-2 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
+              />
+
+              {/* Search Icon */}
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
+              {/* Keyboard Shortcut Hint */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded text-gray-500">
+                  Ctrl
+                </kbd>
+                <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded text-gray-500">
+                  K
+                </kbd>
+              </div>
+            </div>
+          )}
 
           {/* Right Section - Login/User Menu */}
           <div className="flex items-center space-x-4">
@@ -122,71 +182,214 @@ export default function Navigation() {
 
             {/* User Menu (when logged in) */}
             {userInfo && (
-              <div
-                onClick={() => {}}
-                tabIndex={0}
-                className="dropdown dropdown-end"
-              >
-                <div className="flex items-center space-x-3 cursor-pointer group">
-                  <div className="text-right hidden sm:block">
-                    <p className="font-semibold text-gray-800 text-sm">
-                      {userInfo?.username}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {userInfo?.description ? "operator" : "Vendor"}
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-200">
-                      {userInfo?.description ? "A" : "V"}
+              <div className="flex items-center gap-x-4">
+                {/* Organization & Warehouse Switcher */}
+                <div className="flex items-center gap-x-3">
+                  {/* Organization Switcher */}
+                  <div className="dropdown dropdown-end">
+                    <div
+                      tabIndex={0}
+                      className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                    >
+                      <Building2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {userInfo?.organizationName as any}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          Organization
+                        </p>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
+
+                    <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                      {myOrganizations?.length > 0 &&
+                        myOrganizations?.map((org: Organization) => (
+                          <li key={org.id}>
+                            <button
+                              onClick={() => org.id}
+                              className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+                                (org.name as string) ===
+                                (userInfo?.organizationName as any)
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                  : "hover:bg-gray-50 text-gray-700"
+                              }`}
+                            >
+                              <Building2
+                                className={`w-4 h-4 flex-shrink-0 ${
+                                  (org.name as any) ===
+                                  (userInfo?.organizationName as any)
+                                    ? "text-blue-500"
+                                    : "text-gray-400"
+                                }`}
+                              />
+                              <div className="flex-1 text-left">
+                                <p className="font-medium text-sm">
+                                  {org.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Organization
+                                </p>
+                              </div>
+                              {org.name ===
+                                (userInfo?.organizationName as any) && (
+                                <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+
+                  {/* Warehouse Switcher */}
+                  <div className="dropdown dropdown-end">
+                    <div
+                      tabIndex={0}
+                      className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                    >
+                      <WarehouseIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {userInfo?.homeWarehouse.name || "Main Warehouse"}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          Warehouse
+                        </p>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
+                    </div>
+
+                    <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                      {warehouseAccess?.length > 0 &&
+                        warehouseAccess?.map((warehouse: Warehouse) => (
+                          <li key={warehouse.id}>
+                            <button
+                              onClick={() =>
+                                handleSwitchWarehouse(warehouse.id)
+                              }
+                              className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+                                warehouse.id === userInfo?.homeWarehouse.id
+                                  ? "bg-green-50 text-green-700 border border-green-200"
+                                  : "hover:bg-gray-50 text-gray-700"
+                              }`}
+                            >
+                              <WarehouseIcon
+                                className={`w-4 h-4 flex-shrink-0 ${
+                                  warehouse.id === userInfo?.homeWarehouse.id
+                                    ? "text-green-500"
+                                    : "text-gray-400"
+                                }`}
+                              />
+                              <div className="flex-1 text-left">
+                                <p className="font-medium text-sm">
+                                  {warehouse.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {warehouse.location}
+                                </p>
+                              </div>
+                              {warehouse.id === userInfo?.homeWarehouse.id && (
+                                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
                   </div>
                 </div>
 
-                <ul className="dropdown-content z-[1] menu p-3 shadow-2xl bg-white rounded-2xl w-64 mt-2 border border-gray-100">
-                  <li className="border-b border-gray-100">
-                    <div className="px-4 py-3">
-                      <p className="font-semibold text-gray-800">
-                        {userInfo?.displayName || userInfo?.username}
+                {/* User Profile Dropdown */}
+                <div className="dropdown dropdown-end">
+                  <div
+                    tabIndex={0}
+                    className="flex items-center space-x-3 cursor-pointer group p-2 rounded-xl hover:bg-white/80 backdrop-blur-sm transition-all duration-300"
+                  >
+                    <div className="text-right hidden sm:block">
+                      <p className="font-semibold text-gray-800 text-sm">
+                        {userInfo?.username}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {userInfo?.description}
+                      <p className="text-xs text-gray-500 capitalize">
+                        {userInfo?.description || "Vendor"}
                       </p>
                     </div>
-                  </li>
-                  <button
-                    onClick={() =>
-                      (
-                        document.getElementById(
-                          "profile_modal"
-                        ) as HTMLDialogElement
-                      ).showModal()
-                    }
-                    className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-all duration-200"
-                  >
-                    <User2 />
-                    <span>
-                      Profil{" "}
-                      {userInfo?.description === "admin" ? "Admin" : "Vendor"}
-                    </span>
-                  </button>
-                  <li>
-                    <a className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-600 rounded-lg transition-all duration-200">
-                      <Settings />
-                      <span>Pengaturan</span>
-                    </a>
-                  </li>
-                  <li className="border-t border-gray-100 mt-2">
-                    <a
-                      onClick={() => handleLogout()}
-                      className="flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                    >
-                      <LogOut />
-                      <span>Keluar</span>
-                    </a>
-                  </li>
-                </ul>
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                        {userInfo?.displayName?.charAt(0) ||
+                          userInfo?.username?.charAt(0) ||
+                          "U"}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+                    </div>
+                  </div>
+
+                  <ul className="dropdown-content z-[1] menu p-3 shadow-2xl bg-white rounded-2xl w-72 mt-2 border border-gray-100">
+                    {/* User Info Header */}
+                    <li className="border-b border-gray-100">
+                      <div className="px-4 py-3">
+                        <div className="flex items-center gap-x-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {userInfo?.displayName?.charAt(0) ||
+                              userInfo?.username?.charAt(0) ||
+                              "U"}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800">
+                              {userInfo?.displayName || userInfo?.username}
+                            </p>
+                            <p className="text-sm text-gray-500 capitalize">
+                              {userInfo?.description || "Vendor"}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {userInfo?.organizationName as any}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+
+                    {/* Profile Button */}
+                    <li>
+                      <button
+                        onClick={() =>
+                          (
+                            document.getElementById(
+                              "profile_modal"
+                            ) as HTMLDialogElement
+                          ).showModal()
+                        }
+                        className="flex items-center gap-x-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 group"
+                      >
+                        <User2 className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+                        <span>
+                          Profile{" "}
+                          {userInfo?.description === "admin"
+                            ? "Admin"
+                            : "Vendor"}
+                        </span>
+                      </button>
+                    </li>
+
+                    {/* Settings */}
+                    <li>
+                      <button className="flex items-center gap-x-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 group">
+                        <Settings className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+                        <span>Pengaturan</span>
+                      </button>
+                    </li>
+
+                    {/* Logout */}
+                    <li className="border-t border-gray-100 mt-2">
+                      <button
+                        onClick={() => handleLogout()}
+                        className="flex items-center gap-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Keluar</span>
+                      </button>
+                    </li>
+                  </ul>
+                </div>
               </div>
             )}
           </div>

@@ -17,18 +17,10 @@ export class DockService {
 
   async create(createDockDto: CreateDockDto, userInfo: LoginResponseDto) {
     const {
-      warehouseId,
-      photos = [],
-      name,
-      dockType,
-      supportedVehicleTypes = [],
-      maxLength,
-      maxWidth,
-      maxHeight,
       availableFrom,
       availableUntil,
-      isActive = true,
-      priority,
+      photos = [],
+      ...rest
     } = createDockDto;
 
     // Set default times if not provided (00:00 to 23:59:59)
@@ -50,19 +42,20 @@ export class DockService {
     try {
       const dock = await this.prismaService.dock.create({
         data: {
-          name,
-          warehouseId,
+          ...rest,
           photos: photos || [],
-          dockType,
-          supportedVehicleTypes: supportedVehicleTypes || [],
-          maxLength,
-          maxWidth,
-          maxHeight,
           availableFrom: defaultFrom,
           availableUntil: defaultUntil,
-          isActive: isActive ?? true,
-          priority,
           organizationName: userInfo.organizationName,
+        },
+        include: {
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+            },
+          },
         },
       });
 
@@ -91,6 +84,15 @@ export class DockService {
       where,
       take: 20,
       skip: (safePage - 1) * 20,
+      include: {
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+          },
+        },
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -101,29 +103,133 @@ export class DockService {
     });
   }
 
-  findByWarehouseId(id: string) {
-    return `This action returns all dock`;
+  async findByWarehouseId(id: string) {
+    const docks = await this.prismaService.dock.findMany({
+      where: {
+        warehouseId: id,
+      },
+      include: {
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return plainToInstance(ResponseDockDto, docks, {
+      excludeExtraneousValues: true,
+    });
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} dock`;
-  }
-
-  async update(id: string, updateDockDto: UpdateDockDto) {
-    const { warehouseId, ...rest } = updateDockDto;
-
-    const updateData: any = { ...rest };
-    if (warehouseId) {
-      updateData.warehouseId = warehouseId;
-    }
-
-    await this.prismaService.dock.update({
+  async findOne(id: string) {
+    const dock = await this.prismaService.dock.findUnique({
       where: {
         id: id,
       },
-      data: updateData,
+      include: {
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+          },
+        },
+        bookings: {
+          include: {
+            Vehicle: {
+              select: {
+                plateNumber: true,
+                brand: true,
+                jenisKendaraan: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        busyTimes: {
+          orderBy: {
+            from: 'asc',
+          },
+        },
+      },
     });
-    return HttpStatus.ACCEPTED;
+
+    if (!dock) {
+      throw new NotFoundException(`Dock dengan id ${id} tidak ditemukan`);
+    }
+
+    return plainToInstance(ResponseDockDto, dock, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  async update(id: string, updateDockDto: UpdateDockDto) {
+    const existingDock = await this.prismaService.dock.findUnique({
+      where: { id },
+    });
+
+    if (!existingDock) {
+      throw new NotFoundException(`Dock dengan id ${id} tidak ditemukan`);
+    }
+
+    const {
+      id: _id,
+      warehouseId,
+      photos,
+      availableFrom,
+      availableUntil,
+      ...rest
+    } = updateDockDto;
+
+    const updateData: any = { ...rest };
+
+    if (warehouseId !== undefined) {
+      updateData.warehouseId = warehouseId;
+    }
+
+    if (photos !== undefined) {
+      updateData.photos = photos;
+    }
+
+    if (availableFrom !== undefined) {
+      updateData.availableFrom = availableFrom;
+    }
+
+    if (availableUntil !== undefined) {
+      updateData.availableUntil = availableUntil;
+    }
+
+    try {
+      const updatedDock = await this.prismaService.dock.update({
+        where: {
+          id: id,
+        },
+        data: updateData,
+        include: {
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+            },
+          },
+        },
+      });
+
+      return plainToInstance(ResponseDockDto, updatedDock, {
+        excludeExtraneousValues: true,
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
   async remove(id: string) {

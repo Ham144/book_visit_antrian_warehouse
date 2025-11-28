@@ -1,14 +1,13 @@
 start 12/11/2025
 [x] add: setup redis
-[x] add: authentication 
-[x] add: frontend mock design
+[x] add: authentication
+[x] add: frontend mock design full
 [x] add: system design
 [x] add: Menu vehicles management
 [x] add: Menu all-warehouse management
 [70%] add: members management
 [x] add: dock management
 [] add: Menu my-warehouse management
-
 
 belajar: 
 @Exclude()

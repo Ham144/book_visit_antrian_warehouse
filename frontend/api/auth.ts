@@ -4,6 +4,7 @@ import type {
   LoginResponseDto,
   UserInfo,
 } from "@/types/auth";
+import { BaseProps } from "@/types/shared.type";
 import { UserApp } from "@/types/user.type";
 
 export const AuthApi = {
@@ -32,7 +33,7 @@ export const AuthApi = {
     return response.data;
   },
 
-  getAllAccount: async (page?: number, searchKey?: string) => {
+  getAllAccount: async ({ page, searchKey }: BaseProps) => {
     let params = new URLSearchParams();
     params.set("page", page.toString());
     params.set("searchKey", searchKey);

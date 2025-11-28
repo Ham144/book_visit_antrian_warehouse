@@ -7,11 +7,18 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
 import { Auth } from 'src/common/auth.decorator';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
+import { LoginResponseDto } from 'src/user/dto/login.dto';
+import {
+  accessTokenOption,
+  refreshTokenOption,
+} from 'src/user/tokenCookieOptions';
 
 @Controller('/warehouse')
 export class WarehouseController {
@@ -31,9 +38,37 @@ export class WarehouseController {
     );
   }
 
+  @Get('my-access-warehouses')
+  getMyAccessWarehouses(@Auth() userInfo: any) {
+    return this.warehouseService.getAccessWarehouses(userInfo);
+  }
+
   @Patch(':id')
   updateWarehouse(@Param('id') id: string, @Body() body: UpdateWarehouseDto) {
     return this.warehouseService.updateWarehouse(id, body);
+  }
+
+  @Post('switch-homeWarehouse')
+  async switchHomeWarehouse(
+    @Body() id: string,
+    @Auth() userInfo: any,
+    @Req() req: Request,
+    @Res() res: any,
+  ) {
+    const response: LoginResponseDto =
+      await this.warehouseService.switchHomeWarehouse(id, userInfo, req);
+
+    const hasTokens = response.refresh_token && response.access_token;
+
+    if (hasTokens) {
+      res.cookie('refresh_token', response.refresh_token, refreshTokenOption);
+      res.cookie('access_token', response.access_token, accessTokenOption);
+    }
+
+    // Hapus token dari response body
+    const { refresh_token, access_token, ...responseWithoutTokens } = response;
+
+    return responseWithoutTokens;
   }
 
   @Delete(':id')

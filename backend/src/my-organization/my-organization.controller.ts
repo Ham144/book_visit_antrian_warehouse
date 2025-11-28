@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { MyOrganizationService } from './my-organization.service';
 import { CreateMyOrganizationDto } from './dto/create-my-organization.dto';
 import { UpdateMyOrganizationDto } from './dto/update-my-organization.dto';
+import { Auth } from 'src/common/auth.decorator';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
-@Controller('my-organization')
+@Controller('organization')
 export class MyOrganizationController {
   constructor(private readonly myOrganizationService: MyOrganizationService) {}
 
@@ -12,23 +22,31 @@ export class MyOrganizationController {
     return this.myOrganizationService.create(createMyOrganizationDto);
   }
 
-  @Get()
-  findAll() {
-    return this.myOrganizationService.findAll();
+  @Post('switch')
+  switchOrganization(@Body() id: string) {
+    return;
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.myOrganizationService.findOne(+id);
+  @Get('my-organizations')
+  getMyOrganization(@Auth() userInfo: TokenPayload) {
+    return this.myOrganizationService.getMyOrganizations(userInfo);
+  }
+
+  @Get(':name')
+  findOne(@Param('name') name: string) {
+    return this.myOrganizationService.findOne(name);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMyOrganizationDto: UpdateMyOrganizationDto) {
-    return this.myOrganizationService.update(+id, updateMyOrganizationDto);
+  update(
+    @Param('name') name: string,
+    @Body() updateMyOrganizationDto: UpdateMyOrganizationDto,
+  ) {
+    return this.myOrganizationService.update(name, updateMyOrganizationDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.myOrganizationService.remove(+id);
+  @Delete(':name')
+  remove(@Param('name') name: string, @Auth() userInfo: TokenPayload) {
+    return this.myOrganizationService.remove(name, userInfo);
   }
 }

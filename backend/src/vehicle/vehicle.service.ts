@@ -33,7 +33,6 @@ export class VehicleService {
           organizationName: userInfo.organizationName,
         },
       });
-
       return HttpStatus.CREATED;
     } catch (error) {
       throw new InternalServerErrorException(error.message);

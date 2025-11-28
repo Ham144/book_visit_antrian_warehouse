@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpStatus,
   Injectable,
   InternalServerErrorException,
@@ -9,10 +10,19 @@ import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
 import { responseWarehouseDto } from './dto/response-warehouse.dto';
 import { plainToInstance } from 'class-transformer';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
+import { AuthService } from 'src/user/auth.service';
+import { RedisService } from 'src/redis/redis.service';
+import { randomUUID } from 'crypto';
+import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 @Injectable()
 export class WarehouseService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly authService: AuthService,
+    private readonly redis: RedisService,
+  ) {}
   async createWarehouse(body: CreateWarehouseDto, userInfo: any) {
     const { warehouseAccess = [], members: _members, ...data } = body;
 
@@ -48,33 +58,57 @@ export class WarehouseService {
       throw new NotFoundException(`Warehouse ${id} tidak ditemukan`);
     }
 
-    const { warehouseAccess = [], members: _members, ...data } = body;
+    const { warehouseAccess, members: _members, name, ...data } = body;
 
     return this.prismaService.$transaction(async (tx) => {
-      const warehouse = await tx.warehouse.update({
+      const updateData: any = { ...data };
+
+      if (warehouseAccess !== undefined) {
+        updateData.userWarehouseAccesses = {
+          set: warehouseAccess.map((username) => ({ username })),
+        };
+      }
+
+      await tx.warehouse.update({
         where: { id },
-        data,
-        include: {
-          members: { select: { username: true } },
-          docks: true,
-        },
+        data: updateData,
       });
 
       const warehouseWithAccess = await tx.warehouse.findUnique({
         where: { id },
         include: {
-          members: { select: { username: true } },
-          docks: true,
-          userWarehouseAccesses: { select: { username: true } },
+          members: { select: { username: true, displayName: true } },
+          docks: { select: { name: true, id: true } },
+          userWarehouseAccesses: {
+            select: { username: true, displayName: true },
+          },
+          bookings: {
+            include: {
+              Vehicle: {
+                select: {
+                  plateNumber: true,
+                  brand: true,
+                  jenisKendaraan: true,
+                },
+              },
+              Dock: { select: { name: true, id: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+          },
         },
       });
 
-      return plainToInstance(responseWarehouseDto, {
+      const warehouseData = {
         ...warehouseWithAccess,
         warehouseAccess:
           warehouseWithAccess?.userWarehouseAccesses?.map(
-            (access) => access.username,
+            (access: any) => access.username,
           ) ?? [],
+      };
+
+      return plainToInstance(responseWarehouseDto, warehouseData, {
+        excludeExtraneousValues: true,
+        groups: ['detail'],
       });
     });
   }
@@ -111,6 +145,127 @@ export class WarehouseService {
         ),
       }),
     );
+  }
+
+  async getAccessWarehouses(userInfo: TokenPayload) {
+    const warehouses = await this.prismaService.warehouse.findMany({
+      where: {
+        userWarehouseAccesses: {
+          some: {
+            username: userInfo.username,
+          },
+        },
+      },
+    });
+    return warehouses.map((w) => plainToInstance(responseWarehouseDto, w));
+  }
+
+  async getWarehouseDetail(id: string) {
+    const warehouse = await this.prismaService.warehouse.findUnique({
+      where: { id },
+      include: {
+        members: { select: { username: true, displayName: true } },
+        docks: { select: { name: true, id: true } },
+        userWarehouseAccesses: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+        bookings: {
+          include: {
+            Vehicle: {
+              select: { plateNumber: true, brand: true, jenisKendaraan: true },
+            },
+            Dock: { select: { name: true, id: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    const warehouseData = {
+      ...warehouse,
+      warehouseAccess:
+        (warehouse as any)?.userWarehouseAccesses?.map(
+          (access: any) => access.username,
+        ) ?? [],
+    };
+
+    return plainToInstance(responseWarehouseDto, warehouseData, {
+      excludeExtraneousValues: true,
+      groups: ['detail'],
+    });
+  }
+
+  async switchHomeWarehouse(id: string, userInfo: LoginResponseDto, req: any) {
+    //coba periksa apakah benar anggota
+    const isMember = await this.prismaService.warehouse.findFirst({
+      where: {
+        userWarehouseAccesses: {
+          some: {
+            username: userInfo.username,
+          },
+        },
+      },
+    });
+
+    if (!isMember) {
+      throw new ForbiddenException('Anda bukan anggota warehouse ini');
+    }
+
+    //edit user db
+    const editedUser = await this.prismaService.user.update({
+      where: {
+        username: userInfo.username,
+      },
+      data: {
+        homeWarehouseId: isMember.id,
+      },
+      include: {
+        homeWarehouse: true,
+        organizations: { select: { name: true } },
+      },
+    });
+
+    const payload: TokenPayload = {
+      description: userInfo.description,
+      homeWarehouseId: isMember.id,
+      jti: randomUUID(),
+      organizationName: isMember.organizationName,
+      username: userInfo.username,
+    };
+
+    // Generate JWT tokens using reusable method
+    const access_token = this.authService.generateToken(payload, 'access');
+    const refresh_token = this.authService.generateToken(payload, 'refresh');
+
+    if (!access_token || !refresh_token) {
+      throw new Error('Failed to generate authentication tokens');
+    }
+
+    //simpan refresh_token ke redis
+    await this.redis.set(
+      payload.jti,
+      JSON.stringify({
+        username: payload.username,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      }),
+      604800, // 1 minggu
+    );
+    const user: LoginResponseDto = {
+      access_token,
+      refresh_token,
+      organizationName: userInfo.organizationName,
+      description: userInfo.description,
+      username: userInfo.username,
+      displayName: editedUser.displayName,
+      homeWarehouse: editedUser.homeWarehouse,
+    };
+    return plainToInstance(LoginResponseDto, user, {
+      excludeExtraneousValues: true,
+      groups: ['login'],
+    });
   }
 
   async deleteWarehouse(id: string) {

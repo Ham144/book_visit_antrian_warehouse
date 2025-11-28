@@ -9,20 +9,19 @@ import {
   Res,
   Query,
   ParseIntPipe,
-  Param,
 } from '@nestjs/common';
-import { UserService } from './user.service';
 import { Response, Request } from 'express';
 import { refreshTokenOption, accessTokenOption } from './tokenCookieOptions';
 import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
-import { UserAppService } from './userApp.service';
 import { CreateAppUserDto } from './dto/create-user.dto';
+import { UserService } from './user.service';
+import { AuthService } from './auth.service';
 
 @Controller('/user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly userAppService: UserAppService,
+    private readonly authService: AuthService,
   ) {}
 
   @Post('/login/ldap')
@@ -31,7 +30,7 @@ export class UserController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
-    const response: LoginResponseDto = await this.userService.loginUser(
+    const response: LoginResponseDto = await this.authService.loginUser(
       body,
       req,
     );
@@ -60,7 +59,7 @@ export class UserController {
       return { message: 'No refresh token' };
     }
     const { access_token, refresh_token: new_refresh_token } =
-      await this.userService.refreshToken(refreshToken);
+      await this.authService.refreshToken(refreshToken);
 
     res.cookie('refresh_token', new_refresh_token, refreshTokenOption);
     res.cookie('access_token', access_token, accessTokenOption);
@@ -72,7 +71,7 @@ export class UserController {
 
   @Get('/get-user-info')
   async getUserInfo(@Req() req: Request) {
-    return this.userService.getUserInfo(req);
+    return this.authService.getUserInfo(req);
   }
 
   @Get('/list')
@@ -93,7 +92,7 @@ export class UserController {
 
   @Post('/create')
   async createAppUser(@Body() body: CreateAppUserDto) {
-    return this.userAppService.createAppUser(body);
+    return this.userService.createAppUser(body);
   }
 
   @Patch('/update')
@@ -104,7 +103,7 @@ export class UserController {
   @Delete('/logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const access_token = req?.cookies['access_token'];
-    await this.userService.logout(access_token, req);
+    await this.authService.logout(access_token, req);
     res.clearCookie('access_token', { path: '/' });
     res.clearCookie('refresh_token', { path: '/' });
     return { message: 'Logout success' };

@@ -8,14 +8,17 @@ import type {
 
 export const WarehouseApi = {
   createWarehouse: async (data: WarehouseCreateDto): Promise<Warehouse> => {
-    const response = await axiosInstance.post<Warehouse>("/api/warehouse", data);
+    const response = await axiosInstance.post<Warehouse>(
+      "/api/warehouse",
+      data
+    );
     return response.data;
   },
 
   updateWarehouse: async (data: WarehouseUpdateDto): Promise<Warehouse> => {
     const response = await axiosInstance.patch<Warehouse>(
       `/api/warehouse/${data.id}`,
-      data,
+      data
     );
     return response.data;
   },
@@ -38,7 +41,21 @@ export const WarehouseApi = {
     const response = await axiosInstance.get<Warehouse>(`/api/warehouse/${id}`);
     return response.data;
   },
-
+  getMyAccessWarehouses: async () => {
+    const response = await axiosInstance.get(
+      "/api/warehouse/my-access-warehouses"
+    );
+    return response.data;
+  },
+  switchHomeWarehouse: async (id: string) => {
+    const res = await axiosInstance.post(
+      `/api/warehouse/switch-homeWarehouse`,
+      {
+        id,
+      }
+    );
+    return res.data;
+  },
   deleteWarehouse: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/api/warehouse/${id}`);
   },

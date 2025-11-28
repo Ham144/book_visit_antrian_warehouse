@@ -1,36 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit, Trash2, MapPin, Ruler, Star } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  MapPin,
+  Ruler,
+  Star,
+  Warehouse,
+} from "lucide-react";
 import { toast } from "sonner";
 import DockFormModal from "@/components/admin/DockFormModal";
 import { DockFilter, IDock } from "@/types/dock.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DockApi } from "@/api/dock.api";
-
-const mockDocks = [
-  {
-    id: "d-1",
-    name: "Dock A",
-    type: "dock",
-    maxVehicle: "large",
-    status: "active",
-  },
-  {
-    id: "d-2",
-    name: "Dock B",
-    type: "dock",
-    maxVehicle: "medium",
-    status: "active",
-  },
-  {
-    id: "d-3",
-    name: "Gate 1",
-    type: "gate",
-    maxVehicle: "large",
-    status: "active",
-  },
-];
+import { useUserInfo } from "@/components/UserContext";
 
 export default function DocksPage() {
   const queryClient = useQueryClient();
@@ -38,6 +23,7 @@ export default function DocksPage() {
     page: 1,
     warehouseId: null,
   });
+  const { userInfo } = useUserInfo();
   const [formData, setFormData] = useState<IDock>();
 
   const formatDockData = (data: IDock): IDock => {
@@ -62,8 +48,8 @@ export default function DocksPage() {
   const { mutateAsync: handleCreate } = useMutation({
     mutationKey: ["docks"],
     mutationFn: async () => {
-      const formattedData = formatDockData(formData!);
-      return DockApi.registerDock(formattedData);
+      const { warehouse, ...createData } = formatDockData(formData!);
+      return await DockApi.registerDock(createData);
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Gagal membuat dock baru");
@@ -80,7 +66,8 @@ export default function DocksPage() {
     mutationKey: ["docks"],
     mutationFn: async () => {
       const formattedData = formatDockData(formData!);
-      return DockApi.updateDock(formData!.id!, formattedData);
+      const { id, warehouse, ...updateData } = formattedData;
+      return DockApi.updateDock(id!, updateData);
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Gagal memperbarui dock");
@@ -121,7 +108,14 @@ export default function DocksPage() {
                 <h1 className="text-3xl font-bold">Dock Management</h1>
                 <button
                   onClick={() => {
-                    setFormData(undefined);
+                    setFormData({
+                      warehouseId: userInfo?.homeWarehouse?.id,
+                      warehouse: userInfo?.homeWarehouse,
+                      name: "",
+                      photos: [],
+                      supportedVehicleTypes: [],
+                      isActive: true,
+                    });
                     (
                       document.getElementById(
                         "DockFormModal"
@@ -292,7 +286,7 @@ export default function DocksPage() {
                                         "Apakah Anda yakin ingin menghapus dock ini?"
                                       )
                                     ) {
-                                      await handleDelete(dock.id!);
+                                      await handleDelete(dock.id);
                                     }
                                   }}
                                   className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"

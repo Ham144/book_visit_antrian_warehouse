@@ -58,7 +58,11 @@ export default function WarehouseModalForm({
 
   const { data: accounts } = useQuery({
     queryKey: ["warehouse-members", searchKeyAccess],
-    queryFn: () => AuthApi.getAllAccount(1, searchKeyAccess || ""),
+    queryFn: () =>
+      AuthApi.getAllAccount({
+        page: 1,
+        searchKey: searchKeyAccess || "",
+      }),
     enabled: searchKeyAccess.length > 1,
   });
 
@@ -110,6 +114,7 @@ export default function WarehouseModalForm({
                 </label>
                 <input
                   type="text"
+                  disabled={editingId !== null}
                   className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Nama warehouse"
                   value={formData.name || ""}

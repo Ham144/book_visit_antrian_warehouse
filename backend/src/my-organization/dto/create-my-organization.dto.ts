@@ -1,3 +1,5 @@
+import { LoginResponseDto } from 'src/user/dto/login.dto';
+
 export class CreateMyOrganizationDto {
   name: string;
   subscriptionId: string;
@@ -6,6 +8,7 @@ export class CreateMyOrganizationDto {
   AD_PORT?: string;
   AD_DOMAIN?: string;
   AD_BASE_DN?: string;
+  accounts: LoginResponseDto[];
 }
 
 export enum SubscriptionPlan {

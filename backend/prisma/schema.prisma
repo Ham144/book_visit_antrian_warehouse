@@ -28,6 +28,7 @@ model Organization {
   docks Dock[]
   vehicles Vehicle[]
   bookings Booking[]
+  accounts User[]
 }
 
 model Globalsetting {//ini hanya satu di pakai di semua Organization
@@ -37,7 +38,6 @@ model Globalsetting {//ini hanya satu di pakai di semua Organization
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
 
 enum Recurring {
   DAILY
@@ -178,5 +178,5 @@ model User {
   warehouseAccess  Warehouse[]
 
   vehicles Vehicle[]
-  
+  organizations Organization[]
 }
