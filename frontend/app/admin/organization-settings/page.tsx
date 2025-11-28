@@ -2,7 +2,7 @@
 import React from "react";
 
 const OrganizationSettingsPage = () => {
-  return <div>OrganizationSettingsPage</div>;
+  return <div></div>;
 };
 
 export default OrganizationSettingsPage;

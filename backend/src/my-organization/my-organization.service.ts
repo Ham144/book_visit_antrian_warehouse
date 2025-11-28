@@ -8,6 +8,8 @@ import { ResponseMyOrganizationDto } from './dto/response-my-organization.dto';
 import { AuthService } from 'src/user/auth.service';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
+import { BaseProps } from 'src/common/base.dto';
+import { SubscriptionPlan } from '@prisma/client';
 
 @Injectable()
 export class MyOrganizationService {
@@ -18,22 +20,19 @@ export class MyOrganizationService {
   ) {}
 
   async create(createMyOrganizationDto: CreateMyOrganizationDto) {
-    const subscription = await this.prismaService.subscription.create({
-      data: {
-        start: new Date(),
-        plan: 'TRIAL',
-        ...createMyOrganizationDto,
-      },
-    });
-
     await this.prismaService.organization.create({
       data: {
         name: createMyOrganizationDto.name,
-        subscriptionId: createMyOrganizationDto.subscriptionId,
         subscription: {
-          connect: {
-            id: subscription.id,
+          create: {
+            start: new Date(),
+            plan: SubscriptionPlan.PREMIUM,
           },
+        },
+        accounts: {
+          connect: createMyOrganizationDto.accounts.map((user) => ({
+            username: user.username,
+          })),
         },
         AD_HOST: createMyOrganizationDto.AD_HOST,
         AD_PORT: createMyOrganizationDto.AD_PORT,
@@ -55,6 +54,59 @@ export class MyOrganizationService {
     });
     return organizations.map((org) =>
       plainToInstance(ResponseMyOrganizationDto, org),
+    );
+  }
+
+  async getAllOrganizations(filter: BaseProps, userInfo: TokenPayload) {
+    console.log('userInfo.description', userInfo.description);
+    if (userInfo.description != 'IT') {
+      return HttpStatus.FORBIDDEN;
+    }
+
+    const { page, searchKey } = filter;
+
+    let where = {};
+    if (searchKey) {
+      where = {
+        OR: [
+          {
+            name: {
+              contains: searchKey,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      };
+    }
+
+    const organizations = await this.prismaService.organization.findMany({
+      where,
+      include: {
+        accounts: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+        subscription: true,
+        warehouses: {
+          select: {
+            id: true,
+            name: true,
+            location: true,
+          },
+        },
+      },
+      take: 20,
+      skip: (page - 1) * 20,
+    });
+
+    console.log(organizations);
+
+    return organizations.map((org) =>
+      plainToInstance(ResponseMyOrganizationDto, org, {
+        excludeExtraneousValues: true,
+      }),
     );
   }
 
@@ -169,14 +221,13 @@ export class MyOrganizationService {
 
   async remove(name: string, userInfo: TokenPayload) {
     //periksa apakah si penghapus adalah member org
+    if (userInfo.description != 'IT') {
+      return HttpStatus.FORBIDDEN;
+    }
+
     const org = await this.prismaService.organization.findUnique({
       where: {
         name: name,
-        accounts: {
-          some: {
-            username: userInfo.username,
-          },
-        },
       },
     });
     if (!org) {

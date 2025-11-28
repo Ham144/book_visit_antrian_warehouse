@@ -20,6 +20,7 @@ import {
   Rocket,
   Building2,
   PenTool,
+  Crown,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
@@ -74,17 +75,24 @@ const adminMenuItems = [
 
 const ITOnlyMenus = [
   //IT Only---------
+
   {
-    id: "Global Setting",
-    label: "Global Setting",
-    icon: PenTool,
-    href: "/admin/global-settings",
+    id: "Organization Management",
+    label: "Organization Management",
+    icon: Crown,
+    href: "/admin/organization-management",
   },
   {
     id: "Organization Setting",
     label: "Organization Setting",
     icon: Settings2Icon,
     href: "/admin/organization-settings",
+  },
+  {
+    id: "Global Setting",
+    label: "Global Setting",
+    icon: PenTool,
+    href: "/admin/global-settings",
   },
 ];
 
@@ -144,11 +152,12 @@ export default function SideNav() {
         <aside
           ref={sidebarRef}
           className={`
-            fixed left-0 top-13 h-[calc(100vh-52px)] z-20
-            bg-base-100 border-r border-base-300 shadow-md
-            transition-all duration-300 overflow-auto
-            ${isOpen ? "w-64" : "w-12"}
-          `}
+    fixed left-0 top-13 h-[calc(100vh-52px)] z-20
+    bg-base-100 border-r border-base-300 shadow-md
+    transition-all duration-300 overflow-auto
+    no-scrollbar
+    ${isOpen ? "w-64" : "w-14"}
+  `}
         >
           {/* Expand / Collapse Button */}
           <button

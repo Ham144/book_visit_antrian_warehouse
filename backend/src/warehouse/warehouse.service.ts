@@ -199,8 +199,9 @@ export class WarehouseService {
 
   async switchHomeWarehouse(id: string, userInfo: LoginResponseDto, req: any) {
     //coba periksa apakah benar anggota
-    const isMember = await this.prismaService.warehouse.findFirst({
+    const isMember = await this.prismaService.warehouse.findUnique({
       where: {
+        id: id,
         userWarehouseAccesses: {
           some: {
             username: userInfo.username,
@@ -260,7 +261,7 @@ export class WarehouseService {
       description: userInfo.description,
       username: userInfo.username,
       displayName: editedUser.displayName,
-      homeWarehouse: editedUser.homeWarehouse,
+      homeWarehouse: isMember,
     };
     return plainToInstance(LoginResponseDto, user, {
       excludeExtraneousValues: true,

@@ -6,7 +6,10 @@ start 12/11/2025
 [x] add: Menu vehicles management
 [x] add: Menu all-warehouse management
 [70%] add: members management
-[x] add: dock management
+[x] add: admin/dock
+[x] add: admin/organization-management
+[x] add: organization swither
+[x] add: warehouse swither
 [] add: Menu my-warehouse management
 
 belajar: 

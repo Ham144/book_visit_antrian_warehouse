@@ -7,7 +7,6 @@ import {
   Settings,
   Truck,
   User2,
-  Building,
   Building2,
   Check,
   WarehouseIcon,
@@ -145,7 +144,7 @@ export default function Navigation() {
                 type="text"
                 ref={searchBar}
                 placeholder="Cari Menu..."
-                className="xl:w-[500px] lg:w-[300px] pl-7 py-2 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
+                className="xl:w-[500px] lg:w-[300px] pl-8 py-2 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
               />
 
               {/* Search Icon */}
@@ -206,9 +205,9 @@ export default function Navigation() {
                     <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
                       {myOrganizations?.length > 0 &&
                         myOrganizations?.map((org: Organization) => (
-                          <li key={org.id}>
+                          <li key={org.name}>
                             <button
-                              onClick={() => org.id}
+                              onClick={() => org.name}
                               className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
                                 (org.name as string) ===
                                 (userInfo?.organizationName as any)

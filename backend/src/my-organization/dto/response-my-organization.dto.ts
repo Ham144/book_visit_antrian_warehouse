@@ -6,13 +6,14 @@ import {
   Warehouse,
 } from '@prisma/client';
 import { Expose } from 'class-transformer';
+import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 export class ResponseMyOrganizationDto {
   @Expose()
   name: string;
   @Expose()
   subscriptionId?: string;
-  @Expose({ groups: ['detail'] })
+  @Expose({})
   subscription?: SubscriptionPlan;
   @Expose({ groups: ['detail'] })
   AD_HOST?: string;
@@ -22,12 +23,14 @@ export class ResponseMyOrganizationDto {
   AD_DOMAIN?: string;
   @Expose({ groups: ['detail'] })
   AD_BASE_DN?: string;
-  @Expose({ groups: ['detail'] })
+  @Expose({})
   warehouses?: Warehouse[];
-  @Expose({ groups: ['detail'] })
+  @Expose({})
+  accounts?: LoginResponseDto[];
+  @Expose({})
   docks?: Dock[];
-  @Expose({ groups: ['detail'] })
+  @Expose({})
   vehicles?: Vehicle[];
-  @Expose({ groups: ['detail'] })
+  @Expose({})
   bookings?: Booking[];
 }

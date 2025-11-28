@@ -6,7 +6,6 @@ import { UserInfo } from "./auth";
 import { SubscriptionPlan } from "./shared.type";
 
 export interface Organization {
-  id: string;
   name: string;
   subscriptionId?: string;
   subscription?: SubscriptionPlan;
@@ -14,9 +13,10 @@ export interface Organization {
   AD_PORT?: string;
   AD_DOMAIN?: string;
   AD_BASE_DN?: string;
-  warehouses: Warehouse[];
-  docks: IDock;
-  vehicles: IVehicle[];
-  bookings: Booking[];
-  accounts: UserInfo[];
+  warehouses?: Warehouse[];
+  docks?: IDock[];
+  vehicles?: IVehicle[];
+  bookings?: Booking[];
+  accounts?: UserInfo[];
+  isEditing?: boolean;
 }

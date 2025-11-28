@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { MyOrganizationService } from './my-organization.service';
 import { CreateMyOrganizationDto } from './dto/create-my-organization.dto';
@@ -27,6 +28,11 @@ export class MyOrganizationController {
     return;
   }
 
+  @Get()
+  getAllOrganizations(@Query() filter, @Auth() userInfo: TokenPayload) {
+    return this.myOrganizationService.getAllOrganizations(filter, userInfo);
+  }
+
   @Get('my-organizations')
   getMyOrganization(@Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.getMyOrganizations(userInfo);
@@ -37,7 +43,7 @@ export class MyOrganizationController {
     return this.myOrganizationService.findOne(name);
   }
 
-  @Patch(':id')
+  @Patch(':name')
   update(
     @Param('name') name: string,
     @Body() updateMyOrganizationDto: UpdateMyOrganizationDto,

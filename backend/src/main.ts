@@ -2,57 +2,47 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/http-exception-filter';
-import { ClassSerializerInterceptor } from '@nestjs/common';
-
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { json } from 'stream/consumers';
+import { urlencoded } from 'express';
 async function bootstrap() {
-  try {
-    // Disable built-in body parser to configure custom limits
-    const app = await NestFactory.create(AppModule, {
-      bodyParser: false,
-    });
-    app.setGlobalPrefix('api');
+  const app = await NestFactory.create(AppModule);
 
-    app.useGlobalFilters(new HttpExceptionFilter()); //agar error ga dalam banget
+  app.setGlobalPrefix('api');
 
-    // Configure body parser with increased limit (15MB)
-    const express = require('express');
-    app.use(express.json({ limit: '15mb' }));
-    app.use(express.urlencoded({ limit: '15mb', extended: true }));
+  // Global Pipes (cukup 1 kali)
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // hapus field yg tidak ada di DTO
+      forbidNonWhitelisted: false, // tidak lempar error
+      transform: true, // otomatis transform payload → DTO
+    }),
+  );
 
-    // Enable cookie parser
-    app.use(cookieParser());
+  // Cookie parser
+  app.use(cookieParser());
 
-    // Enable CORS
-    app.enableCors({
-      origin:
-        process.env.NODE_ENV === 'production'
-          ? [process.env.FRONTEND_URL_PROD]
-          : ['http://localhost:3000', 'http://192.168.169.12:3000'],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    });
-    app.useGlobalInterceptors(
-      new ClassSerializerInterceptor(app.get(Reflector)),
-    );
-    app.useGlobalPipes(
-      new (require('@nestjs/common').ValidationPipe)({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: true,
-      }),
-    );
+  // CORS
+  app.enableCors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? [process.env.FRONTEND_URL_PROD]
+        : ['http://localhost:3000', 'http://192.168.169.12:3000'],
+    credentials: true,
+  });
 
-    await app.listen(3001);
-    console.log('✓ Server listening on port 3001');
-  } catch (error) {
-    console.error('✗ Failed to start server:', error);
-    console.error(
-      'Error stack:',
-      error instanceof Error ? error.stack : 'No stack trace',
-    );
-    process.exit(1);
-  }
+  // Default: semua class-transformer instance akan pakai excludeExtraneousValues
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector), {
+      excludeExtraneousValues: true,
+    }),
+  );
+
+  // Global error filter (opsional)
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  await app.listen(3001);
+  console.log('✓ Server listening on port 3001');
 }
 
 bootstrap().catch((error) => {

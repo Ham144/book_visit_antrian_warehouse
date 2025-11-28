@@ -29,6 +29,11 @@ export class WarehouseController {
     return this.warehouseService.createWarehouse(body, userInfo);
   }
 
+  @Get('detail/:id')
+  getWarehouseDetail(@Param('id') id: string) {
+    return this.warehouseService.getWarehouseDetail(id);
+  }
+
   @Get()
   list(@Query() filter: any, @Auth() userInfo: any) {
     return this.warehouseService.getWarehouses(
@@ -50,10 +55,10 @@ export class WarehouseController {
 
   @Post('switch-homeWarehouse')
   async switchHomeWarehouse(
-    @Body() id: string,
+    @Body('id') id: string,
     @Auth() userInfo: any,
     @Req() req: Request,
-    @Res() res: any,
+    @Res({ passthrough: true }) res: any,
   ) {
     const response: LoginResponseDto =
       await this.warehouseService.switchHomeWarehouse(id, userInfo, req);
