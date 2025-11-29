@@ -122,7 +122,7 @@ export default function DocksPage() {
                       ) as HTMLDialogElement
                     ).showModal();
                   }}
-                  className="btn px-2 btn-primary"
+                  className="btn px-4 btn-primary"
                 >
                   <Plus size={20} /> New Dock
                 </button>
@@ -299,7 +299,7 @@ export default function DocksPage() {
                           </tr>
                         ))
                       ) : (
-                        <tr>
+                        <tr key={"empty"}>
                           <td colSpan={7} className="px-4 py-8 text-center">
                             <div className="flex flex-col items-center justify-center text-gray-500">
                               <MapPin className="w-12 h-12 text-gray-300 mb-2" />

@@ -171,15 +171,15 @@ export default function AllWarehousePage() {
   const getMembersCount = (warehouse: Warehouse) => {
     if (!warehouse.members) return 0;
     if (Array.isArray(warehouse.members)) {
-      return warehouse.members.length;
+      return warehouse.members?.length;
     }
     return 0;
   };
 
   const getAccessCount = (warehouse: Warehouse) => {
     if (!warehouse.members) return 0;
-    if (Array.isArray(warehouse.members)) {
-      return warehouse.warehouseAccess.length;
+    if (Array.isArray(warehouse?.members)) {
+      return warehouse.warehouseAccess?.length;
     }
     return 0;
   };
@@ -187,7 +187,7 @@ export default function AllWarehousePage() {
   const getDocksCount = (warehouse: Warehouse) => {
     if (!warehouse.docks) return 0;
     if (Array.isArray(warehouse.docks)) {
-      return warehouse.docks.length;
+      return warehouse.docks?.length;
     }
     return 0;
   };
@@ -253,7 +253,7 @@ export default function AllWarehousePage() {
                       </p>
                     </div>
                   </div>
-                ) : warehouses.length === 0 ? (
+                ) : warehouses?.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                     <WarehouseIcon className="w-16 h-16 text-gray-300 mb-4" />
                     <p className="text-gray-500 text-sm max-w-md">

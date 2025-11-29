@@ -172,7 +172,7 @@ export default function Navigation() {
                     document.getElementById("login_modal") as HTMLDialogElement
                   ).showModal()
                 }
-                className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white p-3 btn md:p-2"
+                className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 btn "
               >
                 <LogIn />
                 <span className="max-md:hidden">Login</span>

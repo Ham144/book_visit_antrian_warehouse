@@ -40,6 +40,8 @@ model Globalsetting {//ini hanya satu di pakai di semua Organization
 }
 
 enum Recurring {
+  CUSTOMDAY
+
   DAILY
   WEEKLY
   MONTHLY
@@ -49,6 +51,16 @@ enum SubscriptionPlan {
   TRIAL
   PRO
   PREMIUM
+}
+
+enum Days {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+  MINGGU
 }
 
 model Warehouse {
@@ -127,12 +139,14 @@ model Vehicle {
 
 model DockBusyTime {
   id        String   @id @default(cuid())
-  dockId    String
   from      DateTime
   to        DateTime
-  reason    String?
+  reason    String
+  dockId    String
   dock      Dock     @relation(fields: [dockId], references: [id])
-
+  recurring Recurring
+  recurringStep Int? //daily weekly monthly
+  recurringCustom  Days[]
   createdAt DateTime @default(now())
 }
 

@@ -3,6 +3,8 @@ import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
 export class ResponseDockDto {
   @Expose()
+  id: string;
+  @Expose()
   dockType?: string;
   @Expose()
   warehouseId?: string;

@@ -2,7 +2,7 @@
 import React from "react";
 
 const GlobalSettingsPage = () => {
-  return <div>GlobalSettingsPage</div>;
+  return <div>on progress</div>;
 };
 
 export default GlobalSettingsPage;

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { BusyTimeService } from './busy-time.service';
 import { CreateBusyTimeDto } from './dto/create-busy-time.dto';
 import { UpdateBusyTimeDto } from './dto/update-busy-time.dto';
@@ -12,23 +20,21 @@ export class BusyTimeController {
     return this.busyTimeService.create(createBusyTimeDto);
   }
 
-  @Get()
-  findAll() {
-    return this.busyTimeService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.busyTimeService.findOne(+id);
+  @Get(':dockId')
+  findAll(@Param('dockId') dockId: string) {
+    return this.busyTimeService.findAll(dockId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBusyTimeDto: UpdateBusyTimeDto) {
-    return this.busyTimeService.update(+id, updateBusyTimeDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateBusyTimeDto: UpdateBusyTimeDto,
+  ) {
+    return this.busyTimeService.update(id, updateBusyTimeDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.busyTimeService.remove(+id);
+    return this.busyTimeService.remove(id);
   }
 }

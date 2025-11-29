@@ -2,7 +2,7 @@
 import React from "react";
 
 const OrganizationSettingsPage = () => {
-  return <div></div>;
+  return <div>On Progress</div>;
 };
 
 export default OrganizationSettingsPage;

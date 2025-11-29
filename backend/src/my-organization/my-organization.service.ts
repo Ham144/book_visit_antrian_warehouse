@@ -58,7 +58,6 @@ export class MyOrganizationService {
   }
 
   async getAllOrganizations(filter: BaseProps, userInfo: TokenPayload) {
-    console.log('userInfo.description', userInfo.description);
     if (userInfo.description != 'IT') {
       return HttpStatus.FORBIDDEN;
     }
