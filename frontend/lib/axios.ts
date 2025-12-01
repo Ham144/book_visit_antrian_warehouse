@@ -42,8 +42,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // Check if it's a 401 or 403 error (token expired or missing)
-    const isAuthError =
-      error.response?.status === 401 || error.response?.status === 403;
+    const isAuthError = error.response?.status === 401;
 
     // Get URL from config - handle both relative and absolute URLs
     // Try multiple ways to get the URL since axios may store it differently

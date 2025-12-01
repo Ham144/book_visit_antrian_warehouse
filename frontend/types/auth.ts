@@ -1,4 +1,3 @@
-import { Organization } from "./organization";
 import { Warehouse } from "./warehouse";
 
 export interface LoginRequestLdapDto {
@@ -20,7 +19,7 @@ export interface UserInfo {
   displayName?: string;
   homeWarehouse: Warehouse; //ini adalah warehouse yang sedang di login-in
   isActive?: boolean;
-  organizationName: Organization;
+  organizationName: string;
   warehouseAccess?: Warehouse[];
   driverLicense?: string;
   driverPhone?: string;

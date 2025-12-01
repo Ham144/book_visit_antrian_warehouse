@@ -16,10 +16,8 @@ export const OrganizationApi = {
     const res = await axiosInstance.patch(`/api/organization/${name}`, body);
     return res?.data;
   },
-  switchOrganization: async (id: string) => {
-    const res = await axiosInstance.post("/api/organization/switch", {
-      id,
-    });
+  switchOrganization: async (name: string) => {
+    const res = await axiosInstance.post("/api/organization/switch", { name });
     return res.data;
   },
   getAllOrganizations: async (filter: BaseProps) => {

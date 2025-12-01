@@ -29,6 +29,7 @@ export interface Warehouse {
   bookings?: object[];
   createdAt?: Date;
   updatedAt?: Date;
+  organizationName?: string;
 }
 
 export interface GetWarehouseFilter {

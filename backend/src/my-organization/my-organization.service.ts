@@ -10,6 +10,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
 import { BaseProps } from 'src/common/base.dto';
 import { SubscriptionPlan } from '@prisma/client';
+import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 @Injectable()
 export class MyOrganizationService {
@@ -100,8 +101,6 @@ export class MyOrganizationService {
       skip: (page - 1) * 20,
     });
 
-    console.log(organizations);
-
     return organizations.map((org) =>
       plainToInstance(ResponseMyOrganizationDto, org, {
         excludeExtraneousValues: true,
@@ -168,9 +167,27 @@ export class MyOrganizationService {
     });
   }
 
-  async switchOrganization(id: string, userInfo: TokenPayload, req: any) {
-    const isMember = await this.prismaService.organization.findFirst({
+  async switchOrganization(name: string, userInfo: TokenPayload, req: any) {
+    const usercheckcompatibleWH_ORG =
+      await this.prismaService.organization.findFirst({
+        where: {
+          name: name,
+          warehouses: {
+            some: {
+              id: userInfo.homeWarehouseId,
+            },
+          },
+        },
+      });
+    if (!usercheckcompatibleWH_ORG) {
+      throw new ForbiddenException(
+        'warehouse saat ini tidak terdaftar di organisasi target, coba ganti warehouse dahulu',
+      );
+    }
+
+    const org = await this.prismaService.organization.findFirst({
       where: {
+        name: name,
         accounts: {
           some: {
             username: userInfo.username,
@@ -179,21 +196,31 @@ export class MyOrganizationService {
       },
     });
 
-    if (!isMember) {
-      throw new ForbiddenException('Anda bukan anggota warehouse ini');
+    if (!org) {
+      throw new ForbiddenException('Anda bukan anggota organisasi ini');
     }
-
     //edit user db
     const user = await this.prismaService.user.findUnique({
       where: {
         username: userInfo.username,
+        organizations: {
+          some: {
+            name: userInfo.organizationName,
+          },
+        },
+      },
+      include: {
+        homeWarehouse: true,
+        organizations: { select: { name: true } },
+        warehouseAccess: { select: { name: true } },
       },
     });
+
     const payload: TokenPayload = {
       username: user.username,
       description: user.description,
       homeWarehouseId: user.homeWarehouseId,
-      organizationName: isMember.name,
+      organizationName: org.name,
       jti: randomUUID(),
     };
 
@@ -215,7 +242,19 @@ export class MyOrganizationService {
       }),
       604800, // 1 minggu
     );
-    return HttpStatus.ACCEPTED;
+    return plainToInstance(
+      LoginResponseDto,
+      {
+        access_token,
+        refresh_token,
+        ...payload,
+        ...user,
+      },
+      {
+        excludeExtraneousValues: true,
+        groups: ['login'],
+      },
+    );
   }
 
   async remove(name: string, userInfo: TokenPayload) {

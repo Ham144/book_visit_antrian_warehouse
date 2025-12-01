@@ -10,8 +10,6 @@ export enum SubscriptionPlan {
 }
 
 export enum Recurring {
-  CUSTOMDAY = "CUSTOMDAY",
-
   DAILY = "DAILY",
   WEEKLY = "WEEKLY",
   MONTHLY = "MONTHLY",

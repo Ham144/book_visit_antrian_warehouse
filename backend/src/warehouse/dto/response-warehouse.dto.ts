@@ -23,6 +23,6 @@ export class responseWarehouseDto {
   createdAt?: Date;
   @Expose({ groups: ['detail'] })
   userWarehouseAccesses?: object[];
-  @Expose({ groups: ['detail'] })
+  @Expose()
   organizationName?: String;
 }

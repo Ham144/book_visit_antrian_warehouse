@@ -40,10 +40,8 @@ model Globalsetting {//ini hanya satu di pakai di semua Organization
 }
 
 enum Recurring {
-  CUSTOMDAY
-
   DAILY
-  WEEKLY
+  WEEKLY //customDay
   MONTHLY
 }
 
@@ -145,8 +143,8 @@ model DockBusyTime {
   dockId    String
   dock      Dock     @relation(fields: [dockId], references: [id])
   recurring Recurring
-  recurringStep Int? //daily weekly monthly
-  recurringCustom  Days[]
+  recurringStep Int? //daily monthly
+  recurringCustom  Days[] // weekly
   createdAt DateTime @default(now())
 }
 
@@ -157,9 +155,9 @@ model Booking {
   dockId              String?
 
   arrivalTime         DateTime
-  estimatedFinishTime DateTime?
-  finishTime          DateTime?
-  status              String    // waiting, in_progress, finished, canceled
+  estimatedFinishTime DateTime? //ini yag direncakan
+  actualFinishTime          DateTime? //ini kenyataannya
+  status              BookingStatus    // waiting, in_progress, finished, canceled
   notes               String?
 
   Vehicle             Vehicle   @relation(fields: [vehicleId], references: [id])
@@ -170,6 +168,13 @@ model Booking {
   updatedAt           DateTime  @updatedAt
   organizationName String 
   organization Organization @relation(fields: [organizationName], references: [name])
+}
+
+enum BookingStatus {
+  IN_PROGRESS 
+  UNLOADING  
+  FINISHED
+  CANCELED
 }
 
 model User {

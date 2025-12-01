@@ -4,7 +4,7 @@ import { UpdateBusyTimeDto } from './dto/update-busy-time.dto';
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBusyTimeDockDto } from './dto/response-busy-time.dto';
-import { Recurring } from '@prisma/client';
+import { Days, Recurring } from '@prisma/client';
 
 @Injectable()
 export class BusyTimeService {
@@ -12,23 +12,40 @@ export class BusyTimeService {
 
   async create(createBusyTimeDto: CreateBusyTimeDto) {
     const { recurringCustom, ...rest } = createBusyTimeDto;
-    const overlap = await this.prismaService.dockBusyTime.findFirst({
+    const conflictRecurring = await this.prismaService.dockBusyTime.findFirst({
       where: {
         dockId: createBusyTimeDto.dockId,
-        AND: [
+        recurring: createBusyTimeDto.recurring,
+
+        OR: [
+          // DAILY
           {
-            from: { lt: createBusyTimeDto.to },
+            recurring: Recurring.DAILY,
+            recurringStep: createBusyTimeDto.recurringStep,
           },
+
+          // WEEKLY
           {
-            to: { gt: createBusyTimeDto.from },
+            recurring: Recurring.WEEKLY,
+            recurringCustom: {
+              equals: createBusyTimeDto.recurringCustom.map((rc) => {
+                return Days[rc];
+              }),
+            },
+          },
+
+          // MONTHLY
+          {
+            recurring: Recurring.MONTHLY,
+            recurringStep: createBusyTimeDto.recurringStep, // tanggal
           },
         ],
       },
     });
 
-    if (overlap) {
+    if (conflictRecurring) {
       throw new Error(
-        `Waktu terkait overlap ${overlap.reason}, antara waktu ${overlap.from} sampai ${overlap.to}`,
+        `Waktu terkait overlap dengan ${conflictRecurring.reason}`,
       );
     }
 
@@ -66,6 +83,7 @@ export class BusyTimeService {
   }
 
   async update(id: string, updateBusyTimeDto: UpdateBusyTimeDto) {
+    const { recurringCustom, ...rest } = updateBusyTimeDto;
     const overlap = await this.prismaService.dockBusyTime.findFirst({
       where: {
         dockId: updateBusyTimeDto.dockId,
@@ -89,7 +107,12 @@ export class BusyTimeService {
       where: {
         id,
       },
-      data: updateBusyTimeDto,
+      data: {
+        ...rest,
+        recurringCustom: recurringCustom.map((rc) => {
+          return Days[rc];
+        }),
+      },
     });
     return HttpStatus.ACCEPTED;
   }

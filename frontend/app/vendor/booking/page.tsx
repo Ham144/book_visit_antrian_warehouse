@@ -11,12 +11,6 @@ import {
   mockVehicleTypes,
   mockWarehouses,
 } from "@/lib/mock-data";
-import {
-  getAvailableSlots,
-  getTimeSlots,
-  formatDateIndonesian,
-  getNextAvailableDates,
-} from "@/lib/availibility-util";
 
 type BookingStep = "warehouse" | "details";
 
@@ -34,9 +28,6 @@ export default function BookingPage() {
     vehicleId: "",
     notes: "",
   });
-
-  const [availableDates] = useState(getNextAvailableDates(30));
-  const [timeSlots] = useState(getTimeSlots());
 
   const handleWarehouseSelect = (warehouseId: string) => {
     setSelectedWarehouse(warehouseId);
@@ -67,15 +58,6 @@ export default function BookingPage() {
     setShowQR(true);
     toast.success("Pemesanan berhasil dibuat!");
   };
-
-  const availableSlots = selectedWarehouse
-    ? getAvailableSlots(
-        selectedWarehouse,
-        formData.date,
-        formData.time,
-        mockVehicleTypes[0].id
-      )
-    : [];
 
   const warehouseName = selectedWarehouse
     ? mockWarehouses.find((w) => w.id === selectedWarehouse)?.name
@@ -109,7 +91,9 @@ export default function BookingPage() {
                   </button>
                   <div>
                     <h2 className="text-2xl font-bold">Buat Pemesanan</h2>
-                    <p className="text-sm text-gray-600 mt-1">{warehouseName}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {warehouseName}
+                    </p>
                   </div>
                 </div>
 
@@ -137,7 +121,9 @@ export default function BookingPage() {
 
                   {/* Time Selection */}
                   <div>
-                    <label className="block text-sm font-medium mb-2">Jam</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Jam
+                    </label>
                     <select
                       value={formData.time}
                       onChange={(e) =>
@@ -163,7 +149,9 @@ export default function BookingPage() {
                       <div className="alert alert-warning">
                         <AlertCircle size={18} />
                         <div>
-                          <p className="text-sm">Belum ada kendaraan terdaftar</p>
+                          <p className="text-sm">
+                            Belum ada kendaraan terdaftar
+                          </p>
                           <p className="text-xs text-gray-600 mt-1">
                             Silakan tambahkan kendaraan di menu Kelola Kendaraan
                             terlebih dahulu
@@ -174,7 +162,10 @@ export default function BookingPage() {
                       <select
                         value={formData.vehicleId}
                         onChange={(e) =>
-                          setFormData({ ...formData, vehicleId: e.target.value })
+                          setFormData({
+                            ...formData,
+                            vehicleId: e.target.value,
+                          })
                         }
                         className="select select-bordered w-full"
                       >
@@ -260,7 +251,9 @@ export default function BookingPage() {
                                     : "text-red-600"
                                 }
                               />
-                              <span className="font-bold">{slot.startTime}</span>
+                              <span className="font-bold">
+                                {slot.startTime}
+                              </span>
                             </div>
                             <p className="text-sm text-gray-700">
                               {slot.slot.name}
@@ -294,4 +287,3 @@ export default function BookingPage() {
     </div>
   );
 }
-

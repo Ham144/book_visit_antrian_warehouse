@@ -199,7 +199,7 @@ export class WarehouseService {
 
   async switchHomeWarehouse(id: string, userInfo: LoginResponseDto, req: any) {
     //coba periksa apakah benar anggota
-    const isMember = await this.prismaService.warehouse.findUnique({
+    const targetWH = await this.prismaService.warehouse.findUnique({
       where: {
         id: id,
         userWarehouseAccesses: {
@@ -210,7 +210,7 @@ export class WarehouseService {
       },
     });
 
-    if (!isMember) {
+    if (!targetWH) {
       throw new ForbiddenException('Anda bukan anggota warehouse ini');
     }
 
@@ -220,19 +220,20 @@ export class WarehouseService {
         username: userInfo.username,
       },
       data: {
-        homeWarehouseId: isMember.id,
+        homeWarehouseId: targetWH.id,
       },
       include: {
         homeWarehouse: true,
         organizations: { select: { name: true } },
+        warehouseAccess: { select: { name: true } },
       },
     });
 
     const payload: TokenPayload = {
       description: userInfo.description,
-      homeWarehouseId: isMember.id,
+      homeWarehouseId: targetWH.id,
       jti: randomUUID(),
-      organizationName: isMember.organizationName,
+      organizationName: targetWH.organizationName,
       username: userInfo.username,
     };
 
@@ -261,12 +262,21 @@ export class WarehouseService {
       description: userInfo.description,
       username: userInfo.username,
       displayName: editedUser.displayName,
-      homeWarehouse: isMember,
+      homeWarehouse: targetWH,
     };
-    return plainToInstance(LoginResponseDto, user, {
-      excludeExtraneousValues: true,
-      groups: ['login'],
-    });
+    return plainToInstance(
+      LoginResponseDto,
+      {
+        access_token,
+        refresh_token,
+        ...user,
+        ...payload,
+      },
+      {
+        excludeExtraneousValues: true,
+        groups: ['login'],
+      },
+    );
   }
 
   async deleteWarehouse(id: string) {

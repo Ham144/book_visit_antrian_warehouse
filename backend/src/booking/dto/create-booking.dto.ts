@@ -10,21 +10,13 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   dockId?: string;
-
-  @IsDate()
-  estimatedFinishTime: Date;
-
   @IsDate()
   @IsNotEmpty()
-  finishTime: Date;
+  arrivalTime: Date;
+  @IsDate()
+  @IsNotEmpty()
+  estimatedFinishTime: Date;
   @IsOptional()
-  status: BookingStatus;
+  @IsString()
   notes?: string;
-}
-
-enum BookingStatus {
-  waiting = 'waiting',
-  in_progress = 'in_progress',
-  finished = 'finished',
-  canceled = 'canceled',
 }

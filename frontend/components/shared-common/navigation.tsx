@@ -193,7 +193,7 @@ export default function Navigation() {
                       <Building2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">
-                          {userInfo?.organizationName as any}
+                          {userInfo?.organizationName}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           Organization
@@ -207,10 +207,9 @@ export default function Navigation() {
                         myOrganizations?.map((org: Organization) => (
                           <li key={org.name}>
                             <button
-                              onClick={() => org.name}
+                              onClick={() => handleSwitchOrganization(org.name)}
                               className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
-                                (org.name as string) ===
-                                (userInfo?.organizationName as any)
+                                org.name === userInfo?.organizationName
                                   ? "bg-blue-50 text-blue-700 border border-blue-200"
                                   : "hover:bg-gray-50 text-gray-700"
                               }`}
@@ -287,6 +286,10 @@ export default function Navigation() {
                                 <p className="text-xs text-gray-500">
                                   {warehouse.location}
                                 </p>
+                                <p className="text-xs text-gray-700 flex  items-center gap-x-2 mt-2">
+                                  <Building2 size={10} />{" "}
+                                  {warehouse.organizationName}
+                                </p>
                               </div>
                               {warehouse.id === userInfo?.homeWarehouse.id && (
                                 <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
@@ -339,8 +342,8 @@ export default function Navigation() {
                             <p className="text-sm text-gray-500 capitalize">
                               {userInfo?.description || "Vendor"}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {userInfo?.organizationName as any}
+                            <p className="text-md font-bold text-gray-400 mt-1">
+                              {userInfo?.organizationName}
                             </p>
                           </div>
                         </div>
