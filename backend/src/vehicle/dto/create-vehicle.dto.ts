@@ -56,12 +56,6 @@ export class CreateVehicleDto {
   @IsString()
   @IsOptional()
   driverName?: string;
-  @IsString()
-  @IsOptional()
-  driverPhone?: string;
-  @IsString()
-  @IsOptional()
-  driverLicense?: string;
 
   @IsString()
   @IsOptional()

@@ -18,7 +18,7 @@ export class CreateWarehouseDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  members?: string[];
+  homeMembers?: string[];
 
   @IsOptional()
   @IsArray()

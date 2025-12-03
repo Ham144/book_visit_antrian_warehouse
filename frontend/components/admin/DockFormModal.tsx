@@ -1,5 +1,5 @@
 import { IDock } from "@/types/dock.type";
-import { MutateFunction } from "@tanstack/react-query";
+import { MutateFunction, useQuery } from "@tanstack/react-query";
 import React, { Dispatch, SetStateAction, useState } from "react";
 import {
   Warehouse as WarehouseIcon,
@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Toaster } from "sonner";
+import { DockApi } from "@/api/dock.api";
 
 interface DockFormModalProps {
   formData: IDock;
@@ -29,6 +30,15 @@ const DockFormModal = ({
   onEdit,
 }: DockFormModalProps) => {
   const [showVehicleTypes, setShowVehicleTypes] = useState(false);
+
+  useQuery({
+    queryKey: ["warehouse", formData.id],
+    queryFn: async () => {
+      const res = await DockApi.getAllDockByWarehouseId(formData.warehouseId);
+      setFormData(res);
+    },
+    enabled: !!formData.id,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +97,6 @@ const DockFormModal = ({
     const updatedPhotos = currentPhotos.filter((_, i) => i !== index);
     setFormData({ ...formData, photos: updatedPhotos });
   };
-
-  if (!formData) {
-    return null;
-  }
 
   return (
     <dialog id="DockFormModal" className="modal">

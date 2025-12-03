@@ -1,4 +1,4 @@
-import { Booking } from "@/lib/booking.type";
+import { Booking } from "./booking.type";
 import { Warehouse } from "./warehouse";
 
 export interface IDock {

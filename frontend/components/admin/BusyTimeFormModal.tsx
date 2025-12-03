@@ -26,8 +26,7 @@ const BusyTimeFormModal = ({
 
   const { data: docks } = useQuery({
     queryKey: ["docks"],
-    queryFn: async () =>
-      DockApi.getAllDockByWarehouseId(userInfo?.homeWarehouse?.id),
+    queryFn: async () => DockApi.getAllDocks(userInfo?.homeWarehouse?.id),
     enabled: !!userInfo?.homeWarehouse?.id,
   });
 
@@ -107,18 +106,15 @@ const BusyTimeFormModal = ({
               }
               className="select select-bordered w-full "
             >
-              <option value="" key={"empty"} disabled selected>
+              <option value="" key={"empty"} disabled>
                 -- Pilih Dock --
               </option>
-              {docks?.length > 0 ? (
+              {docks?.length > 0 &&
                 docks.map((dock: IDock) => (
                   <option value={dock.id} key={dock.id}>
                     {dock.name}
                   </option>
-                ))
-              ) : (
-                <option value="">-- Belum dipilih --</option>
-              )}
+                ))}
             </select>
           </div>
 
@@ -299,7 +295,7 @@ const BusyTimeFormModal = ({
                   ) as HTMLDialogElement
                 ).close()
               }
-              className="btn btn-ghost text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+              className="btn px-3 btn-ghost text-gray-600 hover:text-gray-800 hover:bg-gray-100"
             >
               Batal
             </button>

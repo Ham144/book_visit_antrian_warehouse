@@ -137,6 +137,11 @@ export class AuthService {
               homeWarehouseId: warehouse.id,
               displayName:
                 userLDAP['displayName'] || userLDAP['name'] || body.username,
+              organizations: {
+                connect: {
+                  name: organizationSetting.name,
+                },
+              },
             },
             include: {
               homeWarehouse: true,
@@ -150,7 +155,7 @@ export class AuthService {
       await this.prismaService.warehouse.update({
         where: { id: transactionResult.homeWarehouseId },
         data: {
-          members: {
+          homeMembers: {
             connect: {
               username: transactionResult.username,
             },
@@ -161,7 +166,7 @@ export class AuthService {
             },
           },
         },
-        include: { members: true },
+        include: { homeMembers: true },
       });
       user = transactionResult;
     }

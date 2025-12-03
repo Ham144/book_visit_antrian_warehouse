@@ -41,13 +41,17 @@ export default function VehilcleModalForm({
 
   const { data: drivers } = useQuery({
     queryKey: ["vehicles", searchKeyDriver],
-    queryFn: () => AuthApi.getAllAccount(1, searchKeyDriver || ""),
+    queryFn: () =>
+      AuthApi.getAllAccount({
+        page: 1,
+        searchKey: searchKeyDriver,
+      }),
     enabled: searchKeyDriver?.length > 1,
   });
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box w-full max-w-3xl p-0 overflow-auto bg-white">
+    <div className="modal modal-open max-md:w-screen max-md:px-3 max-md:h-screen max-md:">
+      <div className="modal-box w-full max-w-3xl p-0 overflow-auto bg-white ">
         {/* Header with leaf green accent */}
         <div className="bg-leaf-green-50 border-b border-leaf-green-100 px-6 py-4">
           <div className="flex items-center justify-between">

@@ -1,25 +1,27 @@
+import { UserInfo } from "./auth";
 import { IDock } from "./dock.type";
 import { IVehicle } from "./vehicle";
 import { Warehouse } from "./warehouse";
 
 export interface Booking {
-  id: string;
-  vehicleId: string;
+  id?: string;
+  vehicleId: string | null;
   warehouseId: string;
-  dockId?: string | null;
-
-  arrivalTime: Date;
-  estimatedFinishTime?: Date | null;
+  dockId: string;
+  arrivalTime: Date | null;
+  estimatedFinishTime: Date | null;
   actualFinishTime?: Date | null;
-  status: BookingStatus;
+  status?: BookingStatus;
   notes?: string | null;
+  driverId?: string;
 
-  Vehicle?: IVehicle;
-  Warehouse?: Warehouse;
-  Dock?: IDock | null;
+  Vehicle?: IVehicle | null;
+  Warehouse?: Warehouse | null;
+  Dock?: IDock | null | null;
+  Driver?: UserInfo | null;
 
   createdAt?: Date;
-  organizationName: string;
+  organizationName?: string;
 }
 
 export enum BookingStatus {

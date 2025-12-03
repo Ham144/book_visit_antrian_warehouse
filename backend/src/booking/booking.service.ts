@@ -42,14 +42,8 @@ export class BookingService {
   }
 
   async create(createBookingDto: CreateBookingDto, userInfo: TokenPayload) {
-    const {
-      estimatedFinishTime,
-      vehicleId,
-      warehouseId,
-      dockId,
-      arrivalTime,
-      ...rest
-    } = createBookingDto;
+    const { estimatedFinishTime, vehicleId, warehouseId, dockId, arrivalTime } =
+      createBookingDto;
 
     //cek busy time
     const overlapBusyTimeHour = await this.prismaService.dockBusyTime.findFirst(
@@ -103,7 +97,7 @@ export class BookingService {
       );
     }
 
-    const booking = await this.prismaService.booking.create({
+    await this.prismaService.booking.create({
       data: {
         status: 'IN_PROGRESS',
         arrivalTime: arrivalTime,
@@ -112,6 +106,7 @@ export class BookingService {
         Vehicle: { connect: { id: vehicleId } },
         Warehouse: { connect: { id: warehouseId } },
         Dock: { connect: { id: dockId } },
+        driver: { connect: { username: userInfo.username } },
         organization: {
           connect: {
             name: userInfo.organizationName,
@@ -167,13 +162,11 @@ export class BookingService {
     });
     return HttpStatus.ACCEPTED;
   }
-
-  async remove(id: string) {
-    await this.prismaService.booking.delete({
+  async cancelBook(id: string) {
+    const isMine = await this.prismaService.booking.findUnique({
       where: {
         id,
       },
     });
-    return HttpStatus.ACCEPTED;
   }
 }

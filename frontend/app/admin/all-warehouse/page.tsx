@@ -116,8 +116,8 @@ export default function AllWarehousePage() {
         name: warehouse.name || "",
         location: warehouse.location || "",
         description: warehouse.description || "",
-        warehouseAccess: Array.isArray(warehouse.warehouseAccess)
-          ? (warehouse.warehouseAccess as unknown[]).filter(
+        warehouseAccess: Array.isArray(warehouse.userWarehouseAccesses)
+          ? (warehouse.userWarehouseAccesses as unknown[]).filter(
               (username): username is string =>
                 typeof username === "string" && username.length > 0
             )
@@ -169,17 +169,17 @@ export default function AllWarehousePage() {
   };
 
   const getMembersCount = (warehouse: Warehouse) => {
-    if (!warehouse.members) return 0;
-    if (Array.isArray(warehouse.members)) {
-      return warehouse.members?.length;
+    if (!warehouse.homeMembers) return 0;
+    if (Array.isArray(warehouse.homeMembers)) {
+      return warehouse.homeMembers?.length;
     }
     return 0;
   };
 
   const getAccessCount = (warehouse: Warehouse) => {
-    if (!warehouse.members) return 0;
-    if (Array.isArray(warehouse?.members)) {
-      return warehouse.warehouseAccess?.length;
+    if (!warehouse.userWarehouseAccesses) return 0;
+    if (Array.isArray(warehouse?.userWarehouseAccesses)) {
+      return warehouse.userWarehouseAccesses?.length;
     }
     return 0;
   };
@@ -211,7 +211,7 @@ export default function AllWarehousePage() {
                   </div>
                   <button
                     onClick={() => handleOpenEdit()}
-                    className="btn bg-primary text-primary-content px-2"
+                    className="btn bg-primary text-primary-content px-4"
                   >
                     <Plus className="w-5 h-5 mr-2" />
                     Tambah Warehouse
@@ -280,10 +280,10 @@ export default function AllWarehousePage() {
                             Jumlah Dock
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4 ">
-                            Home Member
+                            Home Members
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4">
-                            Access User
+                            Access Warehouse
                           </th>
                           <th className="font-semibold text-gray-700 py-4 px-4">
                             Status

@@ -31,13 +31,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Default: semua class-transformer instance akan pakai excludeExtraneousValues
-  app.useGlobalInterceptors(
-    new ClassSerializerInterceptor(app.get(Reflector), {
-      excludeExtraneousValues: true,
-    }),
-  );
-
   // Global error filter (opsional)
   app.useGlobalFilters(new HttpExceptionFilter());
 

@@ -371,15 +371,6 @@ export default function Navigation() {
                         </span>
                       </button>
                     </li>
-
-                    {/* Settings */}
-                    <li>
-                      <button className="flex items-center gap-x-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 group">
-                        <Settings className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
-                        <span>Pengaturan</span>
-                      </button>
-                    </li>
-
                     {/* Logout */}
                     <li className="border-t border-gray-100 mt-2">
                       <button

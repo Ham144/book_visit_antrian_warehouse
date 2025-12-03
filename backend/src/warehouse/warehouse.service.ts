@@ -24,7 +24,7 @@ export class WarehouseService {
     private readonly redis: RedisService,
   ) {}
   async createWarehouse(body: CreateWarehouseDto, userInfo: any) {
-    const { warehouseAccess = [], members: _members, ...data } = body;
+    const { warehouseAccess = [], homeMembers, ...data } = body;
 
     try {
       await this.prismaService.warehouse.upsert({
@@ -58,7 +58,7 @@ export class WarehouseService {
       throw new NotFoundException(`Warehouse ${id} tidak ditemukan`);
     }
 
-    const { warehouseAccess, members: _members, name, ...data } = body;
+    const { warehouseAccess, homeMembers, name, ...data } = body;
 
     return this.prismaService.$transaction(async (tx) => {
       const updateData: any = { ...data };
@@ -77,7 +77,7 @@ export class WarehouseService {
       const warehouseWithAccess = await tx.warehouse.findUnique({
         where: { id },
         include: {
-          members: { select: { username: true, displayName: true } },
+          homeMembers: { select: { username: true, displayName: true } },
           docks: { select: { name: true, id: true } },
           userWarehouseAccesses: {
             select: { username: true, displayName: true },
@@ -128,7 +128,7 @@ export class WarehouseService {
     const warehouses = await this.prismaService.warehouse.findMany({
       where,
       include: {
-        members: { select: { username: true } },
+        homeMembers: { select: { username: true } },
         docks: { select: { name: true } },
         userWarehouseAccesses: { select: { username: true } },
       },
@@ -138,12 +138,19 @@ export class WarehouseService {
     });
 
     return warehouses.map((w) =>
-      plainToInstance(responseWarehouseDto, {
-        ...w,
-        warehouseAccess: w.userWarehouseAccesses?.map(
-          (access) => access.username,
-        ),
-      }),
+      plainToInstance(
+        responseWarehouseDto,
+        {
+          ...w,
+          warehouseAccess: w.userWarehouseAccesses?.map(
+            (access) => access.username,
+          ),
+        },
+        {
+          excludeExtraneousValues: true,
+          groups: ['detail'],
+        },
+      ),
     );
   }
 
@@ -157,14 +164,18 @@ export class WarehouseService {
         },
       },
     });
-    return warehouses.map((w) => plainToInstance(responseWarehouseDto, w));
+    return warehouses.map((w) =>
+      plainToInstance(responseWarehouseDto, w, {
+        excludeExtraneousValues: true,
+      }),
+    );
   }
 
   async getWarehouseDetail(id: string) {
     const warehouse = await this.prismaService.warehouse.findUnique({
       where: { id },
       include: {
-        members: { select: { username: true, displayName: true } },
+        homeMembers: { select: { username: true, displayName: true } },
         docks: { select: { name: true, id: true } },
         userWarehouseAccesses: {
           select: {

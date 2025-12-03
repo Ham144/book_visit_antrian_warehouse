@@ -284,14 +284,14 @@ export default function WarehouseModalForm({
             <button
               type="button"
               onClick={handleClose}
-              className="btn btn-ghost text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+              className="btn btn-ghost text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors px-4"
             >
               Batal
             </button>
 
             <button
               type="submit"
-              className="btn btn-primary px-2"
+              className="btn btn-primary px-3"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
               {createMutation.isPending || updateMutation.isPending ? (

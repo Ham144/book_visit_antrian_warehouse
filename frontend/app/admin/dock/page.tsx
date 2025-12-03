@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  MapPin,
-  Ruler,
-  Star,
-  Warehouse,
-} from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Ruler, Star } from "lucide-react";
 import { toast } from "sonner";
 import DockFormModal from "@/components/admin/DockFormModal";
 import { DockFilter, IDock } from "@/types/dock.type";
@@ -24,7 +16,23 @@ export default function DocksPage() {
     warehouseId: null,
   });
   const { userInfo } = useUserInfo();
-  const [formData, setFormData] = useState<IDock>();
+  const initialDock: IDock = {
+    name: "",
+    warehouseId: "",
+    warehouse: null,
+    photos: [],
+    dockType: "",
+    supportedVehicleTypes: [],
+    maxLength: 0,
+    maxWidth: 0,
+    maxHeight: 0,
+    availableFrom: null,
+    availableUntil: null,
+    isActive: true,
+    priority: 0,
+    busyTimes: [],
+  };
+  const [formData, setFormData] = useState<IDock>(initialDock);
 
   const formatDockData = (data: IDock): IDock => {
     return {
@@ -56,6 +64,7 @@ export default function DocksPage() {
     },
     onSuccess: () => {
       toast.success("Dock berhasil dibuat");
+      setFormData(initialDock);
       queryClient.invalidateQueries({ queryKey: ["docks"] });
       setFormData(undefined);
       (document.getElementById("DockFormModal") as HTMLDialogElement).close();
@@ -77,6 +86,7 @@ export default function DocksPage() {
       queryClient.invalidateQueries({ queryKey: ["docks"] });
       setFormData(undefined);
       (document.getElementById("DockFormModal") as HTMLDialogElement).close();
+      setFormData(initialDock);
     },
   });
 

@@ -23,8 +23,8 @@ export interface Warehouse {
   isActive?: boolean;
   budgets?: object[];
   flowLogs?: object[];
-  members?: object[];
-  warehouseAccess?: string[];
+  homeMembers?: object[];
+  userWarehouseAccesses?: string[];
   docks?: object[];
   bookings?: object[];
   createdAt?: Date;

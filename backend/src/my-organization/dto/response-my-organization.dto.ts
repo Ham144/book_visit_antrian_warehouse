@@ -23,14 +23,14 @@ export class ResponseMyOrganizationDto {
   AD_DOMAIN?: string;
   @Expose({ groups: ['detail'] })
   AD_BASE_DN?: string;
-  @Expose({})
+  @Expose({ groups: ['detail'] })
   warehouses?: Warehouse[];
-  @Expose({})
+  @Expose({ groups: ['detail'] })
   accounts?: LoginResponseDto[];
-  @Expose({})
+  @Expose({ groups: ['detail'] })
   docks?: Dock[];
-  @Expose({})
+  @Expose({ groups: ['detail'] })
   vehicles?: Vehicle[];
-  @Expose({})
+  @Expose({ groups: ['detail'] })
   bookings?: Booking[];
 }

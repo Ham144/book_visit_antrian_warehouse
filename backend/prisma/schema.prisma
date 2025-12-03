@@ -69,7 +69,7 @@ model Warehouse {
   isActive    Boolean  @default(true)
 
   docks       Dock[]
-  members     User[]   @relation("UserHomeWarehouse")
+  homeMembers    User[]   @relation("UserHomeWarehouse")
   bookings    Booking[]
   createdAt   DateTime @default(now())
   userWarehouseAccesses User[]
@@ -123,7 +123,7 @@ model Vehicle {
   requiresDock    String? // forklift, manual, side-load, etc.
 
   driverName String?
-  Driver User? @relation(fields: [driverName], references: [username])
+  driver User? @relation(fields: [driverName], references: [username])
   description     String?
   isActive        Boolean @default(true)
 
@@ -164,6 +164,8 @@ model Booking {
   Warehouse           Warehouse @relation(fields: [warehouseId], references: [id])
   Dock                Dock?     @relation(fields: [dockId], references: [id])
 
+   driverId String
+  driver User @relation(fields: [driverId], references: [username])
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   organizationName String 
@@ -192,10 +194,12 @@ model User {
   // homeWarehouse = staff biasa (nullable)
   homeWarehouseId  String? 
   homeWarehouse    Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
-
+  
   // many-to-many access (admin area)
   warehouseAccess  Warehouse[]
 
+  //many-to-many booking
+  bookings Booking[] 
   vehicles Vehicle[]
   organizations Organization[]
 }

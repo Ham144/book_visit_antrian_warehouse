@@ -11,67 +11,52 @@ import {
   mockVehicleTypes,
   mockWarehouses,
 } from "@/lib/mock-data";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { WarehouseApi } from "@/api/warehouse.api";
+import { VehicleApi } from "@/api/vehicle.api";
+import { Booking } from "@/types/booking.type";
+import { useUserInfo } from "@/components/UserContext";
+import { BookingApi } from "@/api/booking.api";
 
 type BookingStep = "warehouse" | "details";
 
 export default function BookingPage() {
   const [step, setStep] = useState<BookingStep>("warehouse");
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(
-    null
-  );
   const [showQR, setShowQR] = useState(false);
   const [bookingId, setBookingId] = useState("");
 
-  const [formData, setFormData] = useState({
-    date: "",
-    time: "09:00",
-    vehicleId: "",
-    notes: "",
+  const { userInfo } = useUserInfo();
+
+  const initialBookingData = {
+    arrivalTime: null,
+    dockId: null,
+    estimatedFinishTime: null,
+    warehouseId: userInfo?.homeWarehouse.id,
+    vehicleId: null,
+  };
+
+  const [formData, setFormData] = useState<Booking>(initialBookingData);
+  const { data: vehicles } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: async () =>
+      await VehicleApi.getVehicles({
+        page: 1,
+        searchKey: "",
+      }),
   });
 
-  const handleWarehouseSelect = (warehouseId: string) => {
-    setSelectedWarehouse(warehouseId);
-    setStep("details");
-  };
+  const { data: warehouses } = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: async () => await WarehouseApi.getWarehouses(),
+    retry: 1,
+    staleTime: 30000,
+  });
 
-  const handleBackToWarehouse = () => {
-    setStep("warehouse");
-    setSelectedWarehouse(null);
-    setFormData({ date: "", time: "09:00", vehicleId: "", notes: "" });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (
-      !selectedWarehouse ||
-      !formData.date ||
-      !formData.time ||
-      !formData.vehicleId
-    ) {
-      toast.error("Silakan isi semua bidang yang diperlukan");
-      return;
-    }
-
-    const newBookingId = `BK-${Date.now().toString().slice(-6)}`;
-    setBookingId(newBookingId);
-    setShowQR(true);
-    toast.success("Pemesanan berhasil dibuat!");
-  };
-
-  const warehouseName = selectedWarehouse
-    ? mockWarehouses.find((w) => w.id === selectedWarehouse)?.name
-    : "";
-
-  if (step === "warehouse") {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto p-6">
-          <WarehouseSelector onSelect={handleWarehouseSelect} />
-        </div>
-      </div>
-    );
-  }
+  const { data: myBookings } = useQuery({
+    queryKey: ["booking"],
+    queryFn: BookingApi.getAllBookings,
+    enabled: !!userInfo,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,7 +82,7 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleCraete} className="space-y-4">
                   {/* Date Selection */}
                   <div>
                     <label className="block text-sm font-medium mb-2">

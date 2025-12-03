@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Auth } from 'src/common/auth.decorator';
 
 @Controller('booking')
@@ -44,6 +43,6 @@ export class BookingController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    this.bookingService.remove(id);
+    return this.bookingService.cancelBook(id);
   }
 }

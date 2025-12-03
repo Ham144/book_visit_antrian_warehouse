@@ -104,16 +104,20 @@ export class DockService {
   }
 
   async findByWarehouseId(id: string) {
-    const docks = await this.prismaService.dock.findMany({
+    const dock = await this.prismaService.dock.findFirst({
       where: {
         warehouseId: id,
       },
       include: {
         warehouse: {
           select: {
-            id: true,
             name: true,
-            location: true,
+          },
+        },
+        organization: { select: { name: true } },
+        busyTimes: {
+          orderBy: {
+            from: 'asc',
           },
         },
       },
@@ -122,8 +126,9 @@ export class DockService {
       },
     });
 
-    return plainToInstance(ResponseDockDto, docks, {
+    return plainToInstance(ResponseDockDto, dock, {
       excludeExtraneousValues: true,
+      groups: ['detail'],
     });
   }
 

@@ -208,9 +208,6 @@ const OrganizationManagementPage = () => {
                         Accounts
                       </th>
                       <th className="font-semibold text-gray-700 py-4 px-4">
-                        Bookings
-                      </th>
-                      <th className="font-semibold text-gray-700 py-4 px-4">
                         Actions
                       </th>
                     </tr>
@@ -272,15 +269,6 @@ const OrganizationManagementPage = () => {
                               <Users className="w-4 h-4 text-gray-400" />
                               <span className="font-medium">
                                 {org.accounts?.length || 0}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-3">
-                            <div className="flex items-center space-x-1 text-gray-700">
-                              <Calendar className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium">
-                                {org.bookings?.length || 0}
                               </span>
                             </div>
                           </td>

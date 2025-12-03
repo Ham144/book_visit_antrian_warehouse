@@ -29,8 +29,16 @@ export class VehicleService {
 
       await this.prismaService.vehicle.create({
         data: {
-          ...createVehicleDto,
           organizationName: userInfo.organizationName,
+          brand: createVehicleDto.brand,
+          jenisKendaraan: createVehicleDto.jenisKendaraan,
+          plateNumber: createVehicleDto.plateNumber,
+          durasiBongkar: createVehicleDto.durasiBongkar,
+          dimensionHeight: createVehicleDto.dimensionHeight,
+          dimensionLength: createVehicleDto.dimensionLength,
+          dimensionWidth: createVehicleDto.dimensionWidth,
+          driverName: createVehicleDto.driverName,
+          isActive: createVehicleDto.isActive,
         },
       });
       return HttpStatus.CREATED;
@@ -48,7 +56,9 @@ export class VehicleService {
       });
 
       return vehicles.map((vehicle) =>
-        plainToInstance(ResponseVehicleDto, vehicle),
+        plainToInstance(ResponseVehicleDto, vehicle, {
+          excludeExtraneousValues: true,
+        }),
       );
     } catch (error) {
       throw new InternalServerErrorException('Gagal mengambil daftar vehicle');
@@ -86,7 +96,7 @@ export class VehicleService {
         throw new NotFoundException(`Vehicle dengan id ${id} tidak ditemukan`);
       }
 
-      const vehicle = await this.prismaService.vehicle.update({
+      await this.prismaService.vehicle.update({
         where: { id },
         data: {
           brand: updateVehicleDto.brand,

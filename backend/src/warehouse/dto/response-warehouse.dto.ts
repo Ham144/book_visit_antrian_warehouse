@@ -13,16 +13,20 @@ export class responseWarehouseDto {
   @Expose()
   isActive: Boolean;
   @Expose()
-  members?: LoginResponseDto[];
-  @Expose()
   docks?: object[];
+  @Expose()
+  driverId?: string;
+  @Expose()
+  organizationName?: String;
 
+  @Expose({ groups: ['detail'] })
+  homeMembers?: LoginResponseDto[];
   @Expose({ groups: ['detail'] })
   bookings?: object[];
   @Expose({ groups: ['detail'] })
   createdAt?: Date;
   @Expose({ groups: ['detail'] })
-  userWarehouseAccesses?: object[];
-  @Expose()
-  organizationName?: String;
+  userWarehouseAccesses?: LoginResponseDto[];
+  @Expose({ groups: ['detail'] })
+  driver?: object[];
 }

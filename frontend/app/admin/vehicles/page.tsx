@@ -316,15 +316,23 @@ export default function VehiclesPage() {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleOpenEdit()}
-                  className="btn flex items-center gap-2 px-4 py-2.5 bg-leaf-green-500 hover:bg-leaf-green-600 text-white border-none shadow-lg shadow-leaf-green-200 hover:shadow-leaf-green-300 transition-all duration-300 rounded-full hover:scale-105 active:scale-95 group"
+                <div
+                  onClick={() => {
+                    setIsModalOpen(true);
+                  }}
+                  className="bg-white rounded-lg p-4 border border-gray-200 hover:bg-teal-300"
                 >
-                  <Plus className="w-5 h-5 transition-transform text-black group-hover:scale-110" />
-                  <span className="font-semibold tracking-wide text-black">
-                    New
-                  </span>
-                </button>
+                  <div className="flex items-center cursor-pointer justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">
+                        Tambah
+                      </p>
+                    </div>
+                    <div className="p-3 bg-cyan-100 rounded-lg">
+                      <Plus className="w-6 h-6 text-cyan-600" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Filters and Search */}
@@ -390,116 +398,117 @@ export default function VehiclesPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {vehicles.map((vehicle, index) => (
-                          <tr
-                            key={vehicle.id}
-                            className={`hover:bg-gray-50 transition-colors ${
-                              index % 2 === 0 ? "bg-gray-25" : "bg-white"
-                            }`}
-                          >
-                            <td className="px-4 py-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center space-x-2">
-                                  <Car className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
-                                  <span className="font-semibold text-gray-800">
-                                    {vehicle.brand}
-                                  </span>
-                                </div>
-                                {vehicle.plateNumber && (
-                                  <div className="text-sm text-gray-600">
-                                    {vehicle.plateNumber}
+                        {vehicles?.length &&
+                          vehicles.map((vehicle, index) => (
+                            <tr
+                              key={vehicle.id}
+                              className={`hover:bg-gray-50 transition-colors ${
+                                index % 2 === 0 ? "bg-gray-25" : "bg-white"
+                              }`}
+                            >
+                              <td className="px-4 py-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center space-x-2">
+                                    <Car className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
+                                    <span className="font-semibold text-gray-800">
+                                      {vehicle.brand}
+                                    </span>
                                   </div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-gray-700">
-                              {vehicle.jenisKendaraan}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-1 text-gray-700">
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <span>{vehicle.durasiBongkar} menit</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="space-y-1">
-                                {vehicle.maxCapacity && (
-                                  <div className="text-sm text-gray-700">
-                                    {vehicle.maxCapacity}
-                                  </div>
-                                )}
-                                <div className="text-xs text-gray-500 font-mono">
-                                  {formatDimension(vehicle)}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="space-y-1">
-                                {vehicle.driverName ? (
-                                  <>
-                                    <div className="text-sm font-medium text-gray-800">
-                                      {vehicle.driverName}
+                                  {vehicle.plateNumber && (
+                                    <div className="text-sm text-gray-600">
+                                      {vehicle.plateNumber}
                                     </div>
-                                    {vehicle.driverPhone && (
-                                      <div className="text-xs text-gray-500 flex items-center">
-                                        <Phone className="w-3 h-3 mr-1" />
-                                        {vehicle.driverPhone}
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-gray-700">
+                                {vehicle.jenisKendaraan}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center space-x-1 text-gray-700">
+                                  <Clock className="w-4 h-4 text-gray-400" />
+                                  <span>{vehicle.durasiBongkar} menit</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="space-y-1">
+                                  {vehicle.maxCapacity && (
+                                    <div className="text-sm text-gray-700">
+                                      {vehicle.maxCapacity}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-gray-500 font-mono">
+                                    {formatDimension(vehicle)}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="space-y-1">
+                                  {vehicle.driverName ? (
+                                    <>
+                                      <div className="text-sm font-medium text-gray-800">
+                                        {vehicle.driverName}
                                       </div>
-                                    )}
-                                  </>
-                                ) : (
-                                  <span className="text-gray-400 text-sm">
-                                    -
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="space-y-2">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    vehicle.isActive
-                                      ? "bg-leaf-green-100 text-leaf-green-800"
-                                      : "bg-red-100 text-red-800"
-                                  }`}
-                                >
-                                  <div
-                                    className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                      {vehicle.driverPhone && (
+                                        <div className="text-xs text-gray-500 flex items-center">
+                                          <Phone className="w-3 h-3 mr-1" />
+                                          {vehicle.driverPhone}
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-400 text-sm">
+                                      -
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="space-y-2">
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                       vehicle.isActive
-                                        ? "bg-leaf-green-500"
-                                        : "bg-red-500"
+                                        ? "bg-leaf-green-100 text-leaf-green-800"
+                                        : "bg-red-100 text-red-800"
                                     }`}
-                                  ></div>
-                                  {vehicle.isActive ? "Aktif" : "Tidak Aktif"}
-                                </span>
-                                {vehicle.isReefer && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-cyan-100 text-cyan-800">
-                                    <Snowflake className="w-3 h-3 mr-1" />
-                                    Reefer
+                                  >
+                                    <div
+                                      className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                        vehicle.isActive
+                                          ? "bg-leaf-green-500"
+                                          : "bg-red-500"
+                                      }`}
+                                    ></div>
+                                    {vehicle.isActive ? "Aktif" : "Tidak Aktif"}
                                   </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleOpenEdit(vehicle)}
-                                  className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
-                                  title="Edit kendaraan"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(vehicle.id)}
-                                  className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
-                                  title="Hapus kendaraan"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                  {vehicle.isReefer && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-cyan-100 text-cyan-800">
+                                      <Snowflake className="w-3 h-3 mr-1" />
+                                      Reefer
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleOpenEdit(vehicle)}
+                                    className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
+                                    title="Edit kendaraan"
+                                  >
+                                    <Edit size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(vehicle.id)}
+                                    className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
+                                    title="Hapus kendaraan"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>

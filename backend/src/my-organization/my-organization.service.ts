@@ -54,7 +54,9 @@ export class MyOrganizationService {
       },
     });
     return organizations.map((org) =>
-      plainToInstance(ResponseMyOrganizationDto, org),
+      plainToInstance(ResponseMyOrganizationDto, org, {
+        excludeExtraneousValues: true,
+      }),
     );
   }
 
@@ -96,6 +98,16 @@ export class MyOrganizationService {
             location: true,
           },
         },
+        docks: {
+          select: {
+            name: true,
+          },
+        },
+        vehicles: {
+          select: {
+            id: true,
+          },
+        },
       },
       take: 20,
       skip: (page - 1) * 20,
@@ -104,6 +116,7 @@ export class MyOrganizationService {
     return organizations.map((org) =>
       plainToInstance(ResponseMyOrganizationDto, org, {
         excludeExtraneousValues: true,
+        groups: ['detail'],
       }),
     );
   }
