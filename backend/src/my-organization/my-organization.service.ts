@@ -145,7 +145,6 @@ export class MyOrganizationService {
           include: {
             Vehicle: {
               select: {
-                plateNumber: true,
                 brand: true,
                 jenisKendaraan: true,
               },

@@ -26,7 +26,12 @@ export class VehicleController {
     return this.vehicleService.findAll();
   }
 
-  @Get(':id')
+  @Get('/my-vehicles')
+  getMyVehicle(@Auth() userInfo: any) {
+    return this.vehicleService.getMyVehicles(userInfo);
+  }
+
+  @Get('/detail/:id')
   findOne(@Param('id') id: string) {
     return this.vehicleService.findOne(id);
   }

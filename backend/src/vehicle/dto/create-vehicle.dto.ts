@@ -15,9 +15,6 @@ export class CreateVehicleDto {
   @IsString()
   jenisKendaraan: string;
 
-  @IsNotEmpty()
-  @IsString()
-  plateNumber: string;
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -55,7 +52,7 @@ export class CreateVehicleDto {
 
   @IsString()
   @IsOptional()
-  driverName?: string;
+  driverNames?: string[];
 
   @IsString()
   @IsOptional()

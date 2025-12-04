@@ -9,8 +9,6 @@ export class ResponseVehicleDto {
   @Expose()
   jenisKendaraan?: string | null;
   @Expose()
-  plateNumber?: string | null;
-  @Expose()
   productionYear?: number | null;
   @Expose()
   maxCapacity?: string | null;
@@ -23,8 +21,6 @@ export class ResponseVehicleDto {
   @Expose()
   durasiBongkar: number;
   @Expose()
-  driverName?: string | null;
-  @Expose()
   isReefer?: boolean | null;
   @Expose()
   requiresDock?: string | null;
@@ -33,7 +29,7 @@ export class ResponseVehicleDto {
   @Expose()
   isActive: boolean;
   @Expose({ groups: ['detail'] })
-  driver: LoginResponseDto;
+  drivers: LoginResponseDto[];
   @Expose()
   createdAt?: Date;
   @Expose()

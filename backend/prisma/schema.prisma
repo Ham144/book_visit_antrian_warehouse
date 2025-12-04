@@ -110,7 +110,6 @@ model Vehicle {
   id              String  @id @default(cuid())
   brand           String
   jenisKendaraan  String
-  plateNumber     String  @unique
   productionYear  Int?
 
   maxCapacity     String?
@@ -122,8 +121,7 @@ model Vehicle {
   isReefer        Boolean @default(false)
   requiresDock    String? // forklift, manual, side-load, etc.
 
-  driverName String?
-  driver User? @relation(fields: [driverName], references: [username])
+  drivers User[]
   description     String?
   isActive        Boolean @default(true)
 
@@ -150,10 +148,9 @@ model DockBusyTime {
 
 model Booking {
   id                  String    @id @default(cuid())
-  vehicleId           String
   warehouseId         String
   dockId              String?
-
+  vehicleId           String
   arrivalTime         DateTime
   estimatedFinishTime DateTime? //ini yag direncakan
   actualFinishTime          DateTime? //ini kenyataannya
@@ -166,6 +163,9 @@ model Booking {
 
    driverId String
   driver User @relation(fields: [driverId], references: [username])
+  counterId           Int
+  canceledReason     String?
+  
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   organizationName String 
@@ -194,12 +194,26 @@ model User {
   // homeWarehouse = staff biasa (nullable)
   homeWarehouseId  String? 
   homeWarehouse    Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
+  //one-to-many
+  vehicleId String?
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
   
   // many-to-many access (admin area)
   warehouseAccess  Warehouse[]
 
   //many-to-many booking
   bookings Booking[] 
-  vehicles Vehicle[]
+  
   organizations Organization[]
+}
+
+model Counter {
+  id                 Int       @id @default(autoincrement())
+  organizationName   String
+  warehouseId        String
+  dockId             String
+  date               DateTime
+  sequence_value     Int
+
+  @@unique([organizationName, warehouseId, dockId, date])
 }

@@ -153,28 +153,6 @@ export default function VehilcleModalForm({
                 </select>
               </div>
 
-              {/* Plate Number */}
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700">
-                    Nomor Polisi *
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  className="input input-bordered w-full bg-white border-b focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  placeholder="B 1234 XY"
-                  value={formData.plateNumber || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      plateNumber: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-
               {/* Production Year */}
               <div className="form-control">
                 <label className="label py-2">

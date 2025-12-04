@@ -15,8 +15,6 @@ export class responseWarehouseDto {
   @Expose()
   docks?: object[];
   @Expose()
-  driverId?: string;
-  @Expose()
   organizationName?: String;
 
   @Expose({ groups: ['detail'] })

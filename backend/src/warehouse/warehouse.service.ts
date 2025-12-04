@@ -86,7 +86,6 @@ export class WarehouseService {
             include: {
               Vehicle: {
                 select: {
-                  plateNumber: true,
                   brand: true,
                   jenisKendaraan: true,
                 },
@@ -186,7 +185,7 @@ export class WarehouseService {
         bookings: {
           include: {
             Vehicle: {
-              select: { plateNumber: true, brand: true, jenisKendaraan: true },
+              select: { brand: true, jenisKendaraan: true },
             },
             Dock: { select: { name: true, id: true } },
           },

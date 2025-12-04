@@ -30,9 +30,14 @@ export const VehicleApi = {
     });
     return response.data;
   },
-
-  getVehicle: async (id: string): Promise<IVehicle> => {
-    const response = await axiosInstance.get<IVehicle>(`/api/vehicle/${id}`);
+  getMyVehicles: async () => {
+    const res = await axiosInstance.get("/api/vehicle/my-vehicles");
+    return res.data;
+  },
+  getVehicleDetail: async (id: string): Promise<IVehicle> => {
+    const response = await axiosInstance.get<IVehicle>(
+      `/api/vehicle/detail/${id}`
+    );
     return response.data;
   },
 

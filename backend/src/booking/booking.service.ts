@@ -97,6 +97,30 @@ export class BookingService {
       );
     }
 
+    //counter
+    const counter = await this.prismaService.counter.upsert({
+      where: {
+        organizationName_warehouseId_dockId_date: {
+          date: createBookingDto.arrivalTime,
+          organizationName: userInfo.organizationName,
+          warehouseId: userInfo.homeWarehouseId,
+          dockId: createBookingDto.dockId,
+        },
+      },
+      update: {
+        sequence_value: {
+          increment: 1,
+        },
+      },
+      create: {
+        date: createBookingDto.arrivalTime,
+        organizationName: userInfo.organizationName,
+        warehouseId,
+        dockId,
+        sequence_value: 1,
+      },
+    });
+
     await this.prismaService.booking.create({
       data: {
         status: 'IN_PROGRESS',
@@ -107,6 +131,7 @@ export class BookingService {
         Warehouse: { connect: { id: warehouseId } },
         Dock: { connect: { id: dockId } },
         driver: { connect: { username: userInfo.username } },
+        counterId: counter.id,
         organization: {
           connect: {
             name: userInfo.organizationName,
@@ -119,6 +144,8 @@ export class BookingService {
   }
 
   async findAll(filter, userInfo) {
+    const {} = filter;
+
     const bookings = await this.prismaService.booking.findMany({});
     return bookings.map((booking) =>
       plainToInstance(ResponseBookingDto, booking),
@@ -129,6 +156,13 @@ export class BookingService {
     const booking = await this.prismaService.booking.findUnique({
       where: {
         id,
+      },
+      include: {
+        Vehicle: true,
+        Warehouse: true,
+        Dock: true,
+        driver: true,
+        organization: true,
       },
     });
     return plainToInstance(ResponseBookingDto, booking, {
@@ -162,11 +196,32 @@ export class BookingService {
     });
     return HttpStatus.ACCEPTED;
   }
-  async cancelBook(id: string) {
+
+  async cancelBook(id: string, canceledReason: string, userInfo: TokenPayload) {
     const isMine = await this.prismaService.booking.findUnique({
       where: {
         id,
       },
     });
+    if (!isMine) {
+      const isAdmin =
+        userInfo.description.toUpperCase() == 'IT' ||
+        userInfo.description.toUpperCase().includes('ADMIN');
+      if (!isAdmin && !isAdmin) {
+        throw new Error(
+          'Kamu tidak bisa menghapus booking milikmu kecuali ADMIN/IT',
+        );
+      }
+    }
+    await this.prismaService.booking.update({
+      where: {
+        id,
+      },
+      data: {
+        status: 'CANCELED',
+        canceledReason,
+      },
+    });
+    return HttpStatus.ACCEPTED;
   }
 }

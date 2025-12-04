@@ -26,7 +26,6 @@ import { AuthApi } from "@/api/auth";
 const initialFormData: IVehicle = {
   brand: "",
   jenisKendaraan: "",
-  plateNumber: "",
   productionYear: undefined,
   durasiBongkar: 30,
   description: "",
@@ -36,9 +35,7 @@ const initialFormData: IVehicle = {
   dimensionHeight: undefined,
   isReefer: false,
   requiresDock: "",
-  driverName: "",
-  driverPhone: "",
-  driverLicense: "",
+  drivers: [],
   isActive: true,
 };
 
@@ -155,7 +152,6 @@ export default function VehiclesPage() {
       setFormData({
         brand: vehicle.brand || "",
         jenisKendaraan: vehicle.jenisKendaraan || "",
-        plateNumber: vehicle.plateNumber || "",
         productionYear: vehicle.productionYear,
         durasiBongkar: vehicle.durasiBongkar,
         maxCapacity: vehicle.maxCapacity || "",
@@ -164,9 +160,7 @@ export default function VehiclesPage() {
         dimensionHeight: vehicle.dimensionHeight ?? undefined,
         isReefer: vehicle.isReefer ?? false,
         requiresDock: vehicle.requiresDock || "",
-        driverName: vehicle.driverName || "",
-        driverPhone: vehicle.driverPhone || "",
-        driverLicense: vehicle.driverLicense || "",
+        driverNames: vehicle.driverNames || "",
         description: vehicle.description || "",
         isActive: vehicle.isActive ?? true,
       });
@@ -191,13 +185,6 @@ export default function VehiclesPage() {
       return;
     }
 
-    const plateNumber = formData.plateNumber?.trim();
-
-    if (!plateNumber) {
-      toast.error("Nomor polisi harus diisi");
-      return;
-    }
-
     if (!formData.durasiBongkar) {
       toast.error("Durasi bongkar muat harus diisi");
       return;
@@ -206,7 +193,6 @@ export default function VehiclesPage() {
     const payload = {
       brand: formData.brand.trim(),
       jenisKendaraan: formData.jenisKendaraan.trim(),
-      plateNumber: plateNumber.toUpperCase(),
       productionYear: sanitizeNumber(formData.productionYear),
       maxCapacity: sanitizeString(formData.maxCapacity),
       dimensionLength: sanitizeNumber(formData.dimensionLength),
@@ -414,11 +400,6 @@ export default function VehiclesPage() {
                                       {vehicle.brand}
                                     </span>
                                   </div>
-                                  {vehicle.plateNumber && (
-                                    <div className="text-sm text-gray-600">
-                                      {vehicle.plateNumber}
-                                    </div>
-                                  )}
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-gray-700">
@@ -443,25 +424,7 @@ export default function VehiclesPage() {
                                 </div>
                               </td>
                               <td className="px-4 py-3">
-                                <div className="space-y-1">
-                                  {vehicle.driverName ? (
-                                    <>
-                                      <div className="text-sm font-medium text-gray-800">
-                                        {vehicle.driverName}
-                                      </div>
-                                      {vehicle.driverPhone && (
-                                        <div className="text-xs text-gray-500 flex items-center">
-                                          <Phone className="w-3 h-3 mr-1" />
-                                          {vehicle.driverPhone}
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-gray-400 text-sm">
-                                      -
-                                    </span>
-                                  )}
-                                </div>
+                                {vehicle.drivers.length}
                               </td>
                               <td className="px-4 py-3">
                                 <div className="space-y-2">

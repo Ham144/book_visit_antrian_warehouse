@@ -268,9 +268,6 @@ const MyWarehousePage = () => {
                                   booking.Vehicle?.jenisKendaraan ||
                                   "N/A"}
                               </p>
-                              <p className="text-sm text-gray-500">
-                                {booking.Vehicle?.plateNumber || ""}
-                              </p>
                             </div>
                           </td>
                           <td>{booking.Dock?.name || "N/A"}</td>

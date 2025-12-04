@@ -42,7 +42,7 @@ export class BookingController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.bookingService.cancelBook(id);
+  remove(@Param('id') id: string, canceledReason: string, @Auth() userInfo) {
+    return this.bookingService.cancelBook(id, canceledReason, userInfo);
   }
 }

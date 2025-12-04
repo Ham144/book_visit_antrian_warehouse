@@ -14,6 +14,8 @@ export interface Booking {
   status?: BookingStatus;
   notes?: string | null;
   driverId?: string;
+  counterId?: number;
+  canceledReason?: string;
 
   Vehicle?: IVehicle | null;
   Warehouse?: Warehouse | null;
@@ -22,6 +24,11 @@ export interface Booking {
 
   createdAt?: Date;
   organizationName?: string;
+}
+
+export interface BookingFilter {
+  searchKey?: string | null;
+  warehouseId?: string | null;
 }
 
 export enum BookingStatus {

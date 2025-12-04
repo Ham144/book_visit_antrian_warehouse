@@ -2,6 +2,7 @@
 
 import { AuthApi } from "@/api/auth";
 import { useUserInfo } from "@/components/UserContext";
+import { UserInfo } from "@/types/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   Building,
@@ -27,6 +28,7 @@ export default function HomePage() {
       {
         const res = await AuthApi.getUserInfo();
         setUserInfo(res);
+        return res;
       }
     },
   });

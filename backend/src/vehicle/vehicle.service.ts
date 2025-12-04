@@ -10,6 +10,7 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { ResponseVehicleDto } from './dto/response-vehicle.dto';
 import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Injectable()
 export class VehicleService {
@@ -17,14 +18,22 @@ export class VehicleService {
 
   async create(createVehicleDto: CreateVehicleDto, userInfo: LoginResponseDto) {
     try {
-      const existingUser = await this.prismaService.user.findUnique({
-        where: { username: createVehicleDto.driverName },
-      });
+      for (let i = 0; i < createVehicleDto.driverNames.length; i++) {
+        const userHaseVehicle = await this.prismaService.user.findUnique({
+          where: {
+            username: createVehicleDto.driverNames[i],
+            vehicleId: {
+              not: null,
+            },
+          },
+          include: { vehicle: true },
+        });
 
-      if (!existingUser) {
-        throw new NotFoundException(
-          `Driver ${createVehicleDto.driverName} tidak ditemukan`,
-        );
+        if (!userHaseVehicle) {
+          throw new NotFoundException(
+            `Driver ${createVehicleDto.driverNames[i]} sudah terhubung ke ${userHaseVehicle.vehicle.brand}-${userHaseVehicle.vehicle.jenisKendaraan}`,
+          );
+        }
       }
 
       await this.prismaService.vehicle.create({
@@ -32,12 +41,13 @@ export class VehicleService {
           organizationName: userInfo.organizationName,
           brand: createVehicleDto.brand,
           jenisKendaraan: createVehicleDto.jenisKendaraan,
-          plateNumber: createVehicleDto.plateNumber,
           durasiBongkar: createVehicleDto.durasiBongkar,
           dimensionHeight: createVehicleDto.dimensionHeight,
           dimensionLength: createVehicleDto.dimensionLength,
           dimensionWidth: createVehicleDto.dimensionWidth,
-          driverName: createVehicleDto.driverName,
+          drivers: {
+            connect: createVehicleDto.driverNames.map((d) => ({ username: d })),
+          },
           isActive: createVehicleDto.isActive,
         },
       });
@@ -101,7 +111,6 @@ export class VehicleService {
         data: {
           brand: updateVehicleDto.brand,
           jenisKendaraan: updateVehicleDto.jenisKendaraan,
-          plateNumber: updateVehicleDto.plateNumber,
           productionYear: updateVehicleDto.productionYear,
           maxCapacity: updateVehicleDto.maxCapacity,
           dimensionLength: updateVehicleDto.dimensionLength,
@@ -110,7 +119,11 @@ export class VehicleService {
           durasiBongkar: updateVehicleDto.durasiBongkar,
           isReefer: updateVehicleDto.isReefer,
           requiresDock: updateVehicleDto.requiresDock,
-          driverName: updateVehicleDto.driverName,
+          drivers: {
+            connect: updateVehicleDto.driverNames.map((d) => ({
+              username: d,
+            })),
+          },
           description: updateVehicleDto.description,
           isActive: updateVehicleDto.isActive,
         },
@@ -123,6 +136,24 @@ export class VehicleService {
       }
       throw new InternalServerErrorException('Gagal memperbarui vehicle');
     }
+  }
+
+  async getMyVehicles(userInfo: TokenPayload) {
+    const myVehicles = await this.prismaService.vehicle.findMany({
+      where: {
+        organizationName: userInfo.organizationName,
+        drivers: {
+          some: {
+            username: userInfo.username,
+          },
+        },
+      },
+    });
+    return myVehicles.map((vehicle) =>
+      plainToInstance(ResponseVehicleDto, vehicle, {
+        excludeExtraneousValues: true,
+      }),
+    );
   }
 
   async remove(id: string): Promise<void> {
