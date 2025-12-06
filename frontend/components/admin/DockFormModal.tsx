@@ -1,5 +1,5 @@
 import { IDock } from "@/types/dock.type";
-import { MutateFunction, useQuery } from "@tanstack/react-query";
+import { MutateFunction, useQueries, useQuery } from "@tanstack/react-query";
 import React, { Dispatch, SetStateAction, useState } from "react";
 import {
   Warehouse as WarehouseIcon,
@@ -12,9 +12,11 @@ import {
   MapPin,
   Image,
   Upload,
+  Calendar,
 } from "lucide-react";
 import { Toaster } from "sonner";
 import { DockApi } from "@/api/dock.api";
+import { Days } from "@/types/shared.type";
 
 interface DockFormModalProps {
   formData: IDock;
@@ -34,7 +36,7 @@ const DockFormModal = ({
   useQuery({
     queryKey: ["warehouse", formData.id],
     queryFn: async () => {
-      const res = await DockApi.getAllDockByWarehouseId(formData.warehouseId);
+      const res = await DockApi.getDockDetail(formData.id);
       setFormData(res);
     },
     enabled: !!formData.id,
@@ -100,7 +102,7 @@ const DockFormModal = ({
 
   return (
     <dialog id="DockFormModal" className="modal">
-      <div className="modal-box w-full max-w-2xl p-0  bg-white overflow-auto">
+      <div className="modal-box w-full max-w-4xl p-0  bg-white overflow-auto">
         {/* Header */}
         <div className="bg-leaf-green-50 border-b border-leaf-green-100 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -427,69 +429,6 @@ const DockFormModal = ({
                 </div>
               </div>
 
-              {/* Availability Times */}
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700 flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Tersedia Dari
-                  </span>
-                </label>
-                <input
-                  type="time"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  value={
-                    formData?.availableFrom
-                      ? new Date(formData.availableFrom)
-                          .toTimeString()
-                          .slice(0, 5)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    if (time) {
-                      const date = new Date();
-                      const [hours, minutes] = time.split(":");
-                      date.setHours(parseInt(hours), parseInt(minutes));
-                      setFormData({ ...formData, availableFrom: date });
-                    } else {
-                      setFormData({ ...formData, availableFrom: undefined });
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700 flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Tersedia Sampai
-                  </span>
-                </label>
-                <input
-                  type="time"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  value={
-                    formData?.availableUntil
-                      ? new Date(formData.availableUntil)
-                          .toTimeString()
-                          .slice(0, 5)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    if (time) {
-                      const date = new Date();
-                      const [hours, minutes] = time.split(":");
-                      date.setHours(parseInt(hours), parseInt(minutes));
-                      setFormData({ ...formData, availableUntil: date });
-                    } else {
-                      setFormData({ ...formData, availableUntil: undefined });
-                    }
-                  }}
-                />
-              </div>
-
               {/* Status */}
               <div className="form-control md:col-span-2">
                 <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -507,6 +446,79 @@ const DockFormModal = ({
                 </label>
               </div>
             </div>
+
+            {/* Days */}
+            <label>
+              <span className="my-2 label-text font-medium text-gray-700 flex items-center">
+                <Calendar className="w-4 h-4 mr-2 text-leaf-green-500" />
+                Hari
+              </span>
+              <div className="grid grid-cols-7 w-full flex-1 space-x-1 gap-4">
+                {formData.vacants?.map((vacant, index) => (
+                  <div key={vacant.day} className="flex flex-col gap-3">
+                    <label
+                      htmlFor={vacant.day}
+                      className="btn border w-full justify-center"
+                    >
+                      {vacant.day}
+                    </label>
+                    <div id={vacant.day} className="flex flex-col gap-2">
+                      {/* Availability From */}
+                      <div className="form-control">
+                        <label className="label py-1">
+                          <span className="label-text text-xs">Dari</span>
+                        </label>
+                        <input
+                          type="time"
+                          className="input input-bordered input-sm w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                          value={String(vacant.availableFrom) || null}
+                          onChange={(e) => {
+                            const time = e.target.value;
+                            const updatedVacants = [
+                              ...(formData.vacants || []),
+                            ];
+                            updatedVacants[index] = {
+                              ...updatedVacants[index],
+                              availableFrom: time || null,
+                            };
+                            setFormData({
+                              ...formData,
+                              vacants: updatedVacants,
+                            });
+                          }}
+                        />
+                      </div>
+
+                      {/* Availability Until */}
+                      <div className="form-control">
+                        <label className="label py-1">
+                          <span className="label-text text-xs">Sampai</span>
+                        </label>
+                        <input
+                          type="time"
+                          className="input input-bordered input-sm w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                          value={vacant.availableUntil || ""}
+                          onChange={(e) => {
+                            const time = e.target.value;
+                            const updatedVacants = [
+                              ...(formData.vacants || []),
+                            ];
+                            updatedVacants[index] = {
+                              ...updatedVacants[index],
+                              availableUntil: time || null,
+                            };
+                            setFormData({
+                              ...formData,
+                              vacants: updatedVacants,
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </label>
           </div>
 
           {/* Actions */}

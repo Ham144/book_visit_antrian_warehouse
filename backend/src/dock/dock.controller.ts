@@ -29,8 +29,8 @@ export class DockController {
   }
 
   @Get('/warehouse/:id')
-  findByWarehouseId(@Param('id') id: string) {
-    return this.dockService.findByWarehouseId(id);
+  getDocksByWarehouseId(@Param('id') id: string) {
+    return this.dockService.getDocksByWarehouseId(id);
   }
 
   @Get(':id')

@@ -29,7 +29,6 @@ export class BookingService {
     // DAILY → cek step
     if (busy.recurring === 'DAILY') {
       const start = new Date(busy.from);
-
       // beda hari dari start → hitung kelipatan
       const diffDays = Math.floor(
         (b.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
@@ -50,14 +49,7 @@ export class BookingService {
       {
         where: {
           dockId: dockId,
-          AND: [
-            {
-              from: { lt: arrivalTime },
-            },
-            {
-              to: { gt: estimatedFinishTime },
-            },
-          ],
+          AND: [{}],
         },
       },
     );

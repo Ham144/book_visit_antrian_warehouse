@@ -2,8 +2,8 @@ import { Days, Recurring } from "./shared.type";
 
 export interface IDockBusyTime {
   id?: string;
-  from: Date;
-  to: Date;
+  from: string;
+  to: string;
   reason: string;
   dockId: string;
   recurring: Recurring;

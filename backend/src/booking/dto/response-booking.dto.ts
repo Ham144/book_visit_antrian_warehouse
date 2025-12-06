@@ -15,11 +15,11 @@ export class ResponseBookingDto {
   dockId?: string | null;
 
   @Expose()
-  arrivalTime: Date;
+  arrivalTime: string;
   @Expose()
-  estimatedFinishTime?: Date | null;
+  estimatedFinishTime?: string | null;
   @Expose()
-  finishTime?: Date | null;
+  actualFinishTime?: string | null;
   @Expose()
   status: string;
   @Expose({ groups: ['detail'] })

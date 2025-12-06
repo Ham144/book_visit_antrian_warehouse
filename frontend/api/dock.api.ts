@@ -6,8 +6,13 @@ export const DockApi = {
     const res = await axiosInstance.post("/api/dock", data);
     return res.data;
   },
-  getDockByWarehouseId: async (warehouseId: string) => {
+  getDocksByWarehouseId: async (warehouseId: string) => {
     const res = await axiosInstance.get(`/api/dock/warehouse/${warehouseId}`);
+    return res.data;
+  },
+
+  getDockDetail: async (id: string) => {
+    const res = await axiosInstance.get(`/api/dock/detail/${id}`);
     return res.data;
   },
   getAllDocks: async (filter: DockFilter) => {

@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "DockBusyTime" ALTER COLUMN "from" SET DATA TYPE TEXT,
+ALTER COLUMN "to" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "Vacant" ALTER COLUMN "availableFrom" DROP NOT NULL,
+ALTER COLUMN "availableFrom" SET DATA TYPE TEXT,
+ALTER COLUMN "availableUntil" DROP NOT NULL,
+ALTER COLUMN "availableUntil" SET DATA TYPE TEXT;

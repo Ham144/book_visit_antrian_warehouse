@@ -1,9 +1,9 @@
 import axiosInstance from "@/lib/axios";
-import { BookingFilter } from "@/types/booking.type";
+import { Booking, BookingFilter } from "@/types/booking.type";
 
 export const BookingApi = {
-  createBooking: async () => {
-    const res = await axiosInstance.post("/api/booking");
+  createBooking: async (formData: Booking) => {
+    const res = await axiosInstance.post("/api/booking", formData);
     return res.data;
   },
   getAllBookings: async (filter: BookingFilter) => {

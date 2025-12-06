@@ -1,8 +1,12 @@
-"use client"
+"use client";
 
-import { QrCode, Edit, X, Truck } from "lucide-react"
-import { toast } from "sonner"
-import { useState } from "react"
+import { QrCode, Edit, X, Truck } from "lucide-react";
+import { toast } from "sonner";
+import { useState } from "react";
+import ConfirmationModal from "@/components/shared-common/confirmationModal";
+import { BookingFilter } from "@/types/booking.type";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookingApi } from "@/api/booking.api";
 
 const mockBookings = [
   {
@@ -35,36 +39,52 @@ const mockBookings = [
     plate: "B9012GH",
     duration: "30 menit",
   },
-]
+];
 
 const statusText = {
   completed: "Selesai",
   confirmed: "Dikonfirmasi",
   pending: "Menunggu",
   cancelled: "Dibatalkan",
-}
+};
 
 const statusColors = {
   completed: "badge-success",
   confirmed: "badge-primary",
   pending: "badge-warning",
   cancelled: "badge-error",
-}
+};
 
 export default function HistoryPage() {
-  const [selectedBooking, setSelectedBooking] = useState<string | null>(null)
+  const [selectedBookingId, setSelectedBookingId] = useState<string>(null);
 
-  const handleCancel = (id: string) => {
-    toast.success(`Pemesanan ${id} dibatalkan`)
-  }
+  const [bookedFilter, setBookedFitler] = useState<BookingFilter>({
+    searchKey: "",
+    warehouseId: null,
+  });
 
-  const handleEdit = (id: string) => {
-    toast.info(`Edit pemesanan ${id}`)
-  }
+  const { data: bookings } = useQuery({
+    queryKey: ["bookings"],
+    queryFn: async () => await BookingApi.getAllBookings(bookedFilter),
+    enabled: !!selectedBookingId,
+  });
 
-  const handleShowQR = (id: string) => {
-    toast.info(`Menampilkan QR untuk ${id}`)
-  }
+  const qq = useQueryClient();
+  const { mutateAsync: handleCancel } = useMutation({
+    mutationKey: ["bookings"],
+    mutationFn: async () => {
+      await BookingApi.cancelBooking(selectedBookingId || "");
+    },
+    onSuccess: async () => {
+      toast.success("Pemesanan berhasil dibatalkan");
+      qq.invalidateQueries({
+        queryKey: ["bookings"],
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message);
+    },
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -88,16 +108,26 @@ export default function HistoryPage() {
                 <div
                   key={booking.id}
                   className="card bg-white shadow hover:shadow-lg transition"
-                  onClick={() => setSelectedBooking(selectedBooking === booking.id ? null : booking.id)}
+                  onClick={() =>
+                    setSelectedBookingId(
+                      selectedBookingId === booking.id ? null : booking.id
+                    )
+                  }
                 >
                   <div className="card-body p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="font-bold">{booking.id}</span>
-                          <span className={`badge ${statusColors[booking.status]}`}>{statusText[booking.status]}</span>
+                          <span
+                            className={`badge ${statusColors[booking.status]}`}
+                          >
+                            {statusText[booking.status]}
+                          </span>
                         </div>
-                        <p className="text-sm text-gray-600">{booking.warehouse}</p>
+                        <p className="text-sm text-gray-600">
+                          {booking.warehouse}
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold">{booking.date}</p>
@@ -122,33 +152,20 @@ export default function HistoryPage() {
                       </div>
                     </div>
 
-                    {selectedBooking === booking.id && (
+                    {selectedBookingId === booking.id && (
                       <div className="flex gap-2">
-                        <button
-                          className="btn btn-sm btn-primary flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleShowQR(booking.id)
-                          }}
-                        >
-                          <QrCode size={16} /> Tampilkan QR
-                        </button>
                         {booking.status === "pending" && (
                           <>
                             <button
-                              className="btn btn-sm btn-outline flex-1"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEdit(booking.id)
-                              }}
-                            >
-                              <Edit size={16} /> Edit
-                            </button>
-                            <button
                               className="btn btn-sm btn-error btn-outline flex-1"
                               onClick={(e) => {
-                                e.stopPropagation()
-                                handleCancel(booking.id)
+                                e.stopPropagation();
+                                setSelectedBookingId(booking.id);
+                                (
+                                  document.getElementById(
+                                    "confirmation1"
+                                  ) as HTMLDialogElement
+                                )?.showModal();
                               }}
                             >
                               <X size={16} /> Batal
@@ -164,7 +181,13 @@ export default function HistoryPage() {
           )}
         </div>
       </div>
-    </div>
-  )
-}
 
+      <ConfirmationModal
+        message=""
+        onConfirm={handleCancel}
+        title={"Apakaha kamu yakin akan membatalkan Booking ini? "}
+        key={"confirmation1"}
+      />
+    </div>
+  );
+}

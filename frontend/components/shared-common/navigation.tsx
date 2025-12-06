@@ -122,14 +122,17 @@ export default function Navigation() {
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Brand */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 ">
             <div className="flex items-center space-x-3">
               <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-2.5 rounded-xl shadow-lg">
                 <Truck className="text-white" size={24} />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col max-xl:hidden">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
                   Antrian Gudang
+                  <div className="badge badge-accent -translate-y-3 px-2 font-light text-white">
+                    beta
+                  </div>
                 </h1>
                 <p className="max-md:hidden text-xs text-gray-500 font-medium">
                   {userInfo?.description ? "Portal Operator" : "Portal Vendor"}

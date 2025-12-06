@@ -15,7 +15,7 @@ export class CreateBookingDto {
   arrivalTime: Date;
   @IsDate()
   @IsNotEmpty()
-  estimatedFinishTime: Date;
+  estimatedFinishTime: string;
   @IsOptional()
   @IsString()
   notes?: string;

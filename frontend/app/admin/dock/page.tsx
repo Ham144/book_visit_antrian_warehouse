@@ -8,26 +8,32 @@ import { DockFilter, IDock } from "@/types/dock.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DockApi } from "@/api/dock.api";
 import { useUserInfo } from "@/components/UserContext";
+import { Days } from "@/types/shared.type";
+import ConfirmationModal from "@/components/shared-common/confirmationModal";
+import { Vacant } from "@/types/vacant.type";
 
 export default function DocksPage() {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<DockFilter>({
-    page: 1,
-    warehouseId: null,
-  });
+  const [selectedDockId, setSelectedDockId] = useState<string | null>(null);
   const { userInfo } = useUserInfo();
   const initialDock: IDock = {
     name: "",
-    warehouseId: "",
-    warehouse: null,
+    warehouseId: userInfo?.homeWarehouse?.id,
+    warehouse: userInfo?.homeWarehouse,
     photos: [],
     dockType: "",
     supportedVehicleTypes: [],
     maxLength: 0,
     maxWidth: 0,
     maxHeight: 0,
-    availableFrom: null,
-    availableUntil: null,
+    vacants: ((): Vacant[] => {
+      const days = Object.values(Days);
+      return days.map((day) => ({
+        day,
+        availableFrom: "08:00",
+        availableUntil: "15:50",
+      }));
+    })(),
     isActive: true,
     priority: 0,
     busyTimes: [],
@@ -44,12 +50,6 @@ export default function DocksPage() {
       maxHeight: data.maxHeight ? Number(data.maxHeight) : undefined,
       priority: data.priority ? Number(data.priority) : undefined,
       isActive: data.isActive ?? true,
-      availableFrom: data.availableFrom
-        ? new Date(data.availableFrom)
-        : undefined,
-      availableUntil: data.availableUntil
-        ? new Date(data.availableUntil)
-        : undefined,
     };
   };
 
@@ -91,8 +91,10 @@ export default function DocksPage() {
   });
 
   const { data: docks } = useQuery({
-    queryKey: ["docks", filter],
-    queryFn: async () => DockApi.getAllDocks(filter),
+    queryKey: ["warehouse", userInfo],
+    queryFn: async () =>
+      await DockApi.getDocksByWarehouseId(userInfo?.homeWarehouse?.id),
+    enabled: !!userInfo?.homeWarehouse?.id,
   });
 
   const { mutateAsync: handleDelete } = useMutation({
@@ -107,6 +109,11 @@ export default function DocksPage() {
     },
   });
 
+  const handleSelectToEdit = (dock: IDock) => {
+    setFormData(dock);
+    (document.getElementById("DockFormModal") as HTMLDialogElement).showModal();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
@@ -118,14 +125,7 @@ export default function DocksPage() {
                 <h1 className="text-3xl font-bold">Dock Management</h1>
                 <button
                   onClick={() => {
-                    setFormData({
-                      warehouseId: userInfo?.homeWarehouse?.id,
-                      warehouse: userInfo?.homeWarehouse,
-                      name: "",
-                      photos: [],
-                      supportedVehicleTypes: [],
-                      isActive: true,
-                    });
+                    setFormData(initialDock);
                     (
                       document.getElementById(
                         "DockFormModal"
@@ -169,7 +169,7 @@ export default function DocksPage() {
                       {docks?.length > 0 ? (
                         docks?.map((dock: IDock, index) => (
                           <tr
-                            key={dock.id}
+                            key={index}
                             className={`hover:bg-gray-50 transition-colors ${
                               index % 2 === 0 ? "bg-gray-25" : "bg-white"
                             }`}
@@ -277,12 +277,7 @@ export default function DocksPage() {
                               <div className="flex gap-1">
                                 <button
                                   onClick={() => {
-                                    setFormData(dock);
-                                    (
-                                      document.getElementById(
-                                        "DockFormModal"
-                                      ) as HTMLDialogElement
-                                    ).showModal();
+                                    handleSelectToEdit(dock);
                                   }}
                                   className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
                                   title="Edit dock"
@@ -291,13 +286,12 @@ export default function DocksPage() {
                                 </button>
                                 <button
                                   onClick={async () => {
-                                    if (
-                                      confirm(
-                                        "Apakah Anda yakin ingin menghapus dock ini?"
-                                      )
-                                    ) {
-                                      await handleDelete(dock.id);
-                                    }
+                                    setSelectedDockId(dock.id);
+                                    (
+                                      document.getElementById(
+                                        "confirmation1"
+                                      ) as HTMLDialogElement
+                                    ).showModal();
                                   }}
                                   className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-600 text-gray-500 transition-colors"
                                   title="Hapus dock"
@@ -336,6 +330,12 @@ export default function DocksPage() {
         onCreate={handleCreate}
         onEdit={handleUpdate}
         key={"DockFormModal"}
+      />
+      <ConfirmationModal
+        message="Konfirmasi menghapus dock ini? "
+        onConfirm={() => handleDelete(selectedDockId)}
+        title="Hapus Dock"
+        key={"confirmation1"}
       />
     </div>
   );

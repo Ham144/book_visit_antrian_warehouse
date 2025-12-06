@@ -3,19 +3,19 @@ import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 export class responseWarehouseDto {
   @Expose()
-  id: String;
+  id: string;
   @Expose()
-  name: String;
+  name: string;
   @Expose()
-  location: String;
+  location: string;
   @Expose()
-  description: String;
+  description: string;
   @Expose()
-  isActive: Boolean;
+  isActive: boolean;
   @Expose()
   docks?: object[];
   @Expose()
-  organizationName?: String;
+  organizationName?: string;
 
   @Expose({ groups: ['detail'] })
   homeMembers?: LoginResponseDto[];

@@ -6,10 +6,10 @@ export class CreateDockBusyTimeDto {
   dockId: string;
   @IsNotEmpty()
   @IsDate()
-  from: Date;
+  from: string;
   @IsDate()
   @IsNotEmpty()
-  to: Date;
+  to: string;
   @IsString()
   @IsOptional()
   reason?: string;

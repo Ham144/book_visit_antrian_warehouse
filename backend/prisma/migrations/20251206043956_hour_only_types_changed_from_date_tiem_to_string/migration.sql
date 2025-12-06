@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Booking" ALTER COLUMN "arrivalTime" SET DATA TYPE TEXT,
+ALTER COLUMN "estimatedFinishTime" SET DATA TYPE TEXT,
+ALTER COLUMN "actualFinishTime" SET DATA TYPE TEXT;

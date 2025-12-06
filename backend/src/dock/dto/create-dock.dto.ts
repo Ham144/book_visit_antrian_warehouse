@@ -4,10 +4,12 @@ import {
   IsDate,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Vacant } from './response-dock.dto';
 
 export class CreateDockDto {
   @IsNotEmpty()
@@ -45,14 +47,9 @@ export class CreateDockDto {
   maxHeight?: number;
 
   @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  availableFrom?: Date;
-
-  @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  availableUntil?: Date;
+  @IsArray()
+  @IsObject({ each: true })
+  vacants?: Vacant[];
 
   @IsOptional()
   @IsBoolean()

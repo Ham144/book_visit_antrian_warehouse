@@ -1,4 +1,5 @@
 import { Booking } from "./booking.type";
+import { Vacant } from "./vacant.type";
 import { Warehouse } from "./warehouse";
 
 export interface IDock {
@@ -12,8 +13,7 @@ export interface IDock {
   maxLength?: number;
   maxWidth?: number;
   maxHeight?: number;
-  availableFrom?: Date;
-  availableUntil?: Date;
+  vacants?: Vacant[];
   isActive?: boolean;
   priority?: number;
   bookings?: Booking[];
@@ -22,5 +22,5 @@ export interface IDock {
 
 export interface DockFilter {
   page: number;
-  warehouseId?: string | null;
+  searchKey?: string | null;
 }

@@ -1,5 +1,13 @@
+import { Days } from '@prisma/client';
 import { Expose } from 'class-transformer';
 import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
+
+export class Vacant {
+  id?: String;
+  availableFrom: string | null;
+  availableUntil: string | null;
+  day: Days | String; // ini single data bukan array
+}
 
 export class ResponseDockDto {
   @Expose()
@@ -19,9 +27,7 @@ export class ResponseDockDto {
   @Expose()
   maxHeight?: number;
   @Expose()
-  availableFrom?: Date;
-  @Expose()
-  availableUntil?: Date;
+  vacants?: Vacant[];
   @Expose()
   isActive?: boolean;
   @Expose()
@@ -38,6 +44,5 @@ export class ResponseDockDto {
 
 export class DockFilter {
   page: number;
-  warehouseId?: string | null;
-  organizationName: string;
+  searchKey?: string | null;
 }

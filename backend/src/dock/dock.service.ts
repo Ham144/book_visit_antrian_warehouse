@@ -10,42 +10,31 @@ import { PrismaService } from 'src/common/prisma.service';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { DockFilter, ResponseDockDto } from './dto/response-dock.dto';
 import { plainToInstance } from 'class-transformer';
+import { Days } from '@prisma/client';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Injectable()
 export class DockService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(createDockDto: CreateDockDto, userInfo: LoginResponseDto) {
-    const {
-      availableFrom,
-      availableUntil,
-      photos = [],
-      ...rest
-    } = createDockDto;
-
-    // Set default times if not provided (00:00 to 23:59:59)
-    const defaultFrom =
-      availableFrom ||
-      (() => {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
-        return date;
-      })();
-    const defaultUntil =
-      availableUntil ||
-      (() => {
-        const date = new Date();
-        date.setHours(23, 59, 59, 999);
-        return date;
-      })();
+  async create(createDockDto: CreateDockDto, userInfo: TokenPayload) {
+    const { vacants, photos = [], ...rest } = createDockDto;
 
     try {
-      const dock = await this.prismaService.dock.create({
+      await this.prismaService.dock.create({
         data: {
           ...rest,
           photos: photos || [],
-          availableFrom: defaultFrom,
-          availableUntil: defaultUntil,
+          warehouseId: userInfo.homeWarehouseId,
+          vacants: {
+            createMany: {
+              data: vacants.map((vacant) => ({
+                availableFrom: vacant.availableFrom,
+                availableUntil: vacant.availableUntil,
+                day: vacant.day as Days,
+              })),
+            },
+          },
           organizationName: userInfo.organizationName,
         },
         include: {
@@ -59,23 +48,25 @@ export class DockService {
         },
       });
 
-      return plainToInstance(ResponseDockDto, dock, {
-        excludeExtraneousValues: true,
-      });
+      return HttpStatus.CREATED;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
   }
 
+  //vendor
   async findAll(filter: DockFilter, userInfo: LoginResponseDto) {
-    const { page, warehouseId } = filter;
+    const { page, searchKey } = filter;
 
     const where: any = {
       organizationName: userInfo.organizationName,
     };
 
-    if (warehouseId) {
-      where.warehouseId = warehouseId;
+    if (searchKey) {
+      where.name = {
+        contains: searchKey,
+        mode: 'insensitive', // case-insensitive
+      };
     }
 
     const safePage = Number(page) || 1;
@@ -103,32 +94,29 @@ export class DockService {
     });
   }
 
-  async findByWarehouseId(id: string) {
-    const dock = await this.prismaService.dock.findFirst({
+  //admin/docks
+  async getDocksByWarehouseId(id: string) {
+    const docks = await this.prismaService.dock.findMany({
       where: {
         warehouseId: id,
       },
       include: {
         warehouse: {
           select: {
+            id: true,
             name: true,
+            location: true,
           },
         },
-        organization: { select: { name: true } },
-        busyTimes: {
-          orderBy: {
-            from: 'asc',
-          },
-        },
+        vacants: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    return plainToInstance(ResponseDockDto, dock, {
+    return plainToInstance(ResponseDockDto, docks, {
       excludeExtraneousValues: true,
-      groups: ['detail'],
     });
   }
 
@@ -184,14 +172,7 @@ export class DockService {
       throw new NotFoundException(`Dock dengan id ${id} tidak ditemukan`);
     }
 
-    const {
-      id: _id,
-      warehouseId,
-      photos,
-      availableFrom,
-      availableUntil,
-      ...rest
-    } = updateDockDto;
+    const { id: _id, warehouseId, photos, vacants, ...rest } = updateDockDto;
 
     const updateData: any = { ...rest };
 
@@ -203,20 +184,31 @@ export class DockService {
       updateData.photos = photos;
     }
 
-    if (availableFrom !== undefined) {
-      updateData.availableFrom = availableFrom;
-    }
-
-    if (availableUntil !== undefined) {
-      updateData.availableUntil = availableUntil;
-    }
-
     try {
       const updatedDock = await this.prismaService.dock.update({
         where: {
           id: id,
         },
-        data: updateData,
+        data: {
+          ...updateData,
+          vacants: {
+            deleteMany: {
+              dockId: id,
+            },
+            createMany: {
+              data: vacants.map((vacant) => ({
+                availableFrom: vacant.availableFrom
+                  ? new Date(vacant.availableFrom)
+                  : null,
+                availableUntil: vacant.availableUntil
+                  ? new Date(vacant.availableUntil)
+                  : null,
+                day: vacant.day,
+                dockId: id,
+              })),
+            },
+          },
+        },
         include: {
           warehouse: {
             select: {
@@ -238,22 +230,15 @@ export class DockService {
 
   async remove(id: string) {
     try {
-      const result = await this.prismaService.dock.deleteMany({
-        where: { id },
+      await this.prismaService.dock.delete({
+        where: {
+          id,
+        },
       });
 
-      if (result.count === 0) {
-        throw new NotFoundException('Dock tidak ditemukan');
-      }
-
-      return {
-        message: 'Dock berhasil dihapus',
-        statusCode: 200,
-      };
+      return HttpStatus.ACCEPTED;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
+      console.log(error);
       throw new InternalServerErrorException('Gagal menghapus dock');
     }
   }

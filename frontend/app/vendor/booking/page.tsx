@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Clock,
   ChevronRight,
@@ -14,10 +14,9 @@ import {
   Star,
   Activity,
   CheckCircle,
-  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { WarehouseApi } from "@/api/warehouse.api";
 import { VehicleApi } from "@/api/vehicle.api";
 import { DockApi } from "@/api/dock.api";
@@ -26,22 +25,19 @@ import { useUserInfo } from "@/components/UserContext";
 import { Warehouse } from "@/types/warehouse";
 import { IVehicle } from "@/types/vehicle";
 import { IDock } from "@/types/dock.type";
+import { useRouter, useSearchParams } from "next/navigation";
+import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
+import { BookingApi } from "@/api/booking.api";
 
 type BookingStep = "warehouse" | "vehicle" | "dock" | "detail";
 
 export default function BookingPage() {
   const { userInfo } = useUserInfo();
   const [bookingStep, setBookingStep] = useState<BookingStep>("warehouse");
-  const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(
-    null
-  );
-  const [selectedVehicle, setSelectedVehicle] = useState<IVehicle | null>(null);
-  const [selectedDock, setSelectedDock] = useState<IDock | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedArrivalTime, setSelectedArrivalTime] = useState<string>("");
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
+  const router = useRouter();
 
-  const [formData, setFormData] = useState<Booking>({
+  const initialBookingState = {
     vehicleId: "",
     warehouseId: "",
     dockId: "",
@@ -49,7 +45,18 @@ export default function BookingPage() {
     estimatedFinishTime: null,
     driverId: userInfo?.id || "",
     notes: "",
-  });
+  };
+
+  //url state query
+  const params = useSearchParams();
+  const vehicleIdParam = params.get("vehicleId");
+  const warehouseIdParam = params.get("warehouseId");
+  const dockIdParam = params.get("dockId");
+  const arrivalTimeParam = params.get("arrivalTime");
+  const driverIdParam = params.get("driverId");
+  const notesParam = params.get("notes");
+
+  const [formData, setFormData] = useState<Booking>(initialBookingState);
 
   const { data: warehouses = [], isLoading: loadingWarehouses } = useQuery({
     queryKey: ["warehouses"],
@@ -73,71 +80,77 @@ export default function BookingPage() {
   });
 
   const { data: activeDocks, isLoading: loadingDocks } = useQuery({
-    queryKey: ["docks", selectedWarehouse?.id],
+    queryKey: ["docks", formData.warehouseId],
     queryFn: async () => {
-      if (!selectedWarehouse?.id) return [];
+      if (!formData.warehouseId) return [];
       return await DockApi.getAllDocks({
         page: 1,
-        warehouseId: selectedWarehouse.id,
+        warehouseId: formData.warehouseId,
       });
     },
-    enabled: !!selectedWarehouse?.id,
+  });
+
+  const qq = useQueryClient();
+
+  const { mutateAsync: handleSubmitBooking } = useMutation({
+    mutationKey: ["booking"],
+    mutationFn: async () => BookingApi.createBooking(formData),
+    onSuccess: () => {
+      toast.success("Booking created successfully");
+      router.push("/vendor/history");
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+    },
   });
 
   const handleWarehouseSelect = (warehouse: Warehouse) => {
-    setSelectedWarehouse(warehouse);
-    setFormData({ ...formData, warehouseId: warehouse.id });
+    setFormData({
+      ...formData,
+      warehouseId: warehouse.id,
+      Warehouse: warehouse,
+    });
     setBookingStep("vehicle");
+    router.push(`/vendor/booking?warehouseId=${warehouse.id}`);
   };
 
   const handleVehicleSelect = (vehicle: IVehicle) => {
     if (!vehicle.id) return;
-    setSelectedVehicle(vehicle);
-    setFormData({ ...formData, vehicleId: vehicle.id });
+    setFormData({ ...formData, vehicleId: vehicle.id, Vehicle: vehicle });
     setBookingStep("dock");
+    let full = window.location.href + `&vehicleId=${vehicle.id}`;
+    router.push(full);
   };
 
   const handleDockSelect = (dock: IDock) => {
     if (!dock.id) return;
-    setSelectedDock(dock);
-    setFormData({ ...formData, dockId: dock.id });
-    setBookingStep("date");
-  };
-
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-    setBookingStep("arrivalTime");
+    setFormData({ ...formData, dockId: dock.id, Dock: dock });
+    setBookingStep("detail");
+    let full = window.location.href + `&dockId=${dock.id}`;
+    router.push(full);
   };
 
   const handleBack = () => {
+    let full = window.location.href;
+    const base = full.split("?")[0];
+    const data = full.split("?")[1].split("&");
     if (bookingStep === "vehicle") {
       setBookingStep("warehouse");
-      setSelectedWarehouse(null);
-      setFormData({ ...formData, warehouseId: "" });
+      data.splice(data.indexOf("vehicleId"), 1);
+      router.push(base + "?" + data.join("&"));
+      setFormData({ ...formData, warehouseId: "", Warehouse: null });
     } else if (bookingStep === "dock") {
       setBookingStep("vehicle");
-      setSelectedVehicle(null);
-      setFormData({ ...formData, vehicleId: "" });
-    } else if (bookingStep === "arrivalTime") {
-      setBookingStep("date");
-      setSelectedDate("");
+      data.splice(data.indexOf("dockId"), 1);
+      router.push(base + "?" + data.join("&"));
+      setFormData({ ...formData, vehicleId: "", Vehicle: null });
+    } else if (bookingStep === "detail") {
+      data.splice(data.indexOf("arrivalTime"), 1);
+      data.splice(data.indexOf("notes"), 1);
+      router.push(base + "?" + data.join("&"));
+      setBookingStep("dock");
+      setFormData({ ...formData, arrivalTime: null, notes: "" });
     }
-  };
-
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
   };
 
   const getSteps = () => {
@@ -145,16 +158,15 @@ export default function BookingPage() {
       {
         id: "warehouse",
         label: "Pilih Gudang",
-        completed: !!selectedWarehouse,
+        completed: !!formData.Warehouse,
       },
-      { id: "vehicle", label: "Pilih Kendaraan", completed: !!selectedVehicle },
-      { id: "dock", label: "Pilih Dock", completed: !!selectedDock },
-      { id: "date", label: "Pilih Tanggal", completed: !!selectedDate },
       {
-        id: "arrivalTime",
-        label: "Pilih Waktu",
-        completed: !!selectedArrivalTime,
+        id: "vehicle",
+        label: "Pilih Kendaraan",
+        completed: !!formData.Vehicle,
       },
+      { id: "dock", label: "Pilih Dock", completed: !!formData.Dock },
+      { id: "detail", label: "Detail", completed: !!formData.arrivalTime },
     ];
     return steps;
   };
@@ -163,9 +175,43 @@ export default function BookingPage() {
     return getSteps().findIndex((s) => s.id === bookingStep);
   };
 
+  const handleUpdateFormData = (updates: Partial<Booking>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
+  };
   const displayVehicles = myVehicles.length > 0 ? myVehicles : allVehicles;
   const isLoadingVehicles =
     myVehicles.length > 0 ? loadingMyVehicles : loadingVehicles;
+
+  useEffect(() => {
+    if (
+      vehicleIdParam ||
+      warehouseIdParam ||
+      dockIdParam ||
+      driverIdParam ||
+      notesParam
+    ) {
+      setFormData({
+        ...formData,
+        vehicleId: vehicleIdParam || "",
+        warehouseId: warehouseIdParam || "",
+        dockId: dockIdParam || "",
+        driverId: driverIdParam || "",
+        notes: notesParam || "",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!formData.warehouseId) {
+      setBookingStep("warehouse");
+    } else if (!formData.vehicleId) {
+      setBookingStep("vehicle");
+    } else if (!formData.dockId) {
+      setBookingStep("dock");
+    } else if (!formData.arrivalTime) {
+      setBookingStep("detail");
+    }
+  }, [formData]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -267,7 +313,7 @@ export default function BookingPage() {
                     key={warehouse.id}
                     onClick={() => handleWarehouseSelect(warehouse)}
                     className={`card bg-white shadow-md hover:shadow-xl transition-all cursor-pointer border-2 ${
-                      selectedWarehouse?.id === warehouse.id
+                      formData.warehouseId === warehouse.id
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:border-gray-300"
                     }`}
@@ -276,9 +322,13 @@ export default function BookingPage() {
                       <div className="flex items-start justify-between mb-3">
                         <h3 className="text-xl font-bold">{warehouse.name}</h3>
                         {warehouse.isActive ? (
-                          <span className="badge badge-success">Aktif</span>
+                          <span className="badge badge-success px-3 text-white font-bold">
+                            Aktif
+                          </span>
                         ) : (
-                          <span className="badge badge-error">Tidak Aktif</span>
+                          <span className="badge badge-error  px-3 text-white font-bold">
+                            Tidak Aktif
+                          </span>
                         )}
                       </div>
 
@@ -321,13 +371,13 @@ export default function BookingPage() {
                       )}
 
                       <button
-                        className={`btn w-full gap-2 ${
-                          selectedWarehouse?.id === warehouse.id
+                        className={`btn w-full gap-2 hover:text-white ${
+                          formData.warehouseId === warehouse.id
                             ? "btn-primary"
                             : "btn-outline btn-primary"
                         }`}
                       >
-                        {selectedWarehouse?.id === warehouse.id ? (
+                        {formData.warehouseId === warehouse.id ? (
                           <>
                             <span>Lanjutkan</span>
                             <ChevronRight size={18} />
@@ -382,12 +432,12 @@ export default function BookingPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {displayVehicles.map((vehicle) => (
+                {displayVehicles.map((vehicle: IVehicle) => (
                   <div
                     key={vehicle.id}
                     onClick={() => handleVehicleSelect(vehicle)}
                     className={`card bg-white shadow-md hover:shadow-xl transition-all cursor-pointer border-2 ${
-                      selectedVehicle?.id === vehicle.id
+                      formData.vehicleId === vehicle.id
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:border-gray-300"
                     }`}
@@ -403,7 +453,9 @@ export default function BookingPage() {
                           </p>
                         </div>
                         {vehicle.isActive ? (
-                          <span className="badge badge-success">Aktif</span>
+                          <span className="badge badge-success px-3 text-white font-bold">
+                            Aktif
+                          </span>
                         ) : (
                           <span className="badge badge-error">Tidak Aktif</span>
                         )}
@@ -476,13 +528,13 @@ export default function BookingPage() {
                       </div>
 
                       <button
-                        className={`btn w-full gap-2 ${
-                          selectedVehicle?.id === vehicle.id
+                        className={`btn w-full gap-2 hover:text-white ${
+                          formData.vehicleId === vehicle.id
                             ? "btn-primary"
                             : "btn-outline btn-primary"
                         }`}
                       >
-                        {selectedVehicle?.id === vehicle.id ? (
+                        {formData.vehicleId === vehicle.id ? (
                           <>
                             <span>Lanjutkan</span>
                             <ChevronRight size={18} />
@@ -508,7 +560,7 @@ export default function BookingPage() {
                 Pilih Dock
               </h2>
               <p className="text-gray-600">
-                Pilih dock yang tersedia di {selectedWarehouse?.name}
+                Pilih dock yang tersedia di {formData.Dock?.name}
               </p>
             </div>
 
@@ -532,7 +584,7 @@ export default function BookingPage() {
                     key={dock.id}
                     onClick={() => handleDockSelect(dock)}
                     className={`card bg-white shadow-md hover:shadow-xl transition-all cursor-pointer border-2 ${
-                      selectedDock?.id === dock.id
+                      formData.dockId === dock.id
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:border-gray-300"
                     }`}
@@ -552,7 +604,7 @@ export default function BookingPage() {
 
                       {dock.dockType && (
                         <div className="mb-3">
-                          <span className="badge badge-info">
+                          <span className="badge badge-info px-3 font-bold text-white">
                             {dock.dockType}
                           </span>
                         </div>
@@ -593,13 +645,13 @@ export default function BookingPage() {
                       </div>
 
                       <button
-                        className={`btn w-full gap-2 ${
-                          selectedDock?.id === dock.id
+                        className={`btn w-full gap-2 hover:text-white  ${
+                          formData.dockId === dock.id
                             ? "btn-primary"
                             : "btn-outline btn-primary"
                         }`}
                       >
-                        {selectedDock?.id === dock.id ? (
+                        {formData.dockId === dock.id ? (
                           <>
                             <span>Lanjutkan</span>
                             <ChevronRight size={18} />
@@ -617,134 +669,27 @@ export default function BookingPage() {
         )}
 
         {/* Step 4: Date Selection */}
-        {bookingStep === "date" && (
+        {bookingStep === "detail" && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-semibold flex items-center mb-2">
-                <Calendar className="w-6 h-6 mr-2 text-primary" />
-                Pilih Tanggal
-              </h2>
-              <p className="text-gray-600">
-                Pilih tanggal untuk booking di {selectedWarehouse?.name}
-              </p>
-            </div>
-
-            <div className="card bg-white shadow">
-              <div className="card-body">
-                <div className="form-control w-full max-w-xs">
-                  <label className="label">
-                    <span className="label-text">Tanggal Booking</span>
-                  </label>
-                  <input
-                    type="date"
-                    min={getMinDate()}
-                    value={selectedDate}
-                    onChange={(e) => handleDateSelect(e.target.value)}
-                    className="input input-bordered w-full max-w-xs"
-                  />
-                  {selectedDate && (
-                    <label className="label">
-                      <span className="label-text-alt text-primary">
-                        {formatDate(selectedDate)}
-                      </span>
-                    </label>
-                  )}
-                </div>
-              </div>
-            </div>
+            <PreviewSlotDisplay
+              formData={formData}
+              onUpdateFormData={handleUpdateFormData}
+            />
           </div>
         )}
+      </div>
 
-        {/* Step 5: ArrivalTime Selection */}
-        {bookingStep === "arrivalTime" && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-semibold flex items-center mb-2">
-                <Clock className="w-6 h-6 mr-2 text-primary" />
-                Pilih Slot Waktu
-              </h2>
-              <p className="text-gray-600">
-                Pilih waktu Unload untuk booking Anda
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {loadingSlots ? (
-                <div className="flex justify-center items-center py-16">
-                  <Loader2 className="size-10 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {selectedDock && (
-                    <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm hover:shadow-md transition-shadow duration-300 ease-in-out">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-base-content">
-                          Dock:{" "}
-                          <span className="text-primary">
-                            {selectedDock.name}
-                          </span>
-                        </h3>
-                      </div>
-                      <div className="text-sm text-base-content/80 space-y-1">
-                        {selectedWarehouse?.location && (
-                          <p>
-                            <span className="font-medium">Alamat:</span>{" "}
-                            {selectedWarehouse.location}
-                          </p>
-                        )}
-                        <p>
-                          <span className="font-medium">Warehouse:</span>{" "}
-                          {selectedWarehouse?.name}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {!selectedDate ? (
-                    <div className="flex items-center gap-3 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-lg p-4 shadow-sm">
-                      <AlertCircle className="size-6 shrink-0" />
-                      <span className="font-medium">
-                        Silakan pilih tanggal terlebih dahulu
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="card bg-white shadow">
-                      <div className="card-body">
-                        <p className="text-gray-600 mb-4">
-                          Pilih waktu kedatangan untuk tanggal{" "}
-                          <span className="font-semibold">
-                            {formatDate(selectedDate)}
-                          </span>
-                        </p>
-                        <div className="form-control w-full max-w-xs">
-                          <label className="label">
-                            <span className="label-text">Waktu Kedatangan</span>
-                          </label>
-                          <input
-                            type="time"
-                            value={selectedArrivalTime}
-                            onChange={(e) =>
-                              setSelectedArrivalTime(e.target.value)
-                            }
-                            className="input input-bordered w-full max-w-xs"
-                          />
-                          {selectedVehicle && (
-                            <label className="label">
-                              <span className="label-text-alt text-gray-500">
-                                Durasi bongkar muat:{" "}
-                                {selectedVehicle.durasiBongkar} menit
-                              </span>
-                            </label>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+      {/* Submit Button */}
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={() => handleSubmitBooking()}
+          disabled={!formData.arrivalTime}
+          className={`btn btn-primary px-4 btn-lg ${
+            !formData.arrivalTime ? "btn-disabled" : ""
+          }`}
+        >
+          Buat Booking
+        </button>
       </div>
     </div>
   );
