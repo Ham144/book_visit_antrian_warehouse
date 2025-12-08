@@ -1,27 +1,19 @@
 import { UserInfo } from "./auth";
+import { DockRequirement, VehicleType } from "./shared.type";
 
 export interface IVehicle {
   id?: string;
   brand?: string;
-  jenisKendaraan?: string;
+  vehicleType?: VehicleType;
   productionYear?: number;
-  maxCapacity?: string;
-  dimensionLength?: number;
-  dimensionWidth?: number;
-  dimensionHeight?: number;
+  maxCapacity?: number;
   durasiBongkar: number;
-  driverNames?: string[];
+  requiresDock?: DockRequirement;
   drivers: UserInfo[];
-  isReefer?: boolean;
-  requiresDock?: string;
   description?: string;
   isActive?: boolean;
+  driverNames?: string[];
+  isReefer?: boolean;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface VehicleType {
-  name: string;
-  description: string; // e.g.,  "Cargo", "Container"
-  defaultUnloadMinutes: number;
 }

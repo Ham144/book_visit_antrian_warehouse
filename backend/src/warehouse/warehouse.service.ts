@@ -87,7 +87,7 @@ export class WarehouseService {
               Vehicle: {
                 select: {
                   brand: true,
-                  jenisKendaraan: true,
+                  vehicleType: true,
                 },
               },
               Dock: { select: { name: true, id: true } },
@@ -97,15 +97,7 @@ export class WarehouseService {
         },
       });
 
-      const warehouseData = {
-        ...warehouseWithAccess,
-        warehouseAccess:
-          warehouseWithAccess?.userWarehouseAccesses?.map(
-            (access: any) => access.username,
-          ) ?? [],
-      };
-
-      return plainToInstance(responseWarehouseDto, warehouseData, {
+      return plainToInstance(responseWarehouseDto, warehouseWithAccess, {
         excludeExtraneousValues: true,
         groups: ['detail'],
       });
@@ -185,7 +177,7 @@ export class WarehouseService {
         bookings: {
           include: {
             Vehicle: {
-              select: { brand: true, jenisKendaraan: true },
+              select: { brand: true, vehicleType: true },
             },
             Dock: { select: { name: true, id: true } },
           },

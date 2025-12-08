@@ -31,7 +31,7 @@ export class VehicleService {
 
         if (!userHaseVehicle) {
           throw new NotFoundException(
-            `Driver ${createVehicleDto.driverNames[i]} sudah terhubung ke ${userHaseVehicle.vehicle.brand}-${userHaseVehicle.vehicle.jenisKendaraan}`,
+            `Driver ${createVehicleDto.driverNames[i]} sudah terhubung ke ${userHaseVehicle.vehicle.brand}-${userHaseVehicle.vehicle.vehicleType}`,
           );
         }
       }
@@ -40,13 +40,12 @@ export class VehicleService {
         data: {
           organizationName: userInfo.organizationName,
           brand: createVehicleDto.brand,
-          jenisKendaraan: createVehicleDto.jenisKendaraan,
           durasiBongkar: createVehicleDto.durasiBongkar,
-          dimensionHeight: createVehicleDto.dimensionHeight,
-          dimensionLength: createVehicleDto.dimensionLength,
-          dimensionWidth: createVehicleDto.dimensionWidth,
+          vehicleType: createVehicleDto.vehicleType,
           drivers: {
-            connect: createVehicleDto.driverNames.map((d) => ({ username: d })),
+            connect: createVehicleDto.driverNames.map((d) => ({
+              username: d,
+            })),
           },
           isActive: createVehicleDto.isActive,
         },
@@ -61,7 +60,7 @@ export class VehicleService {
     try {
       const vehicles = await this.prismaService.vehicle.findMany({
         orderBy: {
-          jenisKendaraan: 'asc',
+          createdAt: 'asc',
         },
       });
 
@@ -110,14 +109,10 @@ export class VehicleService {
         where: { id },
         data: {
           brand: updateVehicleDto.brand,
-          jenisKendaraan: updateVehicleDto.jenisKendaraan,
+          vehicleType: updateVehicleDto.vehicleType,
           productionYear: updateVehicleDto.productionYear,
           maxCapacity: updateVehicleDto.maxCapacity,
-          dimensionLength: updateVehicleDto.dimensionLength,
-          dimensionWidth: updateVehicleDto.dimensionWidth,
-          dimensionHeight: updateVehicleDto.dimensionHeight,
           durasiBongkar: updateVehicleDto.durasiBongkar,
-          isReefer: updateVehicleDto.isReefer,
           requiresDock: updateVehicleDto.requiresDock,
           drivers: {
             connect: updateVehicleDto.driverNames.map((d) => ({

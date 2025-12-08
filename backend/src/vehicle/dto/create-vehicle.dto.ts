@@ -6,6 +6,7 @@ import {
   IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { DockRequirement, VehicleType } from '@prisma/client';
 
 export class CreateVehicleDto {
   @IsNotEmpty()
@@ -13,7 +14,7 @@ export class CreateVehicleDto {
   brand: string;
   @IsNotEmpty()
   @IsString()
-  jenisKendaraan: string;
+  vehicleType: VehicleType;
 
   @IsOptional()
   @Type(() => Number)
@@ -22,33 +23,21 @@ export class CreateVehicleDto {
 
   @IsOptional()
   @IsString()
-  maxCapacity?: string;
+  requiresDock?: DockRequirement;
 
-  @IsNumber()
   @IsOptional()
   @Type(() => Number)
-  dimensionLength?: number;
-
   @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  dimensionWidth?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  dimensionHeight?: number;
+  maxCapacity?: number;
 
   @IsNotEmpty()
   @Type(() => Number)
   @IsNumber()
   durasiBongkar: number;
+
   @IsBoolean()
   @IsOptional()
   isReefer?: boolean;
-  @IsString()
-  @IsOptional()
-  requiresDock?: string;
 
   @IsString()
   @IsOptional()

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateBusyTimeDto } from './dto/create-busy-time.dto';
 import { UpdateBusyTimeDto } from './dto/update-busy-time.dto';
 import { PrismaService } from 'src/common/prisma.service';
@@ -12,51 +12,21 @@ export class BusyTimeService {
 
   async create(createBusyTimeDto: CreateBusyTimeDto) {
     const { recurringCustom, ...rest } = createBusyTimeDto;
-    const conflictRecurring = await this.prismaService.dockBusyTime.findFirst({
-      where: {
-        dockId: createBusyTimeDto.dockId,
-        recurring: createBusyTimeDto.recurring,
 
-        OR: [
-          // DAILY
-          {
-            recurring: Recurring.DAILY,
-            recurringStep: createBusyTimeDto.recurringStep,
-          },
-
-          // WEEKLY
-          {
-            recurring: Recurring.WEEKLY,
-            recurringCustom: {
-              equals: createBusyTimeDto.recurringCustom.map((rc) => {
-                return Days[rc];
-              }),
-            },
-          },
-
-          // MONTHLY
-          {
-            recurring: Recurring.MONTHLY,
-            recurringStep: createBusyTimeDto.recurringStep, // tanggal
-          },
-        ],
-      },
-    });
-
-    if (conflictRecurring) {
-      throw new Error(
-        `Waktu terkait overlap dengan ${conflictRecurring.reason}`,
+    if (rest.recurring == 'WEEKLY' && !recurringCustom?.length) {
+      throw new BadRequestException(
+        'WEEKLY recurring memerlukan recurring custom',
+      );
+    } else if (!rest.recurringStep && rest.recurring != 'WEEKLY') {
+      throw new BadRequestException(
+        'WEEKLY recurring memerlukan recurring step',
       );
     }
 
-    const recurringCustomEnum = recurringCustom.map((rc) => {
-      return Recurring[rc];
-    });
-
     await this.prismaService.dockBusyTime.create({
       data: {
-        recurringCustom: recurringCustomEnum,
         ...rest,
+        recurringCustom: recurringCustom?.map((day) => Days[day]) || undefined,
       },
     });
     return HttpStatus.CREATED;
@@ -79,39 +49,33 @@ export class BusyTimeService {
       },
     });
 
-    return busyTimes.map((bt) => plainToInstance(ResponseBusyTimeDockDto, bt));
+    return busyTimes.map((bt) =>
+      plainToInstance(ResponseBusyTimeDockDto, bt, {
+        excludeExtraneousValues: true,
+      }),
+    );
   }
 
   async update(id: string, updateBusyTimeDto: UpdateBusyTimeDto) {
     const { recurringCustom, ...rest } = updateBusyTimeDto;
-    const overlap = await this.prismaService.dockBusyTime.findFirst({
-      where: {
-        dockId: updateBusyTimeDto.dockId,
-        AND: [
-          {
-            from: { lt: updateBusyTimeDto.to },
-          },
-          {
-            to: { gt: updateBusyTimeDto.from },
-          },
-        ],
-      },
-    });
 
-    if (overlap) {
-      throw new Error(
-        `Waktu terkait overlap ${overlap.reason}, antara waktu ${overlap.from} sampai ${overlap.to}`,
+    if (rest.recurring == 'WEEKLY' && !recurringCustom?.length) {
+      throw new BadRequestException(
+        'WEEKLY recurring memerlukan recurring custom',
+      );
+    } else if (!rest.recurringStep && rest.recurring != 'WEEKLY') {
+      throw new BadRequestException(
+        'WEEKLY recurring memerlukan recurring step',
       );
     }
+
     await this.prismaService.dockBusyTime.update({
       where: {
-        id,
+        id: rest.id,
       },
       data: {
         ...rest,
-        recurringCustom: recurringCustom.map((rc) => {
-          return Days[rc];
-        }),
+        recurringCustom: recurringCustom?.map((day) => Days[day]) || undefined,
       },
     });
     return HttpStatus.ACCEPTED;

@@ -11,6 +11,7 @@ import { useUserInfo } from "@/components/UserContext";
 import { Days } from "@/types/shared.type";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
 import { Vacant } from "@/types/vacant.type";
+import { VehicleType } from "@/types/shared.type";
 
 export default function DocksPage() {
   const queryClient = useQueryClient();
@@ -21,11 +22,8 @@ export default function DocksPage() {
     warehouseId: userInfo?.homeWarehouse?.id,
     warehouse: userInfo?.homeWarehouse,
     photos: [],
-    dockType: "",
-    supportedVehicleTypes: [],
-    maxLength: 0,
-    maxWidth: 0,
-    maxHeight: 0,
+    dockType: undefined,
+    allowedTypes: [],
     vacants: ((): Vacant[] => {
       const days = Object.values(Days);
       return days.map((day) => ({
@@ -35,7 +33,7 @@ export default function DocksPage() {
       }));
     })(),
     isActive: true,
-    priority: 0,
+    priority: undefined,
     busyTimes: [],
   };
   const [formData, setFormData] = useState<IDock>(initialDock);
@@ -44,10 +42,7 @@ export default function DocksPage() {
     return {
       ...data,
       photos: data.photos || [],
-      supportedVehicleTypes: data.supportedVehicleTypes || [],
-      maxLength: data.maxLength ? Number(data.maxLength) : undefined,
-      maxWidth: data.maxWidth ? Number(data.maxWidth) : undefined,
-      maxHeight: data.maxHeight ? Number(data.maxHeight) : undefined,
+      allowedTypes: data.allowedTypes || [],
       priority: data.priority ? Number(data.priority) : undefined,
       isActive: data.isActive ?? true,
     };
@@ -149,9 +144,6 @@ export default function DocksPage() {
                           Tipe Dock
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
-                          Dimensi Maks.
-                        </th>
-                        <th className="font-semibold text-gray-700 py-4 px-4">
                           Jenis Kendaraan
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
@@ -188,53 +180,26 @@ export default function DocksPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="text-sm text-gray-700 space-y-1">
-                                {dock.maxLength && (
-                                  <div className="flex items-center space-x-1">
-                                    <Ruler className="w-3 h-3 text-gray-400" />
-                                    <span>P: {dock.maxLength}m</span>
-                                  </div>
-                                )}
-                                {dock.maxWidth && (
-                                  <div className="flex items-center space-x-1">
-                                    <Ruler className="w-3 h-3 text-gray-400" />
-                                    <span>L: {dock.maxWidth}m</span>
-                                  </div>
-                                )}
-                                {dock.maxHeight && (
-                                  <div className="flex items-center space-x-1">
-                                    <Ruler className="w-3 h-3 text-gray-400" />
-                                    <span>T: {dock.maxHeight}m</span>
-                                  </div>
-                                )}
-                                {!dock.maxLength &&
-                                  !dock.maxWidth &&
-                                  !dock.maxHeight && (
-                                    <span className="text-gray-400">-</span>
-                                  )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              {dock.supportedVehicleTypes &&
-                              dock.supportedVehicleTypes.length > 0 ? (
+                              {dock.allowedTypes &&
+                              dock.allowedTypes.length > 0 ? (
                                 <div className="space-y-1">
                                   <div className="text-xs text-gray-600">
-                                    {dock.supportedVehicleTypes.length} jenis
+                                    {dock.allowedTypes.length} jenis
                                   </div>
                                   <div className="flex flex-wrap gap-1">
-                                    {dock.supportedVehicleTypes
+                                    {dock.allowedTypes
                                       .slice(0, 2)
                                       .map((type, idx) => (
                                         <span
                                           key={idx}
                                           className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
                                         >
-                                          {type.split(" ")[0]}
+                                          {type}
                                         </span>
                                       ))}
-                                    {dock.supportedVehicleTypes.length > 2 && (
+                                    {dock.allowedTypes.length > 2 && (
                                       <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                                        +{dock.supportedVehicleTypes.length - 2}
+                                        +{dock.allowedTypes.length - 2}
                                       </span>
                                     )}
                                   </div>
@@ -304,7 +269,7 @@ export default function DocksPage() {
                         ))
                       ) : (
                         <tr key={"empty"}>
-                          <td colSpan={7} className="px-4 py-8 text-center">
+                          <td colSpan={6} className="px-4 py-8 text-center">
                             <div className="flex flex-col items-center justify-center text-gray-500">
                               <MapPin className="w-12 h-12 text-gray-300 mb-2" />
                               <p className="font-medium">Belum ada data dock</p>
@@ -333,8 +298,9 @@ export default function DocksPage() {
       />
       <ConfirmationModal
         message="Konfirmasi menghapus dock ini? "
-        onConfirm={() => handleDelete(selectedDockId)}
+        onConfirm={() => handleDelete(selectedDockId!)}
         title="Hapus Dock"
+        modalId="confirmation1"
         key={"confirmation1"}
       />
     </div>

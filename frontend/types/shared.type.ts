@@ -24,3 +24,28 @@ export enum Days {
   SABTU = "SABTU",
   MINGGU = "MINGGU",
 }
+
+export enum DockType {
+  MANUAL = "MANUAL",
+  FORKLIFT = "FORKLIFT",
+  SIDE = "SIDE",
+  REEFER = "REEFER",
+}
+
+export enum VehicleType {
+  PICKUP = "PICKUP",
+  CDE = "CDE",
+  CDD = "CDD",
+  FUSO = "FUSO",
+  TRONTON = "TRONTON",
+  WINGBOX = "WINGBOX",
+  CONTAINER20 = "CONTAINER20",
+  CONTAINER40 = "CONTAINER40",
+}
+
+export enum DockRequirement {
+  NONE = "NONE",
+  FORKLIFT = "FORKLIFT",
+  SIDE = "SIDE",
+  REEFER = "REEFER",
+}

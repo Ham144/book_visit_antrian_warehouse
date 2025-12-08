@@ -1,3 +1,4 @@
+import { IDock } from "./dock.type";
 import { Days, Recurring } from "./shared.type";
 
 export interface IDockBusyTime {
@@ -7,6 +8,7 @@ export interface IDockBusyTime {
   reason: string;
   dockId: string;
   recurring: Recurring;
+  dock?: IDock;
   recurringStep?: number; //daily weekly monthly
   recurringCustom?: Days[];
 }

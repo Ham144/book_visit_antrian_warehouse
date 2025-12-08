@@ -11,7 +11,6 @@ import {
 import { DockService } from './dock.service';
 import { CreateDockDto } from './dto/create-dock.dto';
 import { UpdateDockDto } from './dto/update-dock.dto';
-import { DockFilter } from './dto/response-dock.dto';
 import { Auth } from 'src/common/auth.decorator';
 
 @Controller('dock')

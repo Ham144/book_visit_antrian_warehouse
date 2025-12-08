@@ -1,27 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Clock, Calendar, Edit, MapPin } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Clock,
+  Calendar,
+  Edit,
+  MapPin,
+  CalendarDays,
+} from "lucide-react";
 import { toast } from "sonner";
+
 import { IDockBusyTime } from "@/types/busyTime.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BusyTimeApi } from "@/api/busyTime.api";
 import BusyTimeFormModal from "@/components/admin/BusyTimeFormModal";
 import { Recurring } from "@/types/shared.type";
 import { useUserInfo } from "@/components/UserContext";
+import ConfirmationModal from "@/components/shared-common/confirmationModal";
+import getDuration from "@/lib/getDuration";
 
 export default function BusyTimesPage() {
   const { userInfo } = useUserInfo();
+  const [selectedBusyTimeId, setSelectedBusyTimeId] = useState<
+    string | undefined
+  >();
 
-  const [formData, setFormData] = useState<IDockBusyTime>({
+  const initialBusyTime = {
     dockId: "",
-    from: new Date(1970, 1, 1, 11, 0, 0),
-    to: new Date(new Date().setHours(23, 59, 59, 999)),
+    from: "12:00",
+    to: "13:00",
     reason: "",
     recurring: Recurring.DAILY,
     recurringStep: 0,
     recurringCustom: [],
-  });
+  };
+
+  const [formData, setFormData] = useState<IDockBusyTime>(initialBusyTime);
 
   const qq = useQueryClient();
 
@@ -69,7 +85,7 @@ export default function BusyTimesPage() {
 
   const { mutateAsync: handleDelete } = useMutation({
     mutationKey: ["busy-times", "delete"],
-    mutationFn: async (id: string) => BusyTimeApi.remove(id),
+    mutationFn: async () => BusyTimeApi.remove(selectedBusyTimeId),
     onSuccess: () => {
       toast.success("Busy time berhasil dihapus");
       qq.invalidateQueries({
@@ -80,6 +96,7 @@ export default function BusyTimesPage() {
       toast.error(error?.response?.data.message || "Gagal menghapus busy time");
     },
   });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="flex">
@@ -97,6 +114,7 @@ export default function BusyTimesPage() {
               </div>
               <button
                 onClick={() => {
+                  setFormData(initialBusyTime);
                   (
                     document.getElementById(
                       "BusyTimeFormModal"
@@ -122,55 +140,89 @@ export default function BusyTimesPage() {
                     <div className="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-start md:items-center gap-4">
                         <div className="p-3 bg-gradient-to-br from-teal-100 to-green-100 rounded-lg">
-                          <Calendar className="text-teal-600" size={22} />
+                          <Clock className="text-teal-600" size={22} />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center flex-wrap gap-2 mb-2">
                             <h3 className="font-bold text-gray-900">
                               {bt.reason}
                             </h3>
                             {bt.recurring && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  bt.recurring === "DAILY"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : bt.recurring === "WEEKLY"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : bt.recurring === "MONTHLY"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : bt.recurring === "ONCE"
+                                    ? "bg-gray-100 text-gray-800"
+                                    : "bg-teal-100 text-teal-800"
+                                }`}
+                              >
                                 {bt.recurring === "DAILY" && "Harian"}
                                 {bt.recurring === "WEEKLY" && "Mingguan"}
                                 {bt.recurring === "MONTHLY" && "Bulanan"}
                               </span>
                             )}
                           </div>
-                          <div className="space-y-1 text-sm text-gray-600">
+
+                          <div className="space-y-2 text-sm text-gray-600">
+                            {/* Time Range */}
                             <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <span>
-                                {new Date(bt.from).toLocaleTimeString("id-ID", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}{" "}
-                                -{" "}
-                                {new Date(bt.to).toLocaleTimeString("id-ID", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-gray-400" />
-                              <span>
-                                {new Date(bt.from).toLocaleDateString("id-ID", {
-                                  weekday: "long",
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            </div>
-                            {bt.dockId && (
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-700">
-                                  {bt.dockId}
+                              <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium text-gray-800">
+                                  {bt.from}
+                                </span>
+                                <span className="text-gray-400">-</span>
+                                <span className="font-medium text-gray-800">
+                                  {bt.to}
                                 </span>
                               </div>
+                              <span className="text-xs text-gray-500">
+                                ({getDuration(bt.from, bt.to)})
+                              </span>
+                            </div>
+
+                            {/* Dock Info */}
+                            {bt.dock && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-700 font-medium">
+                                    Dock:
+                                  </span>
+                                  <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded text-xs">
+                                    {bt.dock.name}
+                                  </span>
+                                </div>
+                              </div>
                             )}
+
+                            {/* Recurring Info */}
+                            {bt.recurring === Recurring.WEEKLY &&
+                              bt.recurringCustom && (
+                                <div className="flex items-start gap-2">
+                                  <Calendar className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <div className="text-xs text-gray-500 mb-1">
+                                      Hari Tertentu:
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {bt.recurringCustom.map((day, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                                        >
+                                          {day}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -191,8 +243,15 @@ export default function BusyTimesPage() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(bt.id)}
-                          className="btn btn-sm btn-ghost text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
+                          onClick={() => {
+                            setSelectedBusyTimeId(bt.id);
+                            (
+                              document.getElementById(
+                                "confirmation-delete"
+                              ) as HTMLDialogElement
+                            )?.showModal();
+                          }}
+                          className="btn btn-sm btn-ghost text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Hapus busy time"
                         >
                           <Trash2 size={16} />
@@ -205,7 +264,7 @@ export default function BusyTimesPage() {
                 <div className="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-8 text-center">
                   <div className="max-w-md mx-auto">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-teal-100 to-green-100 rounded-full flex items-center justify-center">
-                      <Calendar className="w-8 h-8 text-teal-500" />
+                      <Clock className="w-8 h-8 text-teal-500" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">
                       Belum ada Busy Time
@@ -217,6 +276,7 @@ export default function BusyTimesPage() {
                     </p>
                     <button
                       onClick={() => {
+                        setFormData(initialBusyTime);
                         (
                           document.getElementById(
                             "BusyTimeFormModal"
@@ -241,6 +301,13 @@ export default function BusyTimesPage() {
         onCreate={handleCreateBusyTime}
         onEdit={handleUpdateBusyTime}
         setFormData={setFormData}
+      />
+      <ConfirmationModal
+        key={"confirmation1"}
+        message="Apakah anda Yakin ingin Menghapus Busy Time?"
+        onConfirm={() => handleDelete()}
+        title="Apakah anda Yakin ingin Menghapus"
+        modalId="confirmation-delete"
       />
     </div>
   );

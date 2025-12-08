@@ -39,9 +39,9 @@ model Globalsetting {
 }
 
 enum Recurring {
-  DAILY
+  DAILY // recurringStep menentukan berapa lompatan tiap hari
   WEEKLY //customDay
-  MONTHLY
+  MONTHLY //recurringStep menentukan tanggal berapa dalam 1 bulan
 }
 
 enum SubscriptionPlan {
@@ -76,24 +76,53 @@ model Warehouse {
   organization          Organization? @relation(fields: [organizationName], references: [name])
 }
 
+model Vacant {
+  id             String  @id @default(uuid())
+  availableFrom  String?
+  availableUntil String?
+  dockId         String?
+  dock           Dock?   @relation(fields: [dockId], references: [id])
+  day            Days?
+
+  @@unique([dockId, day])
+}
+
+model Vehicle {
+  id             String      @id @default(cuid())
+  brand          String
+  vehicleType    VehicleType
+  productionYear Int?
+
+  maxCapacity   Int?
+  durasiBongkar Int
+
+  requiresDock DockRequirement @default(NONE)
+
+  drivers     User[]
+  description String?
+  isActive    Boolean @default(true)
+  bookings Booking[]
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organizationName String
+  organization     Organization @relation(fields: [organizationName], references: [name])
+}
+
 model Dock {
   id          String    @id @default(cuid())
   name        String
   warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
 
-  photos                String[]
-  dockType              String? // forklift, manual, side, reefer
-  supportedVehicleTypes String[] // ["CDD","Tronton","Wingbox"]
-
-  maxLength Int?
-  maxWidth  Int?
-  maxHeight Int?
+  photos       String[]
+  dockType     DockType
+  allowedTypes VehicleType[] // jenis kendaraan yang boleh masuk ke dock ini
 
   isActive Boolean @default(true)
   priority Int?
 
-  vacants    Vacant[]   
+  vacants   Vacant[]
   bookings  Booking[]
   busyTimes DockBusyTime[]
 
@@ -103,43 +132,6 @@ model Dock {
   organization     Organization @relation(fields: [organizationName], references: [name])
 }
 
-model Vacant {
-  id             String   @id @default(uuid())
-  availableFrom  String?
-  availableUntil String?
-  dockId String? 
-  dock           Dock? @relation(fields: [dockId], references: [id])
-  day Days?
-
-  @@unique([dockId, day])
-}
-
-model Vehicle {
-  id             String @id @default(cuid())
-  brand          String
-  jenisKendaraan String
-  productionYear Int?
-
-  maxCapacity     String?
-  dimensionLength Float?
-  dimensionWidth  Float?
-  dimensionHeight Float?
-
-  durasiBongkar Int
-  isReefer      Boolean @default(false)
-  requiresDock  String? // forklift, manual, side-load, etc.
-
-  drivers     User[]
-  description String?
-  isActive    Boolean @default(true)
-
-  bookings Booking[]
-
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  organizationName String
-  organization     Organization @relation(fields: [organizationName], references: [name])
-}
 
 model DockBusyTime {
   id              String    @id @default(cuid())
@@ -224,4 +216,29 @@ model Counter {
   sequence_value   Int
 
   @@unique([organizationName, warehouseId, dockId, date])
+}
+
+enum DockType {
+  MANUAL
+  FORKLIFT
+  SIDE
+  REEFER
+}
+
+enum VehicleType {
+  PICKUP
+  CDE
+  CDD
+  FUSO
+  TRONTON
+  WINGBOX
+  CONTAINER20
+  CONTAINER40
+}
+
+enum DockRequirement {
+  NONE
+  FORKLIFT
+  SIDE
+  REEFER
 }

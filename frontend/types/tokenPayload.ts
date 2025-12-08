@@ -1,4 +1,4 @@
-interface TokenPayload {
+export interface TokenPayload {
   username: string;
   description: string;
   isOperator: boolean;

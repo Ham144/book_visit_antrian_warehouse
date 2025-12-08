@@ -8,8 +8,8 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { Vacant } from './response-dock.dto';
+import { DockType } from '@prisma/client';
 
 export class CreateDockDto {
   @IsNotEmpty()
@@ -27,24 +27,12 @@ export class CreateDockDto {
 
   @IsOptional()
   @IsString()
-  dockType?: string;
+  dockType?: DockType;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   supportedVehicleTypes?: string[];
-
-  @IsOptional()
-  @IsNumber()
-  maxLength?: number;
-
-  @IsOptional()
-  @IsNumber()
-  maxWidth?: number;
-
-  @IsOptional()
-  @IsNumber()
-  maxHeight?: number;
 
   @IsOptional()
   @IsArray()

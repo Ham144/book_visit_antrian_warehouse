@@ -18,14 +18,18 @@ export class DockService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(createDockDto: CreateDockDto, userInfo: TokenPayload) {
-    const { vacants, photos = [], ...rest } = createDockDto;
+    const { vacants, warehouseId, photos = [], ...rest } = createDockDto;
 
     try {
       await this.prismaService.dock.create({
         data: {
           ...rest,
           photos: photos || [],
-          warehouseId: userInfo.homeWarehouseId,
+          warehouse: {
+            connect: {
+              id: warehouseId,
+            },
+          },
           vacants: {
             createMany: {
               data: vacants.map((vacant) => ({
@@ -35,14 +39,10 @@ export class DockService {
               })),
             },
           },
-          organizationName: userInfo.organizationName,
-        },
-        include: {
-          warehouse: {
-            select: {
-              id: true,
-              name: true,
-              location: true,
+          dockType: rest.dockType,
+          organization: {
+            connect: {
+              name: userInfo.organizationName,
             },
           },
         },

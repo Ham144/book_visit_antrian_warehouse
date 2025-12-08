@@ -13,15 +13,7 @@ export class ResponseVehicleDto {
   @Expose()
   maxCapacity?: string | null;
   @Expose()
-  dimensionLength?: number | null;
-  @Expose()
-  dimensionWidth?: number | null;
-  @Expose()
-  dimensionHeight?: number | null;
-  @Expose()
   durasiBongkar: number;
-  @Expose()
-  isReefer?: boolean | null;
   @Expose()
   requiresDock?: string | null;
   @Expose()

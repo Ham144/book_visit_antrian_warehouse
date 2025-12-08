@@ -3,8 +3,6 @@ import { MutateFunction, useQueries, useQuery } from "@tanstack/react-query";
 import React, { Dispatch, SetStateAction, useState } from "react";
 import {
   Warehouse as WarehouseIcon,
-  Ruler,
-  Clock,
   Truck,
   Star,
   XCircle,
@@ -16,7 +14,7 @@ import {
 } from "lucide-react";
 import { Toaster } from "sonner";
 import { DockApi } from "@/api/dock.api";
-import { Days } from "@/types/shared.type";
+import { VehicleType, DockType } from "@/types/shared.type";
 
 interface DockFormModalProps {
   formData: IDock;
@@ -36,10 +34,10 @@ const DockFormModal = ({
   useQuery({
     queryKey: ["warehouse", formData.id],
     queryFn: async () => {
-      const res = await DockApi.getDockDetail(formData.id);
+      const res = await DockApi.getDockDetail(formData?.id);
       setFormData(res);
     },
-    enabled: !!formData.id,
+    enabled: !!formData?.id,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,31 +53,16 @@ const DockFormModal = ({
     (document.getElementById("DockFormModal") as HTMLDialogElement).close();
   };
 
-  const vehicleTypes = [
-    "Pick Up / Engkel",
-    "CDD Bak / Box",
-    "CDD Wingbox",
-    "CDE Bak / Box",
-    "CDE Wingbox",
-    "Fuso Bak / Box",
-    "Tronton Bak / Box",
-    "Trailer",
-  ];
+  const vehicleTypes = Object.values(VehicleType);
+  const dockTypes = Object.values(DockType);
 
-  const dockTypes = [
-    { value: "forklift", label: "forklift" },
-    { value: "manual", label: "manual" },
-    { value: "side", label: "side" },
-    { value: "reefer", label: "reefer" },
-  ];
-
-  const toggleVehicleType = (vehicleType: string) => {
-    const currentTypes = formData.supportedVehicleTypes || [];
+  const toggleVehicleType = (vehicleType: VehicleType) => {
+    const currentTypes = formData.allowedTypes || [];
     const updatedTypes = currentTypes.includes(vehicleType)
       ? currentTypes.filter((type) => type !== vehicleType)
       : [...currentTypes, vehicleType];
 
-    setFormData({ ...formData, supportedVehicleTypes: updatedTypes });
+    setFormData({ ...formData, allowedTypes: updatedTypes });
   };
 
   const handlePhotoAdd = (url: string) => {
@@ -257,14 +240,17 @@ const DockFormModal = ({
                   className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   value={formData?.dockType || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, dockType: e.target.value })
+                    setFormData({
+                      ...formData,
+                      dockType: e.target.value as DockType,
+                    })
                   }
                   required
                 >
                   <option value="">Pilih Tipe Dock</option>
                   {dockTypes.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
+                    <option key={type} value={type}>
+                      {type}
                     </option>
                   ))}
                 </select>
@@ -288,81 +274,15 @@ const DockFormModal = ({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      priority: Number(e.target.value),
+                      priority: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
                     })
                   }
                 />
               </div>
 
-              {/* Maximum Dimensions */}
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700 flex items-center">
-                    <Ruler className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Panjang Maks. (m)
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  placeholder="0.0"
-                  value={formData?.maxLength || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      maxLength: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700">
-                    Lebar Maks. (m)
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  placeholder="0.0"
-                  value={formData?.maxWidth || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      maxWidth: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700">
-                    Tinggi Maks. (m)
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  placeholder="0.0"
-                  value={formData?.maxHeight || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      maxHeight: Number(e.target.value),
-                    })
-                  }
-                />
-              </div>
-
-              {/* Supported Vehicle Types */}
+              {/* Allowed Vehicle Types */}
               <div className="form-control md:col-span-2">
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
@@ -372,10 +292,10 @@ const DockFormModal = ({
                 </label>
 
                 {/* Selected Types Preview */}
-                {formData?.supportedVehicleTypes &&
-                  formData.supportedVehicleTypes.length > 0 && (
+                {formData?.allowedTypes &&
+                  formData.allowedTypes.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {formData?.supportedVehicleTypes.map((type) => (
+                      {formData?.allowedTypes.map((type) => (
                         <div
                           key={type}
                           className="flex items-center gap-2 px-3 py-1.5 bg-leaf-green-50 border border-leaf-green-200 rounded-lg"
@@ -413,7 +333,7 @@ const DockFormModal = ({
                           type="button"
                           onClick={() => toggleVehicleType(type)}
                           className={`w-full px-4 py-3 text-left hover:bg-leaf-green-50 border-b border-gray-100 last:border-b-0 transition-colors ${
-                            formData.supportedVehicleTypes?.includes(type)
+                            formData.allowedTypes?.includes(type)
                               ? "bg-leaf-green-50"
                               : ""
                           }`}

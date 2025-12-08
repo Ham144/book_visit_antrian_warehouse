@@ -14,6 +14,8 @@ export class ResponseBusyTimeDockDto {
   @Expose()
   dock?: ResponseDockDto;
   @Expose()
+  dockId?: string;
+  @Expose()
   recurring: Recurring;
   @Expose()
   recurringStep?: number; //daily weekly monthly

@@ -40,7 +40,5 @@ export class ResponseBookingDto {
   Driver?: LoginResponseDto;
 
   @Expose()
-  createdAt?: Date;
-  @Expose()
   organizationName: string;
 }
