@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsNumber,
@@ -17,7 +18,6 @@ export class CreateVehicleDto {
   vehicleType: VehicleType;
 
   @IsOptional()
-  @Type(() => Number)
   @IsNumber()
   productionYear?: number;
 
@@ -26,7 +26,6 @@ export class CreateVehicleDto {
   requiresDock?: DockRequirement;
 
   @IsOptional()
-  @Type(() => Number)
   @IsNumber()
   maxCapacity?: number;
 
@@ -35,12 +34,9 @@ export class CreateVehicleDto {
   @IsNumber()
   durasiBongkar: number;
 
-  @IsBoolean()
+  @IsString({ each: true })
   @IsOptional()
-  isReefer?: boolean;
-
-  @IsString()
-  @IsOptional()
+  @IsArray()
   driverNames?: string[];
 
   @IsString()

@@ -146,7 +146,7 @@ export class MyOrganizationService {
             Vehicle: {
               select: {
                 brand: true,
-                jenisKendaraan: true,
+                vehicleType: true,
               },
             },
           },

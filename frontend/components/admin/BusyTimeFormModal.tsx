@@ -226,38 +226,6 @@ const BusyTimeFormModal = ({
             </div>
           </div>
 
-          {/* Daily Interval */}
-          {formData.recurring === Recurring.DAILY && (
-            <div className="space-y-4">
-              <label className="label py-2">
-                <span className="label-text font-medium text-gray-800 text-lg flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-teal-500" />
-                  Interval Harian
-                </span>
-              </label>
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-700 font-medium">Setiap</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    placeholder="1"
-                    value={formData.recurringStep || 1}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        recurringStep: Number(e.target.value),
-                      })
-                    }
-                    className="input input-bordered w-24 text-center py-2 text-lg font-medium bg-white border-gray-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                  />
-                  <span className="text-gray-700 font-medium">hari</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Monthly Date */}
           {formData.recurring === Recurring.MONTHLY && (
             <div className="space-y-4">
@@ -269,13 +237,13 @@ const BusyTimeFormModal = ({
               </label>
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <div className="flex items-center gap-4">
-                  <span className="text-gray-700 font-medium">Tanggal</span>
+                  <span className="text-gray-700 font-medium">Di Tanggal</span>
                   <input
                     type="number"
                     min="1"
                     max="31"
                     placeholder="1"
-                    value={formData.recurringStep || 1}
+                    value={formData.recurringStep}
                     onChange={(e) =>
                       setFormData({
                         ...formData,

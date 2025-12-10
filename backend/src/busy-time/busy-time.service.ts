@@ -4,7 +4,7 @@ import { UpdateBusyTimeDto } from './dto/update-busy-time.dto';
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBusyTimeDockDto } from './dto/response-busy-time.dto';
-import { Days, Recurring } from '@prisma/client';
+import { Days } from '@prisma/client';
 
 @Injectable()
 export class BusyTimeService {
@@ -17,9 +17,24 @@ export class BusyTimeService {
       throw new BadRequestException(
         'WEEKLY recurring memerlukan recurring custom',
       );
-    } else if (!rest.recurringStep && rest.recurring != 'WEEKLY') {
+    } else if (rest.recurring == 'MONTHLY' && !rest.recurringStep) {
       throw new BadRequestException(
-        'WEEKLY recurring memerlukan recurring step',
+        'MONTHLY recurring memerlukan tanggal spesifik',
+      );
+    }
+
+    const isDuplicateHour = await this.prismaService.dockBusyTime.findFirst({
+      where: {
+        dockId: rest.dockId,
+        from: rest.from,
+        to: rest.to,
+        recurring: rest.recurring,
+      },
+    });
+    console.log(isDuplicateHour);
+    if (isDuplicateHour) {
+      throw new BadRequestException(
+        'Busy time kelihatannya duplikat dengan ' + isDuplicateHour.reason,
       );
     }
 
@@ -69,9 +84,24 @@ export class BusyTimeService {
       );
     }
 
+    const isDuplicateHour = await this.prismaService.dockBusyTime.findFirst({
+      where: {
+        id: { not: id },
+        dockId: rest.dockId,
+        from: rest.from,
+        to: rest.to,
+        recurring: rest.recurring,
+      },
+    });
+    if (isDuplicateHour) {
+      throw new BadRequestException(
+        'Busy time kelihatannya duplikat dengan ' + isDuplicateHour.reason,
+      );
+    }
+
     await this.prismaService.dockBusyTime.update({
       where: {
-        id: rest.id,
+        id: id,
       },
       data: {
         ...rest,

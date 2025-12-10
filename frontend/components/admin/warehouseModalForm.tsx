@@ -2,7 +2,6 @@ import {
   X,
   Warehouse,
   MapPin,
-  Users,
   Search,
   XCircle,
   Stamp,

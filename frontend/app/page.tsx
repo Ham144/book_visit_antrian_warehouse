@@ -141,8 +141,17 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href={
-                userInfo?.description ? "/admin/dashboard" : "/vendor/booking"
+                userInfo && userInfo?.description
+                  ? "/admin/dashboard"
+                  : "/vendor/booking"
               }
+              onClick={() => {
+                if (!userInfo) {
+                  (
+                    document.getElementById("login_modal") as HTMLDialogElement
+                  ).showModal();
+                }
+              }}
               className="btn btn-lg bg-white text-blue-700 hover:bg-gray-100 border-0 font-semibold px-8 gap-2"
             >
               <PlayCircle className="w-5 h-5" />

@@ -20,17 +20,18 @@ import type { IVehicle } from "@/types/vehicle";
 import VehilcleModalForm from "@/components/admin/vehicleModelForm";
 import { useUserInfo } from "@/components/UserContext";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
+import { DockRequirement } from "@/types/shared.type";
 
 const initialFormData: IVehicle = {
   driverNames: [],
   brand: "",
-  vehicleType: undefined,
+  vehicleType: null,
   productionYear: undefined,
-  durasiBongkar: 30,
+  durasiBongkar: 0,
   description: "",
   maxCapacity: undefined,
   isReefer: false,
-  requiresDock: undefined,
+  requiresDock: DockRequirement.NONE,
   drivers: [],
   isActive: true,
 };
@@ -68,9 +69,7 @@ export default function VehiclesPage() {
     onSuccess: () => {
       qq.invalidateQueries({ queryKey: ["vehicles"] });
       toast.success("Berhasil mendaftarkan template kendaraan baru");
-      (
-        document.getElementById("VehicleModalFormProps") as HTMLDialogElement
-      ).close();
+      (document.getElementById("vehicle-modal") as HTMLDialogElement).close();
     },
     onError: (e: any) => {
       toast.error(e.response?.data?.message);
@@ -115,7 +114,7 @@ export default function VehiclesPage() {
         <div className="min-h-screen bg-gray-50 p-6">
           <div className="max-w-7xl mx-auto">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 items-center">
               <div className="bg-white rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
@@ -146,21 +145,6 @@ export default function VehiclesPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Kendaraan Reefer
-                    </p>
-                    <p className="text-2xl font-bold text-cyan-600">
-                      {vehicles.filter((v) => v.isReefer).length}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-cyan-100 rounded-lg">
-                    <Snowflake className="w-6 h-6 text-cyan-600" />
-                  </div>
-                </div>
-              </div>
               <div
                 onClick={() => {
                   setFormData(initialFormData);
@@ -283,7 +267,7 @@ export default function VehiclesPage() {
                               )}
                             </td>
                             <td className="px-4 py-3 font-bold  text-gray-700">
-                              {vehicle?.driverNames?.length || 0}
+                              {vehicle?.drivers?.length || 0}
                             </td>
                             <td className="px-4 py-3">
                               <div className="space-y-2">

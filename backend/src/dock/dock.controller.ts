@@ -32,7 +32,7 @@ export class DockController {
     return this.dockService.getDocksByWarehouseId(id);
   }
 
-  @Get(':id')
+  @Get('/detail/:id')
   findOne(@Param('id') id: string) {
     return this.dockService.findOne(id);
   }

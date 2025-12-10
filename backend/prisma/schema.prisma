@@ -140,8 +140,8 @@ model DockBusyTime {
   reason          String
   dockId          String
   dock            Dock      @relation(fields: [dockId], references: [id], onDelete: Cascade)
-  recurring       Recurring
-  recurringStep   Int? //daily monthly
+  recurring       Recurring //daily hanya ini tanpa recurrintSTEP/recurrintCUSTOM
+  recurringStep   Int? //monthly
   recurringCustom Days[] // weekly
   createdAt       DateTime  @default(now())
 }
@@ -161,8 +161,8 @@ model Booking {
   Warehouse Warehouse @relation(fields: [warehouseId], references: [id])
   Dock      Dock?     @relation(fields: [dockId], references: [id])
 
-  driverId       String
-  driver         User    @relation(fields: [driverId], references: [username])
+  driverUsername       String
+  driver         User    @relation(fields: [driverUsername], references: [username])
   counterId      Int
   canceledReason String?
 

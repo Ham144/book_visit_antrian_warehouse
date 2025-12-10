@@ -15,9 +15,10 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import type { IVehicle } from "@/types/vehicle";
 import { MutateFunction, useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
-import { LoginResponseDto } from "@/types/auth";
 import { DockRequirement, VehicleType } from "@/types/shared.type";
 import { TokenPayload } from "@/types/tokenPayload";
+import { Toaster } from "sonner";
+import { UserInfo } from "@/types/auth";
 
 interface VehicleModalFormProps {
   formData: IVehicle;
@@ -63,7 +64,8 @@ export default function VehilcleModalForm({
     enabled: searchKeyDriver?.length > 1,
   });
 
-  const onSubmit = () => {
+  const onSubmit = (e: Event) => {
+    e.preventDefault();
     if (formData.id) {
       onEdit();
     } else {
@@ -76,9 +78,13 @@ export default function VehilcleModalForm({
     const currentDrivers = formData.driverNames || [];
 
     // Check if already exists
-    const exists = currentDrivers.some((d) =>
-      typeof d === "string" ? d === driverUsername : d === driverUsername
+    // Normalize currentDrivers menjadi array username string
+    const usernames = currentDrivers.map((d: UserInfo | string) =>
+      typeof d === "string" ? d : d.username
     );
+
+    // Cek apakah sudah ada
+    const exists = usernames.includes(driverUsername);
 
     if (!exists) {
       setFormData({
@@ -283,7 +289,7 @@ export default function VehilcleModalForm({
                 </label>
                 <select
                   className="select px-2 select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-500 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  value={formData.requiresDock || ""}
+                  defaultValue={formData.requiresDock}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -293,7 +299,6 @@ export default function VehilcleModalForm({
                     })
                   }
                 >
-                  <option value="">Tidak Ada</option>
                   {Object.values(DockRequirement).map((req) => (
                     <option key={req} value={req}>
                       {req}
@@ -534,6 +539,7 @@ export default function VehilcleModalForm({
           </div>
         </form>
       </div>
+      <Toaster />
     </dialog>
   );
 }

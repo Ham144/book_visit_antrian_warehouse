@@ -25,12 +25,12 @@ export const BookingApi = {
     const res = await axiosInstance.patch(`/api/booking/finish/${id}`);
     return res.data;
   },
-  cancelBooking: async (id: string) => {
-    const res = await axiosInstance.delete(`/api/booking/cancel/${id}`);
+  getUpcomingBookings: async () => {
+    const res = await axiosInstance.get("/api/booking/upcoming");
     return res.data;
   },
-  deleteBooking: async (id: string) => {
-    const res = await axiosInstance.delete(`/api/booking/${id}`);
+  cancelBooking: async (id: string) => {
+    const res = await axiosInstance.delete(`/api/booking/cancel/${id}`);
     return res.data;
   },
 };

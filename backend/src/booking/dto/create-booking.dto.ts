@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsDate, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateBookingDto {
@@ -10,16 +11,18 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   dockId?: string;
+  @Type(() => Date)
   @IsDate()
   @IsNotEmpty()
   arrivalTime: Date;
   @IsDate()
   @IsNotEmpty()
-  estimatedFinishTime: string;
+  @Type(() => Date)
+  estimatedFinishTime: Date;
   @IsOptional()
   @IsString()
   notes?: string;
   @IsOptional()
   @IsString()
-  driverId: string;
+  driverUsername: string;
 }

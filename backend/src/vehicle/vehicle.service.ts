@@ -11,12 +11,15 @@ import { ResponseVehicleDto } from './dto/response-vehicle.dto';
 import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
+import { VehicleType } from '@prisma/client';
 
 @Injectable()
 export class VehicleService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(createVehicleDto: CreateVehicleDto, userInfo: LoginResponseDto) {
+    const { driverNames, vehicleType, requiresDock, ...rest } =
+      createVehicleDto;
     try {
       for (let i = 0; i < createVehicleDto.driverNames.length; i++) {
         const userHaseVehicle = await this.prismaService.user.findUnique({
@@ -29,25 +32,24 @@ export class VehicleService {
           include: { vehicle: true },
         });
 
-        if (!userHaseVehicle) {
+        if (userHaseVehicle) {
           throw new NotFoundException(
-            `Driver ${createVehicleDto.driverNames[i]} sudah terhubung ke ${userHaseVehicle.vehicle.brand}-${userHaseVehicle.vehicle.vehicleType}`,
+            `Driver ${createVehicleDto.driverNames[i]} sudah terhubung ke ${userHaseVehicle?.vehicle.brand}-${userHaseVehicle.vehicle.vehicleType}`,
           );
         }
       }
 
       await this.prismaService.vehicle.create({
         data: {
-          organizationName: userInfo.organizationName,
-          brand: createVehicleDto.brand,
-          durasiBongkar: createVehicleDto.durasiBongkar,
-          vehicleType: createVehicleDto.vehicleType,
+          ...rest,
+          vehicleType: VehicleType[vehicleType],
+          requiresDock: requiresDock[requiresDock],
           drivers: {
-            connect: createVehicleDto.driverNames.map((d) => ({
+            connect: driverNames.map((d) => ({
               username: d,
             })),
           },
-          isActive: createVehicleDto.isActive,
+          organizationName: userInfo?.organizationName,
         },
       });
       return HttpStatus.CREATED;
@@ -61,6 +63,13 @@ export class VehicleService {
       const vehicles = await this.prismaService.vehicle.findMany({
         orderBy: {
           createdAt: 'asc',
+        },
+        include: {
+          drivers: {
+            select: {
+              username: true,
+            },
+          },
         },
       });
 

@@ -30,9 +30,7 @@ const ConfirmationModal = ({
           <button
             onClick={() => {
               onConfirm();
-              (
-                document.getElementById("confirmation1") as HTMLDialogElement
-              )?.close();
+              (document.getElementById(modalId) as HTMLDialogElement)?.close();
             }}
             className="btn btn-success hover:bg-primary hover:text-white"
           >

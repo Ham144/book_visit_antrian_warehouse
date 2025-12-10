@@ -32,7 +32,7 @@ const DockFormModal = ({
   const [showVehicleTypes, setShowVehicleTypes] = useState(false);
 
   useQuery({
-    queryKey: ["warehouse", formData.id],
+    queryKey: ["warehouse", formData?.id],
     queryFn: async () => {
       const res = await DockApi.getDockDetail(formData?.id);
       setFormData(res);
@@ -119,7 +119,7 @@ const DockFormModal = ({
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="input input-bordered w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Dock A, Gate 1, Ramp B, etc."
                   value={formData?.name || ""}
                   onChange={(e) =>
@@ -139,7 +139,7 @@ const DockFormModal = ({
                 </label>
                 <select
                   disabled
-                  className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="select select-bordered w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   value={formData?.warehouseId || ""}
                   required
                 >
@@ -162,7 +162,7 @@ const DockFormModal = ({
                 <div className="flex gap-2 mb-3">
                   <input
                     type="text"
-                    className="input input-bordered flex-1 bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                    className="input input-bordered flex-1 bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                     placeholder="Masukkan URL foto"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -182,7 +182,7 @@ const DockFormModal = ({
                         input.value = "";
                       }
                     }}
-                    className="btn btn-outline border-gray-300 hover:bg-gray-50"
+                    className="btn btn-outline border px-2  hover:bg-gray-50"
                   >
                     <Upload className="w-4 h-4" />
                   </button>
@@ -219,7 +219,7 @@ const DockFormModal = ({
                 )}
 
                 {(!formData?.photos || formData.photos.length === 0) && (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                  <div className="text-center py-8 border-2 border-dashed border px-2  rounded-lg bg-gray-50">
                     <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">
                       Belum ada foto. Masukkan URL foto di atas.
@@ -237,7 +237,7 @@ const DockFormModal = ({
                   </span>
                 </label>
                 <select
-                  className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="select select-bordered w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   value={formData?.dockType || ""}
                   onChange={(e) =>
                     setFormData({
@@ -268,7 +268,7 @@ const DockFormModal = ({
                   type="number"
                   min="1"
                   max="10"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="input input-bordered w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="1 (tertinggi) - 10 (terendah)"
                   value={formData?.priority || ""}
                   onChange={(e) =>
@@ -292,35 +292,34 @@ const DockFormModal = ({
                 </label>
 
                 {/* Selected Types Preview */}
-                {formData?.allowedTypes &&
-                  formData.allowedTypes.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {formData?.allowedTypes.map((type) => (
-                        <div
-                          key={type}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-leaf-green-50 border border-leaf-green-200 rounded-lg"
+                {formData?.allowedTypes && formData.allowedTypes.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {formData?.allowedTypes.map((type) => (
+                      <div
+                        key={type}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-leaf-green-50 border border-leaf-green-200 rounded-lg"
+                      >
+                        <span className="text-sm font-medium text-leaf-green-800">
+                          {type}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleVehicleType(type)}
+                          className="p-0.5 hover:bg-leaf-green-100 rounded-full transition-colors"
                         >
-                          <span className="text-sm font-medium text-leaf-green-800">
-                            {type}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => toggleVehicleType(type)}
-                            className="p-0.5 hover:bg-leaf-green-100 rounded-full transition-colors"
-                          >
-                            <XCircle className="w-4 h-4 text-leaf-green-500" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                          <XCircle className="w-4 h-4 text-leaf-green-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Vehicle Types Dropdown */}
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowVehicleTypes(!showVehicleTypes)}
-                    className="btn btn-outline w-full justify-between border-gray-300 hover:bg-gray-50"
+                    className="btn btn-outline w-full justify-between border px-2  hover:bg-gray-50"
                   >
                     <span>Pilih Jenis Kendaraan</span>
                     <Truck className="w-4 h-4" />
@@ -354,7 +353,7 @@ const DockFormModal = ({
                 <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-primary border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
+                    className="checkbox checkbox-primary border px-2  checked:border-leaf-green-500 checked:bg-leaf-green-500"
                     checked={formData?.isActive ?? true}
                     onChange={(e) =>
                       setFormData({ ...formData, isActive: e.target.checked })
@@ -390,7 +389,7 @@ const DockFormModal = ({
                         </label>
                         <input
                           type="time"
-                          className="input input-bordered input-sm w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                          className="input input-bordered input-sm w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                           value={String(vacant.availableFrom) || null}
                           onChange={(e) => {
                             const time = e.target.value;
@@ -416,8 +415,8 @@ const DockFormModal = ({
                         </label>
                         <input
                           type="time"
-                          className="input input-bordered input-sm w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                          value={vacant.availableUntil || ""}
+                          className="input input-bordered input-sm w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                          value={vacant.availableUntil as string}
                           onChange={(e) => {
                             const time = e.target.value;
                             const updatedVacants = [

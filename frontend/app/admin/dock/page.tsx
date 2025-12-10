@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit, Trash2, MapPin, Ruler, Star } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Star } from "lucide-react";
 import { toast } from "sonner";
 import DockFormModal from "@/components/admin/DockFormModal";
-import { DockFilter, IDock } from "@/types/dock.type";
+import { IDock } from "@/types/dock.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DockApi } from "@/api/dock.api";
 import { useUserInfo } from "@/components/UserContext";
 import { Days } from "@/types/shared.type";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
 import { Vacant } from "@/types/vacant.type";
-import { VehicleType } from "@/types/shared.type";
 
 export default function DocksPage() {
   const queryClient = useQueryClient();
@@ -26,11 +25,21 @@ export default function DocksPage() {
     allowedTypes: [],
     vacants: ((): Vacant[] => {
       const days = Object.values(Days);
-      return days.map((day) => ({
-        day,
-        availableFrom: "08:00",
-        availableUntil: "15:50",
-      }));
+      return days.map((day) => {
+        if (day == "MINGGU") {
+          return {
+            day: day,
+            availableFrom: null,
+            availableUntil: null,
+          };
+        } else {
+          return {
+            day,
+            availableFrom: "08:00",
+            availableUntil: "15:50",
+          };
+        }
+      });
     })(),
     isActive: true,
     priority: undefined,
@@ -69,9 +78,8 @@ export default function DocksPage() {
   const { mutateAsync: handleUpdate } = useMutation({
     mutationKey: ["docks"],
     mutationFn: async () => {
-      const formattedData = formatDockData(formData!);
-      const { id, warehouse, ...updateData } = formattedData;
-      return DockApi.updateDock(id!, updateData);
+      const { id } = formData;
+      return DockApi.updateDock(id!, formData);
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Gagal memperbarui dock");
@@ -86,7 +94,7 @@ export default function DocksPage() {
   });
 
   const { data: docks } = useQuery({
-    queryKey: ["warehouse", userInfo],
+    queryKey: ["docks", userInfo],
     queryFn: async () =>
       await DockApi.getDocksByWarehouseId(userInfo?.homeWarehouse?.id),
     enabled: !!userInfo?.homeWarehouse?.id,
@@ -142,9 +150,9 @@ export default function DocksPage() {
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Tipe Dock
-                        </th>
+                        </th>{" "}
                         <th className="font-semibold text-gray-700 py-4 px-4">
-                          Jenis Kendaraan
+                          Allow Types
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Prioritas
@@ -180,29 +188,17 @@ export default function DocksPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              {dock.allowedTypes &&
+                              {dock?.allowedTypes &&
                               dock.allowedTypes.length > 0 ? (
-                                <div className="space-y-1">
-                                  <div className="text-xs text-gray-600">
-                                    {dock.allowedTypes.length} jenis
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {dock.allowedTypes
-                                      .slice(0, 2)
-                                      .map((type, idx) => (
-                                        <span
-                                          key={idx}
-                                          className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                                        >
-                                          {type}
-                                        </span>
-                                      ))}
-                                    {dock.allowedTypes.length > 2 && (
-                                      <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                                        +{dock.allowedTypes.length - 2}
-                                      </span>
-                                    )}
-                                  </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {dock.allowedTypes.map((type, index) => (
+                                    <span
+                                      key={index}
+                                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                                    >
+                                      {type}
+                                    </span>
+                                  ))}
                                 </div>
                               ) : (
                                 <span className="text-gray-400 text-sm">-</span>

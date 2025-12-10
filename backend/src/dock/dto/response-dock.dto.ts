@@ -19,7 +19,7 @@ export class ResponseDockDto {
   @Expose()
   name: string;
   @Expose()
-  supportedVehicleTypes?: string[];
+  allowedTypes?: string[];
   @Expose()
   maxLength?: number;
   @Expose()
@@ -32,12 +32,12 @@ export class ResponseDockDto {
   isActive?: boolean;
   @Expose()
   priority?: number;
-  @Expose({ groups: ['detail'] })
-  bookings?: object[];
   @Expose()
   busyTimes?: object[];
-  @Expose({ groups: ['detail'] })
+  @Expose()
   warehouse?: responseWarehouseDto;
+  @Expose({ groups: ['detail'] })
+  bookings?: object[];
   @Expose({ groups: ['detail'] })
   photos?: string[];
 }

@@ -10,9 +10,9 @@ export const DockApi = {
     const res = await axiosInstance.get(`/api/dock/warehouse/${warehouseId}`);
     return res.data;
   },
-  getDockDetail: async (id: string) => {
-    const res = await axiosInstance.get(`/api/dock/detail/${id}`);
-    return res.data;
+  getDockDetail: async (id: string): Promise<IDock> => {
+    const { data } = await axiosInstance.get<IDock>(`/api/dock/detail/${id}`);
+    return data;
   },
   getAllDocks: async (filter: DockFilter) => {
     const params = new URLSearchParams();

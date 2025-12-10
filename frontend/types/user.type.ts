@@ -1,5 +1,4 @@
 export interface UserApp {
-  id?: string;
   username: string;
 
   password?: string;

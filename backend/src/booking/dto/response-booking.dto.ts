@@ -25,7 +25,7 @@ export class ResponseBookingDto {
   @Expose({ groups: ['detail'] })
   notes?: string | null;
   @Expose()
-  driverId?: string;
+  driverUsername: string;
   @Expose()
   counterId?: number;
   canceledReason?: string;

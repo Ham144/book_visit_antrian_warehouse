@@ -34,26 +34,24 @@ type BookingStep = "warehouse" | "vehicle" | "dock" | "detail";
 export default function BookingPage() {
   const { userInfo } = useUserInfo();
   const [bookingStep, setBookingStep] = useState<BookingStep>("warehouse");
-  const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
   const router = useRouter();
 
-  const initialBookingState = {
+  const initialBookingState: Booking = {
     vehicleId: "",
     warehouseId: "",
     dockId: "",
     arrivalTime: null,
     estimatedFinishTime: null,
-    driverId: userInfo?.id || "",
+    driverUsername: userInfo?.username,
     notes: "",
   };
+  const qq = useQueryClient();
 
   //url state query
   const params = useSearchParams();
   const vehicleIdParam = params.get("vehicleId");
   const warehouseIdParam = params.get("warehouseId");
   const dockIdParam = params.get("dockId");
-  const arrivalTimeParam = params.get("arrivalTime");
-  const driverIdParam = params.get("driverId");
   const notesParam = params.get("notes");
 
   const [formData, setFormData] = useState<Booking>(initialBookingState);
@@ -83,24 +81,54 @@ export default function BookingPage() {
     queryKey: ["docks", formData.warehouseId],
     queryFn: async () => {
       if (!formData.warehouseId) return [];
-      return await DockApi.getAllDocks({
-        page: 1,
-        warehouseId: formData.warehouseId,
-      });
+      return await DockApi.getDocksByWarehouseId(formData.warehouseId);
     },
   });
 
-  const qq = useQueryClient();
-
   const { mutateAsync: handleSubmitBooking } = useMutation({
     mutationKey: ["booking"],
-    mutationFn: async () => BookingApi.createBooking(formData),
+    mutationFn: async () => {
+      // Validate required fields
+      if (!formData.warehouseId) {
+        throw new Error("Warehouse harus dipilih");
+      }
+      if (!formData.vehicleId) {
+        throw new Error("Kendaraan harus dipilih");
+      }
+      if (!formData.dockId) {
+        throw new Error("Dock harus dipilih");
+      }
+      if (!formData.arrivalTime) {
+        throw new Error("Waktu kedatangan harus dipilih");
+      }
+      if (!formData.estimatedFinishTime) {
+        throw new Error("Waktu selesai estimasi harus dihitung");
+      }
+
+      // Validate that estimatedFinishTime is after arrivalTime
+      if (
+        formData.arrivalTime &&
+        formData.estimatedFinishTime &&
+        new Date(formData.estimatedFinishTime) <= new Date(formData.arrivalTime)
+      ) {
+        throw new Error("Waktu selesai harus setelah waktu kedatangan");
+      }
+
+      // Prepare booking data
+      const bookingData: Booking = {
+        ...formData,
+        arrivalTime: formData.arrivalTime,
+        estimatedFinishTime: formData.estimatedFinishTime,
+      };
+
+      return BookingApi.createBooking(bookingData);
+    },
     onSuccess: () => {
-      toast.success("Booking created successfully");
+      toast.success("Booking berhasil dibuat");
       router.push("/vendor/history");
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(error?.response?.data?.message || "Gagal membuat booking");
     },
   });
 
@@ -129,24 +157,39 @@ export default function BookingPage() {
     let full = window.location.href + `&dockId=${dock.id}`;
     router.push(full);
   };
-
   const handleBack = () => {
     let full = window.location.href;
     const base = full.split("?")[0];
-    const data = full.split("?")[1].split("&");
+    const data = full.split("?")[1]?.split("&").filter(Boolean);
     if (bookingStep === "vehicle") {
       setBookingStep("warehouse");
-      data.splice(data.indexOf("vehicleId"), 1);
+      const warehouseIdIndex = data.indexOf(
+        `warehouseId=${formData.warehouseId}`
+      );
+      if (warehouseIdIndex !== -1) {
+        data.splice(warehouseIdIndex, 1);
+      }
       router.push(base + "?" + data.join("&"));
       setFormData({ ...formData, warehouseId: "", Warehouse: null });
     } else if (bookingStep === "dock") {
       setBookingStep("vehicle");
-      data.splice(data.indexOf("dockId"), 1);
+      const vehicleIdIndex = data.indexOf(`vehicleId=${formData.vehicleId}`);
+      if (vehicleIdIndex !== -1) {
+        data.splice(vehicleIdIndex, 1);
+      }
       router.push(base + "?" + data.join("&"));
       setFormData({ ...formData, vehicleId: "", Vehicle: null });
     } else if (bookingStep === "detail") {
-      data.splice(data.indexOf("arrivalTime"), 1);
-      data.splice(data.indexOf("notes"), 1);
+      const arrivalTimeIndex = data.indexOf(
+        `arrivalTime=${formData.arrivalTime}`
+      );
+      const notesIndex = data.indexOf(`notes=${formData.notes}`);
+      if (arrivalTimeIndex !== -1) {
+        data.splice(arrivalTimeIndex, 1);
+      }
+      if (notesIndex !== -1) {
+        data.splice(notesIndex, 1);
+      }
       router.push(base + "?" + data.join("&"));
       setBookingStep("dock");
       setFormData({ ...formData, arrivalTime: null, notes: "" });
@@ -183,35 +226,16 @@ export default function BookingPage() {
     myVehicles.length > 0 ? loadingMyVehicles : loadingVehicles;
 
   useEffect(() => {
-    if (
-      vehicleIdParam ||
-      warehouseIdParam ||
-      dockIdParam ||
-      driverIdParam ||
-      notesParam
-    ) {
+    if (vehicleIdParam || warehouseIdParam || dockIdParam || notesParam) {
       setFormData({
         ...formData,
         vehicleId: vehicleIdParam || "",
         warehouseId: warehouseIdParam || "",
         dockId: dockIdParam || "",
-        driverId: driverIdParam || "",
         notes: notesParam || "",
       });
     }
   }, []);
-
-  useEffect(() => {
-    if (!formData.warehouseId) {
-      setBookingStep("warehouse");
-    } else if (!formData.vehicleId) {
-      setBookingStep("vehicle");
-    } else if (!formData.dockId) {
-      setBookingStep("dock");
-    } else if (!formData.arrivalTime) {
-      setBookingStep("detail");
-    }
-  }, [formData]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -449,7 +473,7 @@ export default function BookingPage() {
                             {vehicle.brand || "-"}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {vehicle.jenisKendaraan || "-"}
+                            {vehicle.vehicleType || "-"}
                           </p>
                         </div>
                         {vehicle.isActive ? (
@@ -467,28 +491,6 @@ export default function BookingPage() {
                             <Calendar className="w-4 h-4 text-gray-400" />
                             <span className="text-gray-700">
                               Tahun: {vehicle.productionYear}
-                            </span>
-                          </div>
-                        )}
-
-                        {(vehicle.dimensionLength ||
-                          vehicle.dimensionWidth ||
-                          vehicle.dimensionHeight) && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Ruler className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-700">
-                              Dimensi:{" "}
-                              {vehicle.dimensionLength
-                                ? `${vehicle.dimensionLength}m`
-                                : "-"}{" "}
-                              x{" "}
-                              {vehicle.dimensionWidth
-                                ? `${vehicle.dimensionWidth}m`
-                                : "-"}{" "}
-                              x{" "}
-                              {vehicle.dimensionHeight
-                                ? `${vehicle.dimensionHeight}m`
-                                : "-"}
                             </span>
                           </div>
                         )}
@@ -610,40 +612,6 @@ export default function BookingPage() {
                         </div>
                       )}
 
-                      <div className="space-y-2 mb-4">
-                        {(dock.maxLength ||
-                          dock.maxWidth ||
-                          dock.maxHeight) && (
-                          <div className="flex items-center gap-2 text-sm text-gray-700">
-                            <Ruler className="w-4 h-4 text-gray-400" />
-                            <span>
-                              Max: {dock.maxLength ? `${dock.maxLength}m` : "-"}{" "}
-                              x {dock.maxWidth ? `${dock.maxWidth}m` : "-"} x{" "}
-                              {dock.maxHeight ? `${dock.maxHeight}m` : "-"}
-                            </span>
-                          </div>
-                        )}
-
-                        {dock.supportedVehicleTypes &&
-                          dock.supportedVehicleTypes.length > 0 && (
-                            <div className="text-sm text-gray-700">
-                              <span className="font-medium">
-                                Tipe Kendaraan Didukung:
-                              </span>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {dock.supportedVehicleTypes.map((type, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="badge badge-outline badge-sm"
-                                  >
-                                    {type}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-
                       <button
                         className={`btn w-full gap-2 hover:text-white  ${
                           formData.dockId === dock.id
@@ -677,19 +645,31 @@ export default function BookingPage() {
             />
           </div>
         )}
-      </div>
-
-      {/* Submit Button */}
-      <div className="flex justify-end gap-4">
-        <button
-          onClick={() => handleSubmitBooking()}
-          disabled={!formData.arrivalTime}
-          className={`btn btn-primary px-4 btn-lg ${
-            !formData.arrivalTime ? "btn-disabled" : ""
-          }`}
-        >
-          Buat Booking
-        </button>
+        {bookingStep === "detail" && (
+          <div className="flex flex-1 ">
+            <button
+              onClick={() => handleSubmitBooking()}
+              disabled={
+                !formData.warehouseId ||
+                !formData.vehicleId ||
+                !formData.dockId ||
+                !formData.arrivalTime ||
+                !formData.estimatedFinishTime
+              }
+              className={`btn w-full my-4  btn-primary px-4 btn-lg ${
+                !formData.warehouseId ||
+                !formData.vehicleId ||
+                !formData.dockId ||
+                !formData.arrivalTime ||
+                !formData.estimatedFinishTime
+                  ? "btn-disabled"
+                  : ""
+              }`}
+            >
+              Buat Booking
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

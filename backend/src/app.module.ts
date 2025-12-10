@@ -11,7 +11,6 @@ import { DockModule } from './dock/dock.module';
 import { BusyTimeModule } from './busy-time/busy-time.module';
 import { BookingModule } from './booking/booking.module';
 import { MyOrganizationModule } from './my-organization/my-organization.module';
-import { DockBusyTimeModule } from './dock-busy-time/dock-busy-time.module';
 
 @Module({
   imports: [
@@ -31,7 +30,7 @@ import { DockBusyTimeModule } from './dock-busy-time/dock-busy-time.module';
     BusyTimeModule,
     BookingModule,
     MyOrganizationModule,
-    DockBusyTimeModule,
+    BusyTimeModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

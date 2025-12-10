@@ -10,7 +10,7 @@ import { PrismaService } from 'src/common/prisma.service';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { DockFilter, ResponseDockDto } from './dto/response-dock.dto';
 import { plainToInstance } from 'class-transformer';
-import { Days } from '@prisma/client';
+import { Days, VehicleType } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Injectable()
@@ -18,7 +18,13 @@ export class DockService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(createDockDto: CreateDockDto, userInfo: TokenPayload) {
-    const { vacants, warehouseId, photos = [], ...rest } = createDockDto;
+    const {
+      vacants,
+      warehouseId,
+      allowedTypes,
+      photos = [],
+      ...rest
+    } = createDockDto;
 
     try {
       await this.prismaService.dock.create({
@@ -30,6 +36,7 @@ export class DockService {
               id: warehouseId,
             },
           },
+          allowedTypes: allowedTypes as VehicleType[],
           vacants: {
             createMany: {
               data: vacants.map((vacant) => ({
@@ -70,7 +77,6 @@ export class DockService {
     }
 
     const safePage = Number(page) || 1;
-
     const docks = await this.prismaService.dock.findMany({
       where,
       take: 20,
@@ -108,7 +114,6 @@ export class DockService {
             location: true,
           },
         },
-        vacants: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -138,7 +143,7 @@ export class DockService {
             Vehicle: {
               select: {
                 brand: true,
-                jenisKendaraan: true,
+                vehicleType: true,
               },
             },
           },
@@ -151,6 +156,7 @@ export class DockService {
             from: 'asc',
           },
         },
+        vacants: true,
       },
     });
 
@@ -160,10 +166,12 @@ export class DockService {
 
     return plainToInstance(ResponseDockDto, dock, {
       excludeExtraneousValues: true,
+      groups: ['detail'],
     });
   }
 
   async update(id: string, updateDockDto: UpdateDockDto) {
+    const { allowedTypes, vacants, dockType, ...rest } = updateDockDto;
     const existingDock = await this.prismaService.dock.findUnique({
       where: { id },
     });
@@ -172,57 +180,29 @@ export class DockService {
       throw new NotFoundException(`Dock dengan id ${id} tidak ditemukan`);
     }
 
-    const { id: _id, warehouseId, photos, vacants, ...rest } = updateDockDto;
-
-    const updateData: any = { ...rest };
-
-    if (warehouseId !== undefined) {
-      updateData.warehouseId = warehouseId;
-    }
-
-    if (photos !== undefined) {
-      updateData.photos = photos;
-    }
-
     try {
-      const updatedDock = await this.prismaService.dock.update({
+      await this.prismaService.dock.update({
         where: {
           id: id,
         },
         data: {
-          ...updateData,
+          ...rest,
           vacants: {
-            deleteMany: {
-              dockId: id,
-            },
+            deleteMany: {},
             createMany: {
               data: vacants.map((vacant) => ({
-                availableFrom: vacant.availableFrom
-                  ? new Date(vacant.availableFrom)
-                  : null,
-                availableUntil: vacant.availableUntil
-                  ? new Date(vacant.availableUntil)
-                  : null,
-                day: vacant.day,
-                dockId: id,
+                availableFrom: vacant.availableFrom,
+                availableUntil: vacant.availableUntil,
+                day: vacant.day as Days,
               })),
             },
           },
-        },
-        include: {
-          warehouse: {
-            select: {
-              id: true,
-              name: true,
-              location: true,
-            },
-          },
+          dockType,
+          allowedTypes: allowedTypes as VehicleType[],
         },
       });
 
-      return plainToInstance(ResponseDockDto, updatedDock, {
-        excludeExtraneousValues: true,
-      });
+      return HttpStatus.ACCEPTED;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }

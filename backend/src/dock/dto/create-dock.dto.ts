@@ -32,7 +32,7 @@ export class CreateDockDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  supportedVehicleTypes?: string[];
+  allowedTypes?: string[];
 
   @IsOptional()
   @IsArray()

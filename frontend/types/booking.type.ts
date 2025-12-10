@@ -13,7 +13,7 @@ export interface Booking {
   actualFinishTime?: Date | null;
   status?: BookingStatus;
   notes?: string | null;
-  driverId?: string;
+  driverUsername?: string;
   counterId?: number;
   canceledReason?: string;
 

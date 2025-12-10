@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Plus,
-  Trash2,
-  Clock,
-  Calendar,
-  Edit,
-  MapPin,
-  CalendarDays,
-} from "lucide-react";
+import { Plus, Trash2, Clock, Calendar, Edit, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 import { IDockBusyTime } from "@/types/busyTime.type";
@@ -33,7 +25,7 @@ export default function BusyTimesPage() {
     to: "13:00",
     reason: "",
     recurring: Recurring.DAILY,
-    recurringStep: 0,
+    recurringStep: 1,
     recurringCustom: [],
   };
 

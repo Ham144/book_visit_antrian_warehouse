@@ -1,4 +1,9 @@
-<!-- 82aad50d-0883-45e5-ad2e-a2e2e049c439 59887dc0-c370-458b-aa05-e225ab1e9911 -->
+---
+name: Perbaiki Booking Page dengan Slot Time Picker Interaktif
+overview: ""
+todos: []
+---
+
 # Perbaiki Booking Page dengan Slot Time Picker Interaktif
 
 ## Masalah yang Akan Diperbaiki

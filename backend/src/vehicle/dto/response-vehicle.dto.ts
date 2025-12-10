@@ -5,22 +5,24 @@ export class ResponseVehicleDto {
   @Expose()
   id: string;
   @Expose()
-  brand?: string | null;
+  brand?: string;
   @Expose()
-  jenisKendaraan?: string | null;
+  jenisKendaraan?: string;
   @Expose()
-  productionYear?: number | null;
+  productionYear?: number;
   @Expose()
-  maxCapacity?: string | null;
+  vehicleType?: string;
+  @Expose()
+  maxCapacity?: number;
   @Expose()
   durasiBongkar: number;
   @Expose()
-  requiresDock?: string | null;
+  requiresDock?: string;
   @Expose()
-  description?: string | null;
+  description?: string;
   @Expose()
   isActive: boolean;
-  @Expose({ groups: ['detail'] })
+  @Expose()
   drivers: LoginResponseDto[];
   @Expose()
   createdAt?: Date;
