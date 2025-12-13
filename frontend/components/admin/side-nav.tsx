@@ -116,10 +116,10 @@ export const vendorMenutItems = [
     href: "/vendor/history",
   },
   {
-    id: "warehouse",
-    label: "Warehouse",
+    id: "Members",
+    label: "Member Management",
     icon: Users,
-    href: "/vendor/warehouse",
+    href: "/vendor/member-management",
   },
   { id: "reports", label: "Reports", icon: BarChart3, href: "/vendor/reports" },
   { id: "vehicles", label: "Vehicles", icon: Truck, href: "/vendor/vehicles" },

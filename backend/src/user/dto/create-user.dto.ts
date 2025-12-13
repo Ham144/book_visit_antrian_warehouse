@@ -14,9 +14,15 @@ export class CreateAppUserDto {
   @IsString()
   @MinLength(5)
   password?: string;
-  @IsOptional()
+
   @IsString()
-  description?: string;
+  passwordHash?: string;
+
+  @IsString()
+  mail?: string;
+
+  @IsString()
+  description: string;
 
   @IsBoolean()
   @IsOptional()

@@ -62,7 +62,7 @@ export class MyOrganizationService {
 
   async getAllOrganizations(filter: BaseProps, userInfo: TokenPayload) {
     if (userInfo.description != 'IT') {
-      return HttpStatus.FORBIDDEN;
+      throw new ForbiddenException('Anda bukan IT');
     }
 
     const { page, searchKey } = filter;

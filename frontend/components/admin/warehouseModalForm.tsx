@@ -1,6 +1,6 @@
 import {
   X,
-  Warehouse,
+  WarehouseIcon,
   MapPin,
   Search,
   XCircle,
@@ -13,9 +13,9 @@ import {
   type FormEvent,
   type SetStateAction,
 } from "react";
-import type { WarehouseCreateDto } from "@/types/warehouse";
 import { useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
+import { Warehouse } from "@/types/warehouse";
 
 type MutationSnapshot = {
   isPending: boolean;
@@ -26,8 +26,8 @@ interface WarehouseModalFormProps {
   editingId: string | null;
   handleClose: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  formData: WarehouseCreateDto;
-  setFormData: Dispatch<SetStateAction<WarehouseCreateDto>>;
+  formData: Warehouse;
+  setFormData: Dispatch<SetStateAction<Warehouse>>;
   createMutation: MutationSnapshot;
   updateMutation: MutationSnapshot;
 }
@@ -53,7 +53,7 @@ export default function WarehouseModalForm({
   if (!isModalOpen) return null;
 
   const [searchKeyAccess, setSearchKeyAccess] = useState<string>("");
-  const selectedAccess = formData.warehouseAccess ?? [];
+  const selectedAccess = formData.userWarehouseAccesses ?? [];
 
   const { data: accounts } = useQuery({
     queryKey: ["warehouse-members", searchKeyAccess],
@@ -68,14 +68,14 @@ export default function WarehouseModalForm({
   const handleAddAccessWarehouse = (username: string) => {
     if (!selectedAccess.includes(username)) {
       const newAccess = [...selectedAccess, username];
-      setFormData({ ...formData, warehouseAccess: newAccess });
+      setFormData({ ...formData, userWarehouseAccesses: newAccess });
       setSearchKeyAccess("");
     }
   };
 
   const handleRemoveAccessWarehouse = (username: string) => {
     const newAccess = selectedAccess.filter((m) => m !== username);
-    setFormData({ ...formData, warehouseAccess: newAccess });
+    setFormData({ ...formData, userWarehouseAccesses: newAccess });
   };
 
   return (
@@ -86,7 +86,7 @@ export default function WarehouseModalForm({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-leaf-green-100 rounded-lg">
-                <Warehouse className="w-5 h-5 text-leaf-green-600" />
+                <WarehouseIcon className="w-5 h-5 text-leaf-green-600" />
               </div>
               <h3 className="font-bold text-lg text-gray-800">
                 {editingId ? "Edit Warehouse" : "Tambah Warehouse Baru"}
@@ -107,7 +107,7 @@ export default function WarehouseModalForm({
               <div className="form-control md:col-span-2">
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
-                    <Warehouse className="w-4 h-4 mr-2 text-leaf-green-500" />
+                    <WarehouseIcon className="w-4 h-4 mr-2 text-leaf-green-500" />
                     Nama Warehouse *
                   </span>
                 </label>

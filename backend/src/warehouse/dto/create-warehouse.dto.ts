@@ -23,5 +23,5 @@ export class CreateWarehouseDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  warehouseAccess?: string[];
+  userWarehouseAccesses?: string[];
 }

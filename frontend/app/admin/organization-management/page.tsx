@@ -39,11 +39,11 @@ const OrganizationManagementPage = () => {
   const [formData, setFormData] = useState<Organization>(initialOrganization);
   const qq = useQueryClient();
 
-  const [organizationFilter, setOrganizationFilter] = useState<BaseProps>({
+  const [organizationFilter] = useState<BaseProps>({
     searchKey: "",
     page: 1,
   });
-  const { data: organizations, isLoading: isLoadingOrganizations } = useQuery({
+  const { data: organizations } = useQuery({
     queryKey: ["organizations"],
     queryFn: async () =>
       await OrganizationApi.getAllOrganizations(organizationFilter),
@@ -155,10 +155,12 @@ const OrganizationManagementPage = () => {
                       Total Warehouses
                     </p>
                     <p className="text-2xl font-bold text-leaf-green-600">
-                      {organizations?.reduce(
-                        (acc, org) => acc + (org.warehouses?.length || 0),
-                        0
-                      ) || 0}
+                      {Array.isArray(organizations)
+                        ? organizations.reduce(
+                            (acc, org) => acc + (org.warehouses?.length || 0),
+                            0
+                          )
+                        : 0}
                     </p>
                   </div>
                   <div className="p-3 bg-leaf-green-100 rounded-lg">
@@ -173,11 +175,13 @@ const OrganizationManagementPage = () => {
                     <p className="text-sm font-medium text-gray-600">
                       Total Accounts
                     </p>
-                    <p className="text-2xl font-bold text-cyan-600">
-                      {organizations?.reduce(
-                        (acc, org) => acc + (org.accounts?.length || 0),
-                        0
-                      ) || 0}
+                    <p className="text-2xl font-bold text-leaf-green-600">
+                      {Array.isArray(organizations)
+                        ? organizations.reduce(
+                            (acc, org) => acc + (org.warehouses?.length || 0),
+                            0
+                          )
+                        : 0}
                     </p>
                   </div>
                   <div className="p-3 bg-cyan-100 rounded-lg">
@@ -202,10 +206,10 @@ const OrganizationManagementPage = () => {
                         Docks
                       </th>
                       <th className="font-semibold text-gray-700 py-4 px-4">
-                        Vehicles
+                        Vehicles Template
                       </th>
                       <th className="font-semibold text-gray-700 py-4 px-4">
-                        Accounts
+                        Members
                       </th>
                       <th className="font-semibold text-gray-700 py-4 px-4">
                         Actions
@@ -216,7 +220,7 @@ const OrganizationManagementPage = () => {
                     {organizations?.length > 0 ? (
                       organizations.map((org: Organization, index) => (
                         <tr
-                          key={org.name}
+                          key={index}
                           className={`hover:bg-gray-50 transition-colors ${
                             index % 2 === 0 ? "bg-gray-25" : "bg-white"
                           }`}

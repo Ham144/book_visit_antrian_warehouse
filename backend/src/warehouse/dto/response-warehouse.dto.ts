@@ -7,15 +7,17 @@ export class responseWarehouseDto {
   @Expose()
   name: string;
   @Expose()
-  location: string;
+  location?: string;
   @Expose()
-  description: string;
+  description?: string;
   @Expose()
-  isActive: boolean;
+  isActive?: boolean;
   @Expose()
   docks?: object[];
   @Expose()
   organizationName?: string;
+  @Expose()
+  userWarehouseAccesses?: LoginResponseDto[];
 
   @Expose({ groups: ['detail'] })
   homeMembers?: LoginResponseDto[];
@@ -23,8 +25,6 @@ export class responseWarehouseDto {
   bookings?: object[];
   @Expose({ groups: ['detail'] })
   createdAt?: Date;
-  @Expose({ groups: ['detail'] })
-  userWarehouseAccesses?: LoginResponseDto[];
   @Expose({ groups: ['detail'] })
   driver?: object[];
 }

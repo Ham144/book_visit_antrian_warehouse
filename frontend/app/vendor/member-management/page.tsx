@@ -9,7 +9,6 @@ import {
   IdCardIcon,
   Plus,
   Search,
-  Trash2,
   User,
   User2,
 } from "lucide-react";
@@ -21,7 +20,7 @@ interface MemberManagementFilter {
   page: number;
 }
 
-const MemberManagementPage = () => {
+const VendorMemberManagementPage = () => {
   const initialUserAPP: UserApp = {
     username: "",
     password: "",
@@ -284,4 +283,4 @@ const MemberManagementPage = () => {
   );
 };
 
-export default MemberManagementPage;
+export default VendorMemberManagementPage;

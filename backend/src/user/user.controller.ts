@@ -12,10 +12,13 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { refreshTokenOption, accessTokenOption } from './tokenCookieOptions';
-import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
+import { LoginResponseDto, LoginRequestDto } from './dto/login.dto';
 import { CreateAppUserDto } from './dto/create-user.dto';
 import { UserService } from './user.service';
 import { AuthService } from './auth.service';
+import { UpdateAppUserDto } from './dto/update-user.dto';
+import { Auth } from 'src/common/auth.decorator';
+import { TokenPayload } from './dto/token-payload.dto';
 
 @Controller('/user')
 export class UserController {
@@ -26,11 +29,34 @@ export class UserController {
 
   @Post('/login/ldap')
   async loginUserLdap(
-    @Body() body: LoginRequestLdapDto,
+    @Body() body: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
   ) {
-    const response: LoginResponseDto = await this.authService.loginUser(
+    const response: LoginResponseDto = await this.authService.loginUserAD(
+      body,
+      req,
+    );
+    const hasTokens = response.refresh_token && response.access_token;
+
+    if (hasTokens) {
+      res.cookie('refresh_token', response.refresh_token, refreshTokenOption);
+      res.cookie('access_token', response.access_token, accessTokenOption);
+    }
+
+    // Hapus token dari response body
+    const { refresh_token, access_token, ...responseWithoutTokens } = response;
+
+    return responseWithoutTokens;
+  }
+
+  @Post('/login/app')
+  async loginUserApp(
+    @Body() body: LoginRequestDto,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    const response: LoginResponseDto = await this.authService.loginUserAPP(
       body,
       req,
     );
@@ -91,12 +117,15 @@ export class UserController {
   }
 
   @Post('/create')
-  async createAppUser(@Body() body: CreateAppUserDto) {
-    return this.userService.createAppUser(body);
+  async createAppUser(
+    @Body() body: CreateAppUserDto,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.userService.createAppUser(body, userInfo);
   }
 
   @Patch('/update')
-  async updateAccount(@Body() body: LoginResponseDto) {
+  async updateAccount(@Body() body: UpdateAppUserDto) {
     return this.userService.updateAccount(body);
   }
 

@@ -167,7 +167,7 @@ export default function DocksPage() {
                     </thead>
                     <tbody>
                       {docks?.length > 0 ? (
-                        docks?.map((dock: IDock, index) => (
+                        docks?.map((dock: IDock, index: number) => (
                           <tr
                             key={index}
                             className={`hover:bg-gray-50 transition-colors ${

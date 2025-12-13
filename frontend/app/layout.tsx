@@ -6,7 +6,7 @@ import { Metadata } from "next";
 import Navigation from "@/components/shared-common/navigation";
 
 export const metadata: Metadata = {
-  title: "Warehouse Petty Cash Flow",
+  title: "Visitation Book CSI",
   icons: {
     icon: "/csi-logo.png",
     shortcut: "/csi-logo.png",

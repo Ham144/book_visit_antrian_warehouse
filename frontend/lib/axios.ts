@@ -43,6 +43,7 @@ axiosInstance.interceptors.response.use(
 
     // Check if it's a 401 or 403 error (token expired or missing)
     const isAuthError = error.response?.status === 401;
+    const isForbiddenError = error.response?.status === 403;
 
     // Get URL from config - handle both relative and absolute URLs
     // Try multiple ways to get the URL since axios may store it differently
@@ -113,6 +114,10 @@ axiosInstance.interceptors.response.use(
           isRefreshing = false;
         }
       }
+    }
+
+    if (isForbiddenError) {
+      window.location.href = "/forbidden";
     }
 
     return Promise.reject(error);

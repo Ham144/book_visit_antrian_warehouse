@@ -14,7 +14,7 @@ export class LoginResponseDto {
   displayName: string;
 
   @Expose()
-  homeWarehouse: responseWarehouseDto;
+  homeWarehouse?: responseWarehouseDto;
 
   @Expose()
   isActive?: boolean;
@@ -25,6 +25,9 @@ export class LoginResponseDto {
   @Expose()
   warehouseAccess?: responseWarehouseDto[];
 
+  @Expose()
+  accountType?: string;
+
   @Expose({ groups: ['login'] })
   refresh_token?: string;
 
@@ -32,7 +35,7 @@ export class LoginResponseDto {
   access_token?: string;
 }
 
-export class LoginRequestLdapDto {
+export class LoginRequestDto {
   @IsString()
   @IsNotEmpty()
   username: string;

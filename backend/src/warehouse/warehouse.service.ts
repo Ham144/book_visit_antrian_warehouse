@@ -23,8 +23,9 @@ export class WarehouseService {
     private readonly authService: AuthService,
     private readonly redis: RedisService,
   ) {}
+
   async createWarehouse(body: CreateWarehouseDto, userInfo: any) {
-    const { warehouseAccess = [], homeMembers, ...data } = body;
+    const { userWarehouseAccesses = [], homeMembers, ...data } = body;
 
     try {
       await this.prismaService.warehouse.upsert({
@@ -32,13 +33,13 @@ export class WarehouseService {
         update: {
           // kalau mau update sedikit, taruh di sini
           userWarehouseAccesses: {
-            connect: warehouseAccess.map((username) => ({ username })),
+            connect: userWarehouseAccesses.map((username) => ({ username })),
           },
         },
         create: {
           ...data,
           userWarehouseAccesses: {
-            connect: warehouseAccess.map((username) => ({ username })),
+            connect: userWarehouseAccesses.map((username) => ({ username })),
           },
           organizationName: userInfo?.organizationName,
         },
@@ -58,14 +59,14 @@ export class WarehouseService {
       throw new NotFoundException(`Warehouse ${id} tidak ditemukan`);
     }
 
-    const { warehouseAccess, homeMembers, name, ...data } = body;
+    const { userWarehouseAccesses, homeMembers, name, ...data } = body;
 
     return this.prismaService.$transaction(async (tx) => {
       const updateData: any = { ...data };
 
-      if (warehouseAccess !== undefined) {
+      if (userWarehouseAccesses !== undefined) {
         updateData.userWarehouseAccesses = {
-          set: warehouseAccess.map((username) => ({ username })),
+          set: userWarehouseAccesses.map((username) => ({ username })),
         };
       }
 
@@ -187,7 +188,7 @@ export class WarehouseService {
     });
     const warehouseData = {
       ...warehouse,
-      warehouseAccess:
+      userWarehouseAccesses:
         (warehouse as any)?.userWarehouseAccesses?.map(
           (access: any) => access.username,
         ) ?? [],

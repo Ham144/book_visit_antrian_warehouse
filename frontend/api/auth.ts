@@ -1,18 +1,21 @@
 import axiosInstance from "@/lib/axios";
-import type {
-  LoginRequestLdapDto,
-  LoginResponseDto,
-  UserInfo,
-} from "@/types/auth";
+import type { LoginRequestDto, LoginResponseDto, UserApp } from "@/types/auth";
 import { BaseProps } from "@/types/shared.type";
-import { UserApp } from "@/types/user.type";
 
 export const AuthApi = {
   loginUserLdap: async (
-    credentials: LoginRequestLdapDto
+    credentials: LoginRequestDto
   ): Promise<LoginResponseDto> => {
     const response = await axiosInstance.post<LoginResponseDto>(
       "/api/user/login/ldap",
+      credentials
+    );
+    return response.data;
+  },
+
+  loginUserAPP: async (credentials: LoginRequestDto) => {
+    const response = await axiosInstance.post<LoginResponseDto>(
+      "/api/user/login/app",
       credentials
     );
     return response.data;
@@ -28,7 +31,7 @@ export const AuthApi = {
     return response.data;
   },
 
-  updateAccount: async (body: UserInfo) => {
+  updateAccount: async (body: UserApp) => {
     const response = await axiosInstance.patch("/api/user/update", body);
     return response.data;
   },

@@ -1,10 +1,9 @@
 import { WarehouseApi } from "@/api/warehouse.api";
-import { UserApp } from "@/types/user.type";
-import { GetWarehouseFilter } from "@/types/warehouse";
+import { UserApp } from "@/types/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   User,
-  Mail,
+  KeyIcon,
   Phone,
   IdCard,
   Warehouse,
@@ -12,8 +11,8 @@ import {
   Eye,
   EyeOff,
   FileText,
-  CheckCircle,
   XCircle,
+  Mail,
 } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { toast, Toaster } from "sonner";
@@ -23,6 +22,7 @@ export interface UserEditProps {
   setFormData: Dispatch<SetStateAction<UserApp>>;
   submitCreate: any;
   submitUpdate: any;
+  isCreating: boolean;
 }
 
 export default function UserEditModalForm({
@@ -30,19 +30,13 @@ export default function UserEditModalForm({
   setFormData,
   submitCreate,
   submitUpdate,
+  isCreating,
 }: UserEditProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [warehouseFilter, setWarehouseFilter] = useState<GetWarehouseFilter>({
-    page: 1,
-    searchKey: "",
-  });
-
   const { data: warehouses } = useQuery({
     queryKey: ["warehouses"],
-    queryFn: () => WarehouseApi.getWarehouses(warehouseFilter),
-    enabled: warehouseFilter.searchKey.length > 1,
+    queryFn: () => WarehouseApi.getWarehouses(),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,10 +46,10 @@ export default function UserEditModalForm({
       return;
     }
 
-    if (formData.id) {
-      submitUpdate();
-    } else {
+    if (isCreating) {
       submitCreate();
+    } else {
+      submitUpdate();
     }
   };
 
@@ -74,7 +68,7 @@ export default function UserEditModalForm({
                 <User className="w-5 h-5 text-leaf-green-600" />
               </div>
               <h3 className="font-bold text-lg text-gray-800">
-                {formData.id ? "Edit User" : "Tambah User Baru"}
+                {!isCreating ? "Edit User" : "Tambah User Baru"}
               </h3>
             </div>
             <button
@@ -93,13 +87,13 @@ export default function UserEditModalForm({
               <div className="form-control md:col-span-2">
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
-                    <Mail className="w-4 h-4 mr-2 text-leaf-green-500" />
+                    <KeyIcon className="w-4 h-4 mr-2 text-leaf-green-500" />
                     Username *
                   </span>
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Username untuk login"
                   value={formData.username || ""}
                   onChange={(e) =>
@@ -119,7 +113,7 @@ export default function UserEditModalForm({
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Nama lengkap"
                   value={formData.displayName || ""}
                   onChange={(e) =>
@@ -138,7 +132,7 @@ export default function UserEditModalForm({
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="0812xxxx"
                   value={formData.driverPhone || ""}
                   onChange={(e) =>
@@ -157,11 +151,29 @@ export default function UserEditModalForm({
                 </label>
                 <input
                   type="text"
-                  className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="SIM A, SIM B1, SIM B2"
                   value={formData.driverLicense || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, driverLicense: e.target.value })
+                  }
+                />
+              </div>
+              {/* mail */}
+              <div className="form-control">
+                <label className="label py-2">
+                  <span className="label-text font-medium text-gray-700 flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-leaf-green-500" />
+                    E-Mail
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  placeholder="ham@dev.com"
+                  value={formData.mail || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, mail: e.target.value })
                   }
                 />
               </div>
@@ -184,7 +196,9 @@ export default function UserEditModalForm({
                       homeWarehouseId: e.target.value || undefined,
                     })
                   }
+                  disabled={!isCreating}
                 >
+                  <option value="empty">Pilih Warehouse login</option>
                   {warehouses?.map((warehouse) => (
                     <option key={warehouse.id} value={warehouse.id}>
                       {warehouse.name}{" "}
@@ -192,26 +206,10 @@ export default function UserEditModalForm({
                     </option>
                   ))}
                 </select>
-
-                {/* Quick Search Input */}
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    placeholder="Cari warehouse..."
-                    className="input input-bordered input-sm w-full bg-white border-gray-300"
-                    value={warehouseFilter.searchKey || ""}
-                    onChange={(e) =>
-                      setWarehouseFilter((prev) => ({
-                        ...prev,
-                        searchKey: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
               </div>
 
               {/* Password - Only for new users */}
-              {!formData.id && (
+              {formData?.accountType === "APP" && (
                 <>
                   <div className="form-control">
                     <label className="label py-2">
@@ -223,13 +221,16 @@ export default function UserEditModalForm({
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
-                        className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
+                        className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
                         placeholder="Password"
                         value={formData.password || ""}
                         onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
+                          setFormData({
+                            ...formData,
+                            password: e.target.value,
+                          })
                         }
-                        required={!formData.id}
+                        required={!isCreating}
                       />
                       <button
                         type="button"
@@ -255,7 +256,7 @@ export default function UserEditModalForm({
                     <div className="relative">
                       <input
                         type={showConfirmPassword ? "text" : "password"}
-                        className="input input-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
+                        className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
                         placeholder="Konfirmasi password"
                         value={formData.passwordConfirm || ""}
                         onChange={(e) =>
@@ -264,7 +265,7 @@ export default function UserEditModalForm({
                             passwordConfirm: e.target.value,
                           })
                         }
-                        required={!formData.id}
+                        required={!isCreating}
                       />
                       <button
                         type="button"
@@ -289,18 +290,18 @@ export default function UserEditModalForm({
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
                     <FileText className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Deskripsi
+                    Account Deskripsi
                   </span>
                 </label>
-                <textarea
-                  className="textarea textarea-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  rows={3}
+                <input
+                  className=" input input-bordered border px-3 border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Deskripsi user"
                   value={formData.description || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
                 />
+                <span>eg: Admin</span>
               </div>
 
               {/* Status */}
@@ -336,7 +337,7 @@ export default function UserEditModalForm({
               type="submit"
               className="btn btn-primary border-leaf-green-500 text-white hover:bg-leaf-green-600 hover:border-leaf-green-600 transition-colors px-8"
             >
-              {formData.id ? "Perbarui" : "Tambah User"}
+              {!isCreating ? "Perbarui" : "Tambah User"}
             </button>
           </div>
         </form>

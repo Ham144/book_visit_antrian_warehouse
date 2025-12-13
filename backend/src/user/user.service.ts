@@ -1,19 +1,17 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
-import { RedisService } from 'src/redis/redis.service';
 import { CreateAppUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { LoginResponseDto } from './dto/login.dto';
 import { plainToInstance } from 'class-transformer';
+import { UpdateAppUserDto } from './dto/update-user.dto';
+import { TokenPayload } from './dto/token-payload.dto';
 
 @Injectable()
 export class UserService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly redis: RedisService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  async createAppUser(body: CreateAppUserDto) {
+  async createAppUser(body: CreateAppUserDto, userInfo: TokenPayload) {
     const passwordHash = await bcrypt.hash(body.password, 10);
 
     const homeWarehouse = await this.prismaService.warehouse.findUnique({
@@ -32,6 +30,18 @@ export class UserService {
         driverPhone: body.driverPhone,
         driverLicense: body.driverLicense,
         homeWarehouseId: homeWarehouse.id,
+        accountType: 'APP',
+        warehouseAccess: {
+          connect: {
+            id: homeWarehouse.id,
+          },
+        },
+        mail: body.mail,
+        organizations: {
+          connect: {
+            name: userInfo.organizationName,
+          },
+        },
       },
     });
     return HttpStatus.CREATED;
@@ -90,21 +100,23 @@ export class UserService {
     );
   }
 
-  async updateAccount(body: LoginResponseDto) {
+  async updateAccount(body: UpdateAppUserDto) {
+    const { username, password, ...rest } = body;
+
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+      rest.passwordHash = passwordHash;
+    }
+
     const updated = await this.prismaService.user.update({
       where: {
-        username: body.username,
+        username: username,
       },
-      data: {
-        displayName: body.displayName,
-        isActive: body.isActive,
-      },
+      data: rest,
     });
-    return {
-      username: updated.username,
-      displayName: updated.displayName,
-      description: updated.description,
-      isActive: updated.isActive,
-    };
+
+    return plainToInstance(LoginResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
   }
 }

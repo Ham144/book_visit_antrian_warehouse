@@ -1,22 +1,5 @@
-export interface WarehouseCreateDto {
-  name: string;
-  location?: string;
-  description?: string;
-  warehouseAccess?: string[];
-  isActive?: boolean;
-}
-
-export interface WarehouseUpdateDto {
-  id: string;
-  name?: string;
-  location?: string;
-  description?: string;
-  warehouseAccess?: string[];
-  isActive?: boolean;
-}
-
 export interface Warehouse {
-  id: string;
+  id?: string;
   name: string;
   location?: string | null;
   description?: string | null;
@@ -32,7 +15,7 @@ export interface Warehouse {
   organizationName?: string;
 }
 
-export interface GetWarehouseFilter {
+export interface WarehouseFilter {
   searchKey?: string;
   page?: number;
 }

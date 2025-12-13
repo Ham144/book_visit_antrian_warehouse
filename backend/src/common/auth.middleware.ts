@@ -5,7 +5,11 @@ import { TokenPayload } from 'src/user/dto/token-payload.dto';
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   async use(req: any, res: any, next: (error?: Error | any) => void) {
-    const publicRoutes = ['/api/user/login/ldap', '/api/user/refresh-token'];
+    const publicRoutes = [
+      '/api/user/login/ldap',
+      '/api/user/login/app',
+      '/api/user/refresh-token',
+    ];
 
     //refresh_token tidak akan melewati middleware ini
     if (publicRoutes.some((path) => req.originalUrl.startsWith(path))) {
@@ -16,7 +20,7 @@ export class AuthMiddleware implements NestMiddleware {
     const access_token = req?.cookies?.['access_token'];
 
     if (!access_token) {
-      return res.status(403).json({ message: 'Route is forbidden' });
+      return res.status(401).json({ message: 'Access token not found' });
     }
 
     try {

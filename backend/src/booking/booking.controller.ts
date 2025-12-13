@@ -22,7 +22,7 @@ export class BookingController {
 
   @Post()
   create(@Body() createBookingDto: CreateBookingDto, @Auth() userInfo: any) {
-    return this.bookingService.create(createBookingDto, userInfo);
+    return this.bookingForVendorService.create(createBookingDto, userInfo);
   }
 
   @Get()

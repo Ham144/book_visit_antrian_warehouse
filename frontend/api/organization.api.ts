@@ -20,7 +20,7 @@ export const OrganizationApi = {
     const res = await axiosInstance.post("/api/organization/switch", { name });
     return res.data;
   },
-  getAllOrganizations: async (filter: BaseProps) => {
+  getAllOrganizations: async (filter: BaseProps): Promise<Organization[]> => {
     const params = new URLSearchParams();
     const { page, searchKey } = filter;
     if (searchKey) params.set("searchKey", searchKey);

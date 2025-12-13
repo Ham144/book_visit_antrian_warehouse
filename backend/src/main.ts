@@ -1,10 +1,9 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/http-exception-filter';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
-import { json } from 'stream/consumers';
-import { urlencoded } from 'express';
+import { ValidationPipe } from '@nestjs/common';
+import { PrismaExceptionFilter } from './common/PrismaException';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -32,7 +31,7 @@ async function bootstrap() {
   });
 
   // Global error filter (opsional)
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(), new PrismaExceptionFilter());
 
   await app.listen(3001);
   console.log('✓ Server listening on port 3001');

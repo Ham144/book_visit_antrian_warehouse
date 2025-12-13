@@ -4,7 +4,6 @@ import {
   ChevronDown,
   LogIn,
   LogOut,
-  Settings,
   Truck,
   User2,
   Building2,
@@ -22,13 +21,15 @@ import { OrganizationApi } from "@/api/organization.api";
 import { WarehouseApi } from "@/api/warehouse.api";
 import { Organization } from "@/types/organization";
 import { Warehouse } from "@/types/warehouse";
+import { AccountType } from "@/types/auth";
 
 export default function Navigation() {
   const { userInfo, setUserInfo } = useUserInfo();
   const searchBar = useRef<HTMLInputElement | null>(null);
+  const [accountType, setAccountType] = useState<AccountType>(AccountType.AD);
 
   const [formData, setFormData] = useState({
-    username: "yafizham",
+    username: "ham b",
     password: "Catur2025!",
     organization: "CATUR SUKSES INTERNASIONAL",
   });
@@ -45,7 +46,7 @@ export default function Navigation() {
 
   const router = useRouter();
 
-  const { mutateAsync: handeLogin } = useMutation({
+  const { mutateAsync: handeLoginAD } = useMutation({
     mutationKey: ["userInfo"],
     mutationFn: async () => {
       const res = await AuthApi.loginUserLdap(formData);
@@ -66,6 +67,34 @@ export default function Navigation() {
     },
   });
 
+  const { mutateAsync: handeLoginAPP } = useMutation({
+    mutationKey: ["userInfo"],
+    mutationFn: async () => {
+      const res = await AuthApi.loginUserAPP(formData);
+      return res;
+    },
+    onSuccess: (res: any) => {
+      setUserInfo(res);
+      (document.getElementById("login_modal") as any)?.close();
+      if (res?.description) {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/vendor/dashboard");
+      }
+    },
+    onError: (er: any) => {
+      toast.error(er?.response?.data?.message || "Gagal login");
+    },
+  });
+
+  const onSubmitLogin = () => {
+    if (accountType === AccountType.AD) {
+      handeLoginAD();
+    } else {
+      handeLoginAPP();
+    }
+  };
+
   const { mutateAsync: handleLogout } = useMutation({
     mutationKey: ["userInfo"],
     mutationFn: AuthApi.logout,
@@ -84,6 +113,7 @@ export default function Navigation() {
       await WarehouseApi.switchHomeWarehouse(id),
     onSuccess: (res) => {
       setUserInfo(res);
+      window.location.reload();
     },
     onError: (re: any) => {
       toast.error(re?.response.data.message);
@@ -96,6 +126,7 @@ export default function Navigation() {
       await OrganizationApi.switchOrganization(id),
     onSuccess: (res) => {
       setUserInfo(res);
+      window.location.reload();
     },
     onError: (re: any) => {
       toast.error(re?.response.data.message);
@@ -252,7 +283,7 @@ export default function Navigation() {
                       <WarehouseIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">
-                          {userInfo?.homeWarehouse.name || "Main Warehouse"}
+                          {userInfo?.homeWarehouse?.name || "Main Warehouse"}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           Warehouse
@@ -399,11 +430,69 @@ export default function Navigation() {
             <h3 className="font-bold text-xl">Login ke Sistem</h3>
             <p className="text-teal-100 mt-1">Masuk ke portal Antrian Gudang</p>
           </div>
+          <div className="grid grid-cols-2 gap-2 p-1 bg-teal-50 rounded-xl border border-teal-100 shadow-inner">
+            <button
+              onClick={() => setAccountType(AccountType.AD)}
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                accountType === AccountType.AD
+                  ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg scale-[1.02]"
+                  : "bg-white text-teal-700 border border-teal-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-md"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 ${
+                  accountType === AccountType.AD
+                    ? "text-teal-100"
+                    : "text-teal-500"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+              Active Directory
+            </button>
 
+            <button
+              onClick={() => setAccountType(AccountType.APP)}
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                accountType === AccountType.APP
+                  ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg scale-[1.02]"
+                  : "bg-white text-teal-700 border border-teal-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-md"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 ${
+                  accountType === AccountType.APP
+                    ? "text-teal-100"
+                    : "text-teal-500"
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                />
+              </svg>
+              App
+            </button>
+          </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handeLogin();
+              onSubmitLogin();
             }}
             className="p-6 space-y-4"
           >
@@ -443,14 +532,13 @@ export default function Navigation() {
 
             <div className="text-center">
               <a
-                href="#"
+                href="/forgot-password"
                 className="text-sm text-teal-600 hover:text-teal-700 transition-colors"
               >
-                Masuk dengan akun non AD?
+                Lupa Password ?
               </a>
             </div>
           </form>
-
           <div className="modal-action p-4 bg-gray-50">
             <form method="dialog">
               <button className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">

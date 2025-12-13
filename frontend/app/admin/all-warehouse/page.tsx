@@ -15,19 +15,14 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { WarehouseApi } from "@/api/warehouse.api";
-import type {
-  Warehouse,
-  WarehouseCreateDto,
-  WarehouseUpdateDto,
-  GetWarehouseFilter,
-} from "@/types/warehouse";
+import type { Warehouse, WarehouseFilter } from "@/types/warehouse";
 import WarehouseModalForm from "@/components/admin/warehouseModalForm";
 
-const initialFormData: WarehouseCreateDto = {
+const initialFormData: Warehouse = {
   name: "",
   location: "",
   description: "",
-  warehouseAccess: [],
+  userWarehouseAccesses: [],
   isActive: true,
 };
 
@@ -38,14 +33,14 @@ export default function AllWarehousePage() {
     return trimmed.length > 0 ? trimmed : undefined;
   };
 
-  const [filter, setFilter] = useState<GetWarehouseFilter>({
+  const [filter, setFilter] = useState<WarehouseFilter>({
     searchKey: "",
     page: 1,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<WarehouseCreateDto>(initialFormData);
+  const [formData, setFormData] = useState<Warehouse>(initialFormData);
   const queryClient = useQueryClient();
 
   const { data: warehouses = [], isLoading } = useQuery({
@@ -62,7 +57,7 @@ export default function AllWarehousePage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: async (body: WarehouseCreateDto) =>
+    mutationFn: async (body: Warehouse) =>
       await WarehouseApi.createWarehouse(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-warehouse"] });
@@ -79,7 +74,7 @@ export default function AllWarehousePage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: WarehouseUpdateDto) =>
+    mutationFn: async (data: Warehouse) =>
       await WarehouseApi.updateWarehouse(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-warehouse"] });
@@ -116,12 +111,9 @@ export default function AllWarehousePage() {
         name: warehouse.name || "",
         location: warehouse.location || "",
         description: warehouse.description || "",
-        warehouseAccess: Array.isArray(warehouse.userWarehouseAccesses)
-          ? (warehouse.userWarehouseAccesses as unknown[]).filter(
-              (username): username is string =>
-                typeof username === "string" && username.length > 0
-            )
-          : [],
+        userWarehouseAccesses: warehouse.userWarehouseAccesses.map(
+          (u: any) => u.username
+        ),
         isActive: warehouse.isActive ?? true,
       });
       setEditingId(warehouse.id);
@@ -140,11 +132,11 @@ export default function AllWarehousePage() {
       return;
     }
 
-    const payload = {
+    const payload: Warehouse = {
       name: formData.name.trim(),
       location: sanitizeString(formData.location),
       description: sanitizeString(formData.description),
-      warehouseAccess: formData.warehouseAccess || [],
+      userWarehouseAccesses: formData.userWarehouseAccesses || [],
       isActive: formData.isActive ?? true,
     };
 

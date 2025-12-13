@@ -8,9 +8,11 @@ import * as LdapClient from 'ldapjs-client';
 import * as jwt from 'jsonwebtoken';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
-import { LoginRequestLdapDto, LoginResponseDto } from './dto/login.dto';
+import { LoginRequestDto, LoginResponseDto } from './dto/login.dto';
 import { TokenPayload } from './dto/token-payload.dto';
 import { plainToInstance } from 'class-transformer';
+import { AccountType } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +21,7 @@ export class AuthService {
     private redis: RedisService,
   ) {}
 
-  async loginUser(body: LoginRequestLdapDto, req: any) {
+  async loginUserAD(body: LoginRequestDto, req: any) {
     const organizationSetting =
       await this.prismaService.organization.findUnique({
         where: {
@@ -70,12 +72,24 @@ export class AuthService {
           'User terkait tidak memiliki warehouse:physicalDeliveryOfficeName',
       });
     }
+
+    if (!userLDAP['description']) {
+      throw new BadRequestException({
+        message: 'User terkait tidak memiliki description',
+      });
+    }
+
     let user = await this.prismaService.user.findUnique({
       where: {
         username: body.username,
       },
       include: {
-        homeWarehouse: true,
+        homeWarehouse: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
     //jika user sebelumnya memiliki description yg berbeda dengan ldap :ganti
@@ -109,6 +123,8 @@ export class AuthService {
           description: userLDAP['description'],
           displayName: userLDAP['displayName'],
           homeWarehouseId: warehouseId,
+          accountType: 'AD',
+          mail: userLDAP['mail'],
         },
         include: {
           homeWarehouse: true,
@@ -137,6 +153,8 @@ export class AuthService {
               homeWarehouseId: warehouse.id,
               displayName:
                 userLDAP['displayName'] || userLDAP['name'] || body.username,
+              accountType: AccountType['AD'],
+              mail: userLDAP['mail'],
               organizations: {
                 connect: {
                   name: organizationSetting.name,
@@ -163,6 +181,7 @@ export class AuthService {
           userWarehouseAccesses: {
             connect: {
               username: transactionResult.username,
+              accountType: 'AD',
             },
           },
         },
@@ -202,12 +221,100 @@ export class AuthService {
       access_token,
       refresh_token,
       organizationName: organizationSetting.name,
+      homeWarehouse: user.homeWarehouse,
       ...user,
     };
     return plainToInstance(LoginResponseDto, userInfo, {
       excludeExtraneousValues: true,
       groups: ['login'],
     });
+  }
+
+  async loginUserAPP(body: LoginRequestDto, req: any) {
+    const organizationSetting =
+      await this.prismaService.organization.findUnique({
+        where: {
+          name: body.organization,
+        },
+      });
+
+    if (!organizationSetting) {
+      throw new BadRequestException('Organization Setting tidak ditemukan.');
+    }
+
+    let userInfo: LoginResponseDto;
+    try {
+      const user = await this.prismaService.user.findFirst({
+        where: {
+          username: body.username,
+          organizations: {
+            some: {
+              name: organizationSetting.name,
+            },
+          },
+        },
+        include: {
+          homeWarehouse: true,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('User tidak ditemukan');
+      }
+
+      const isPasswordCorrect = await bcrypt.compare(
+        body.password,
+        user.passwordHash,
+      );
+
+      if (!isPasswordCorrect) {
+        throw new BadRequestException({
+          message: 'credential yang anda masukkan salah',
+        });
+      }
+
+      const payload: TokenPayload = {
+        username: user.username,
+        description: user.description,
+        homeWarehouseId: user.homeWarehouseId,
+        organizationName: organizationSetting.name,
+        jti: randomUUID(),
+      };
+
+      const access_token = this.generateToken(payload, 'access');
+      const refresh_token = this.generateToken(payload, 'refresh');
+
+      if (!access_token || !refresh_token) {
+        throw new Error('Failed to generate authentication tokens');
+      }
+
+      await this.redis.set(
+        payload.jti,
+        JSON.stringify({
+          username: payload.username,
+          ip: req.ip,
+          userAgent: req.headers['user-agent'],
+        }),
+        604800, // 1 minggu
+      );
+
+      userInfo = {
+        access_token,
+        refresh_token,
+        organizationName: organizationSetting.name,
+        homeWarehouse: user.homeWarehouse,
+        ...user,
+      };
+
+      return plainToInstance(LoginResponseDto, userInfo, {
+        excludeExtraneousValues: true,
+        groups: ['login'],
+      });
+    } catch (error) {
+      throw new BadRequestException({
+        message: error.message,
+      });
+    }
   }
 
   async refreshToken(refresh_token: string) {

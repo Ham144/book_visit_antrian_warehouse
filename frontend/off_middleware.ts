@@ -6,9 +6,6 @@ export function middleware(req: NextRequest) {
   const refreshToken = req.cookies.get("refresh_token")?.value;
   const pathname = req.nextUrl.pathname;
 
-  const wl_IT_only = ["/admin", "/setup", "/warehouse"];
-  const kasir_IT_only = ["/admin/all-warehouse-management"];
-
   // Jika di halaman login, biarkan lewat (tidak perlu check token)
   if (pathname === "/") {
     return NextResponse.next();
@@ -45,24 +42,26 @@ export function middleware(req: NextRequest) {
 
     const description = decoded?.description;
 
-    // === Role checking ===
-    if (description === "IT") {
-      return NextResponse.next();
-    }
-
-    if (description?.includes("WL")) {
-      if (wl_IT_only.includes(pathname)) {
+    if (!description) {
+      return NextResponse.redirect(new URL("/", req.url));
+    } else if (
+      description == "IT" ||
+      description.toUpperCase().includes("ADMIN")
+    ) {
+      // Jika user sudah di halaman admin, biarkan lewat
+      if (pathname.startsWith("/admin")) {
         return NextResponse.next();
       }
-    }
-
-    if (description?.includes("KASIR")) {
-      if (kasir_IT_only.includes(pathname)) {
+      // Jika user bukan di halaman admin, redirect ke admin dashboard
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    } else {
+      // Jika user sudah di halaman vendor, biarkan lewat
+      if (pathname.startsWith("/vendor")) {
         return NextResponse.next();
       }
+      // Jika user bukan di halaman vendor, redirect ke vendor dashboard
+      return NextResponse.redirect(new URL("/vendor/dashboard", req.url));
     }
-
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
   } catch (err) {
     // Token invalid/malformed
     // Jika ada refresh_token, biarkan lewat (biarkan axios handle refresh)
@@ -75,6 +74,6 @@ export function middleware(req: NextRequest) {
 }
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|csi-logo.png|login|unauthorized).*)",
+    "/((?!_next/static|_next/image|favicon.ico|csi-logo.png|login|forgot-password|forbidden|unauthorized).*)",
   ],
 };
