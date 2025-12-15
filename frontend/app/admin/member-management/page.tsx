@@ -1,6 +1,7 @@
 "use client";
 import { AuthApi } from "@/api/auth";
-import UserEditModalForm from "@/components/admin/UserEditModalForm";
+import ConfirmationModal from "@/components/shared-common/confirmationModal";
+import UserEditModalForm from "@/components/shared-common/UserEditModalForm";
 import { UserApp, UserInfo } from "@/types/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,6 +14,7 @@ import {
   User,
   User2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -24,8 +26,8 @@ interface MemberManagementFilter {
 const MemberManagementPage = () => {
   const initialUserAPP: UserApp = {
     username: "",
-    password: "",
-    passwordConfirm: "",
+    password: "SMD2025!",
+    passwordConfirm: "SMD2025!",
     description: "",
     displayName: "",
     homeWarehouseId: "",
@@ -43,11 +45,16 @@ const MemberManagementPage = () => {
     page: 1,
   });
 
+  const router = useRouter();
+
   const qc = useQueryClient();
   const { data: accounts, isLoading } = useQuery({
     queryKey: ["users", filter],
     queryFn: () =>
-      AuthApi.getAllAccountForMemberManagement(filter.page, filter.searchKey),
+      AuthApi.getAllAccountForMemberManagement({
+        page: filter.page,
+        searchKey: filter.searchKey,
+      }),
   });
 
   const { mutateAsync: handleCreateAppUser } = useMutation({
@@ -59,6 +66,7 @@ const MemberManagementPage = () => {
     },
     onSuccess: () => {
       (document.getElementById("UserEditModalForm") as any)?.close();
+      qc.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message);
@@ -79,6 +87,21 @@ const MemberManagementPage = () => {
     },
   });
 
+  const [selectedUser, setSelectedUser] = useState<UserApp | undefined>();
+
+  const { mutateAsync: handleDeleteAppUser } = useMutation({
+    mutationKey: ["delete-app-user", "users"],
+    mutationFn: async () => await AuthApi.deleteAppUser(selectedUser?.username),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      (document.getElementById("delete-app-user") as any)?.close();
+    },
+    onError: async (er: any) => {
+      toast.error(er?.response?.data?.message || "gagal menghapus data member");
+      (document.getElementById("delete-app-user") as any)?.close();
+    },
+  });
+
   const handleOpenEdit = (user?: UserApp) => {
     setFormData(user);
     (document.getElementById("UserEditModalForm") as any)?.showModal();
@@ -95,7 +118,7 @@ const MemberManagementPage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                      Manajemen Member and access
+                      Manajemen Member and access group saya
                     </h1>
                     <p className="text-gray-600">
                       Kelola member dan hak akses warehouse disini
@@ -151,7 +174,7 @@ const MemberManagementPage = () => {
                       </p>
                     </div>
                   </div>
-                ) : accounts.length === 0 ? (
+                ) : accounts?.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                     <User className="w-16 h-16 text-gray-300 mb-4" />
                     <p className="text-gray-500 text-sm max-w-md">
@@ -186,7 +209,7 @@ const MemberManagementPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {accounts.map((account: UserInfo, index) => (
+                        {accounts?.map((account: UserInfo, index) => (
                           <tr
                             key={index}
                             className={`hover:bg-gray-50 transition-colors ${
@@ -228,6 +251,12 @@ const MemberManagementPage = () => {
                                 <span className="font-medium text-sm">
                                   {account.warehouseAccess.length}
                                 </span>
+                                <Plus
+                                  className="w-4 h-4 text-gray-400 cursor-pointer"
+                                  onClick={() =>
+                                    router.push("/admin/all-warehouse")
+                                  }
+                                />
                               </div>
                             </td>
                             <td className="px-4 py-3">
@@ -249,7 +278,7 @@ const MemberManagementPage = () => {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 items-center gap-x-2">
                                 <button
                                   onClick={() => {
                                     handleOpenEdit(account);
@@ -258,6 +287,21 @@ const MemberManagementPage = () => {
                                   title="Edit user"
                                 >
                                   <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(account);
+                                    (
+                                      document.getElementById(
+                                        "delete-app-user"
+                                      ) as HTMLDialogElement
+                                    )?.showModal();
+                                  }}
+                                  className={`btn text-red-400 font-bold  ${
+                                    account.homeWarehouse ? "" : ""
+                                  } hover:bg-red-50 hover:text-red-600 transition-colors`}
+                                >
+                                  <Trash2 className="w-4 h-4 " />
                                 </button>
                               </div>
                             </td>
@@ -279,6 +323,13 @@ const MemberManagementPage = () => {
         isCreating={isCreating}
         submitUpdate={handleUpdateUser}
         key={"UserEditModalForm"}
+      />
+      <ConfirmationModal
+        message="Apakah anda yakin ingin menghapus user ini ?"
+        modalId="delete-app-user"
+        onConfirm={handleDeleteAppUser}
+        title="konfirmasi delete-app-user?"
+        key={"delete-app-user"}
       />
     </div>
   );

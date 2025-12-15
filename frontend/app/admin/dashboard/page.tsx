@@ -22,9 +22,7 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <p className="text-gray-600">
-                {userInfo.homeWarehouse.name} warehouse
-              </p>
+              <p className="text-gray-600">{userInfo?.vendorName} Dashboard</p>
             </div>
             <KPICards />
             <SlotGrid />

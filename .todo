@@ -14,6 +14,7 @@ start 12/11/2025
 [x] add: Menu vehicles management
 [x] add: admin dock management
 [x] add: (main) set booking
+[x] add: entitas vendor yang tidak perlu/bisa  create dan update
 
 belajar: 
 @Exclude()

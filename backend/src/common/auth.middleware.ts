@@ -34,8 +34,9 @@ export class AuthMiddleware implements NestMiddleware {
       req.user = {
         username: decoded.username,
         description: decoded.description,
-        homeWarehouseId: decoded.homeWarehouseId,
+        homeWarehouseId: decoded?.homeWarehouseId || null,
         organizationName: decoded.organizationName,
+        vendorName: decoded?.vendorName || null,
         jti: decoded.jti,
       };
 

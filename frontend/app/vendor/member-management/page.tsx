@@ -1,6 +1,6 @@
 "use client";
 import { AuthApi } from "@/api/auth";
-import UserEditModalForm from "@/components/admin/UserEditModalForm";
+import UserEditModalForm from "@/components/shared-common/UserEditModalForm";
 import { UserApp, UserInfo } from "@/types/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -45,8 +45,7 @@ const VendorMemberManagementPage = () => {
   const qc = useQueryClient();
   const { data: accounts, isLoading } = useQuery({
     queryKey: ["users", filter],
-    queryFn: () =>
-      AuthApi.getAllAccountForMemberManagement(filter.page, filter.searchKey),
+    queryFn: () => AuthApi.getAllAccountForMemberManagement(filter),
   });
 
   const { mutateAsync: handleCreateAppUser } = useMutation({

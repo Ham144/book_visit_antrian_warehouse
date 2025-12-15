@@ -231,7 +231,8 @@ export class MyOrganizationService {
     const payload: TokenPayload = {
       username: user.username,
       description: user.description,
-      homeWarehouseId: user.homeWarehouseId,
+      homeWarehouseId: user?.homeWarehouseId || null,
+      vendorName: user?.vendorName || null,
       organizationName: org.name,
       jti: randomUUID(),
     };

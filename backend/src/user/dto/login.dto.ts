@@ -28,6 +28,9 @@ export class LoginResponseDto {
   @Expose()
   accountType?: string;
 
+  @Expose()
+  vendorName?: string;
+
   @Expose({ groups: ['login'] })
   refresh_token?: string;
 

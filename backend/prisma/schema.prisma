@@ -28,6 +28,7 @@ model Organization {
   vehicles       Vehicle[]
   bookings       Booking[]
   accounts       User[]
+  vendors Vendor[]
 }
 
 model Globalsetting {
@@ -182,7 +183,7 @@ enum BookingStatus {
 model User {
   username     String   @id
   passwordHash String? // kalau pakai auth lokal
-  description  String?
+  description  String? //e.g: DRIVER_{vendor}
   isActive     Boolean  @default(true)
   displayName  String
   createdAt    DateTime @default(now())
@@ -206,8 +207,17 @@ model User {
 
   //many-to-many booking
   bookings Booking[]
-
+  vendorName String?
+  vendor Vendor? @relation(fields: [vendorName], references: [name])
+  
   organizations Organization[]
+}
+
+model Vendor {
+  name String @id
+  members User[]
+  organizationName String
+  organization Organization @relation(fields: [organizationName], references: [name])
 }
 
 enum AccountType {

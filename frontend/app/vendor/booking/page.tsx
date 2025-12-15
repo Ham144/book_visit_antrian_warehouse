@@ -10,10 +10,10 @@ import {
   Truck,
   ArrowLeft,
   Calendar,
-  Ruler,
   Star,
   Activity,
   CheckCircle,
+  User2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,13 +28,22 @@ import { IDock } from "@/types/dock.type";
 import { useRouter, useSearchParams } from "next/navigation";
 import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
 import { BookingApi } from "@/api/booking.api";
+import { AuthApi } from "@/api/auth";
+import { UserApp } from "@/types/auth";
 
 type BookingStep = "warehouse" | "vehicle" | "dock" | "detail";
 
 export default function BookingPage() {
   const { userInfo } = useUserInfo();
   const [bookingStep, setBookingStep] = useState<BookingStep>("warehouse");
+
+  //pagination
+  const [pageDriver, setPageDriver] = useState(1);
+  const [searchKeyDriver, setSearchKeyDriver] = useState("");
+
   const router = useRouter();
+  // const isDriver = userInfo?.description?.startsWith("DRIVER");
+  const isDriver = false;
 
   const initialBookingState: Booking = {
     vehicleId: "",
@@ -61,21 +70,31 @@ export default function BookingPage() {
     queryFn: async () => await WarehouseApi.getWarehouses(),
   });
 
-  const { data: myVehicles = [], isLoading: loadingMyVehicles } = useQuery({
+  const { data: myVehicles = [], isLoading: isLoadingMyVehicles } = useQuery({
     queryKey: ["my-vehicle"],
     queryFn: async () => await VehicleApi.getMyVehicles(),
-    enabled: !!userInfo,
+    enabled: !!isDriver,
   });
 
-  const { data: allVehicles = [], isLoading: loadingVehicles } = useQuery({
-    queryKey: ["vehicles"],
+  const { data: myDrivers, isLoading: isLoadingMyDrivers } = useQuery({
+    queryKey: ["my-drivers"],
     queryFn: async () =>
-      await VehicleApi.getVehicles({
-        page: 1,
-        searchKey: "",
+      await AuthApi.getAllMyDrivers({
+        page: pageDriver,
+        searchKey: searchKeyDriver,
       }),
-    enabled: myVehicles.length === 0,
+    enabled: !!isDriver == false,
   });
+
+  const handleDriverSelect = (driver: UserApp) => {
+    setFormData({
+      ...formData,
+      driverUsername: driver.username,
+      vehicleId: driver.vehicle.id,
+      Driver: driver,
+      Vehicle: driver.vehicle,
+    });
+  };
 
   const { data: activeDocks, isLoading: loadingDocks } = useQuery({
     queryKey: ["docks", formData.warehouseId],
@@ -205,7 +224,7 @@ export default function BookingPage() {
       },
       {
         id: "vehicle",
-        label: "Pilih Kendaraan",
+        label: isDriver ? "Pilih Kendaraan" : "Pilih Driver",
         completed: !!formData.Vehicle,
       },
       { id: "dock", label: "Pilih Dock", completed: !!formData.Dock },
@@ -221,9 +240,6 @@ export default function BookingPage() {
   const handleUpdateFormData = (updates: Partial<Booking>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
-  const displayVehicles = myVehicles.length > 0 ? myVehicles : allVehicles;
-  const isLoadingVehicles =
-    myVehicles.length > 0 ? loadingMyVehicles : loadingVehicles;
 
   useEffect(() => {
     if (vehicleIdParam || warehouseIdParam || dockIdParam || notesParam) {
@@ -422,41 +438,48 @@ export default function BookingPage() {
         {bookingStep === "vehicle" && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold flex items-center mb-2">
-                <Truck className="w-6 h-6 mr-2 text-primary" />
-                Pilih Kendaraan
+              <h2 className="text-2xl font-semibold flex items-center   mb-2">
+                {isDriver ? (
+                  <>
+                    <Truck className="w-6 h-6 mr-2 text-primary" />
+                    Pilih Kendaraan{" "}
+                  </>
+                ) : (
+                  <>
+                    <User2 className="w-6 h-6 mr-2 text-primary" />
+                    My Drivers
+                  </>
+                )}
               </h2>
               <p className="text-gray-600">
-                {myVehicles.length > 0
-                  ? "Pilih kendaraan yang telah ditetapkan untuk Anda"
-                  : "Pilih kendaraan untuk booking ini"}
+                Pilih kendaraan yang telah ditetapkan untuk Anda atau cari
+                dengan nama driver terkait jika anda admin
               </p>
             </div>
 
-            {isLoadingVehicles ? (
+            {(isLoadingMyDrivers && !isDriver) ||
+            (isLoadingMyVehicles && isDriver) ? (
               <div className="flex justify-center items-center py-16">
                 <span className="loading loading-spinner loading-lg text-primary"></span>
               </div>
-            ) : displayVehicles.length === 0 ? (
+            ) : (myDrivers?.length === 0 && !isDriver) ||
+              (myVehicles?.length === 0 && isDriver) ? (
               <div className="card bg-white shadow">
                 <div className="card-body">
                   <div className="alert alert-warning">
                     <AlertCircle size={18} />
                     <div>
-                      <p className="font-medium">
-                        Belum ada kendaraan tersedia
-                      </p>
+                      <p className="font-medium">Belum ada pilihan tersedia</p>
                       <p className="text-sm text-gray-600 mt-1">
                         Silakan hubungi administrator untuk menambahkan
-                        kendaraan
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : isDriver ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {displayVehicles.map((vehicle: IVehicle) => (
+                {myVehicles.map((vehicle: IVehicle) => (
                   <div
                     key={vehicle.id}
                     onClick={() => handleVehicleSelect(vehicle)}
@@ -549,6 +572,34 @@ export default function BookingPage() {
                   </div>
                 ))}
               </div>
+            ) : (
+              myDrivers?.map((driver: UserApp) => (
+                <div
+                  key={driver.username}
+                  onClick={() => handleDriverSelect(driver)}
+                  className={`card bg-white shadow-md hover:shadow-xl transition-all cursor-pointer border-2 ${
+                    formData.driverUsername === driver.username
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent hover:border-gray-300"
+                  }`}
+                >
+                  <div className="card-body p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-xl font-bold">
+                          {driver.displayName}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {driver.description}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {driver.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}

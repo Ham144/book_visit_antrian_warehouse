@@ -1,6 +1,6 @@
 "use client";
 import { AuthApi } from "@/api/auth";
-import { UserInfo } from "@/types/auth";
+import { UserApp, UserInfo } from "@/types/auth";
 import { createContext, useContext, useState, useEffect } from "react";
 
 interface UserContextType {
@@ -42,13 +42,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useUserInfo(): {
-  userInfo: UserInfo | null;
+  userInfo: UserInfo | UserApp | null;
   loadingUser: boolean;
-  setUserInfo: (userInfo: UserInfo | null) => void;
+  setUserInfo: (userInfo: UserInfo | UserApp | null) => void;
 } {
   const context = useContext(UserContext);
   if (!context) {
     throw new Error("useUserInfo must be used within UserProvider");
   }
-  return context;
+  return context as {
+    userInfo: UserInfo | UserApp | null;
+    loadingUser: boolean;
+    setUserInfo: (userInfo: UserInfo | UserApp | null) => void;
+  };
 }

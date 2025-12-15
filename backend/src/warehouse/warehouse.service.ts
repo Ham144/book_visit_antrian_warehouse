@@ -234,8 +234,9 @@ export class WarehouseService {
 
     const payload: TokenPayload = {
       description: userInfo.description,
-      homeWarehouseId: targetWH.id,
+      homeWarehouseId: targetWH?.id || null,
       jti: randomUUID(),
+      vendorName: userInfo?.vendorName || null,
       organizationName: targetWH.organizationName,
       username: userInfo.username,
     };

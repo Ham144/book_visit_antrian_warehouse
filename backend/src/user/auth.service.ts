@@ -11,7 +11,7 @@ import { randomUUID } from 'crypto';
 import { LoginRequestDto, LoginResponseDto } from './dto/login.dto';
 import { TokenPayload } from './dto/token-payload.dto';
 import { plainToInstance } from 'class-transformer';
-import { AccountType } from '@prisma/client';
+import { AccountType, Warehouse } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -190,11 +190,32 @@ export class AuthService {
       user = transactionResult;
     }
 
+    //daftarkan vendor baru jika ada
+    const vendor = userLDAP['description'].toUpperCase().split('_')[1] || null;
+    if (userLDAP['physicalDeliveryOfficeName'] && vendor) {
+      await this.prismaService.vendor.upsert({
+        where: {
+          name: vendor,
+        },
+        update: {},
+        create: {
+          name: vendor,
+          organizationName: organizationSetting.name,
+          members: {
+            connect: {
+              username: user.username,
+            },
+          },
+        },
+      });
+    }
+
     const payload: TokenPayload = {
       username: user.username,
       description: user.description,
-      homeWarehouseId: user.homeWarehouseId,
+      homeWarehouseId: user.homeWarehouseId || null,
       organizationName: organizationSetting.name,
+      vendorName: user.vendorName || null,
       jti: randomUUID(),
     };
 
@@ -276,7 +297,8 @@ export class AuthService {
       const payload: TokenPayload = {
         username: user.username,
         description: user.description,
-        homeWarehouseId: user.homeWarehouseId,
+        homeWarehouseId: user?.homeWarehouseId || null,
+        vendorName: user.vendorName || null,
         organizationName: organizationSetting.name,
         jti: randomUUID(),
       };
@@ -355,7 +377,8 @@ export class AuthService {
       const newPayload: TokenPayload = {
         username: userDB.username,
         description: userDB?.description,
-        homeWarehouseId: userDB.homeWarehouseId,
+        homeWarehouseId: userDB?.homeWarehouseId || null,
+        vendorName: userDB?.vendorName || null,
         organizationName: oldPayload.organizationName,
         jti: newJti as unknown as string,
       };
@@ -398,10 +421,13 @@ export class AuthService {
     //ubah payload sedikit agar bisa langsung dipakai
     let userInfo: LoginResponseDto = req.user;
 
-    const myWarehouse = await this.prismaService.warehouse.findUnique({
-      where: { id: req.user.homeWarehouseId },
-    });
-    userInfo.homeWarehouse = myWarehouse;
+    let myWarehouse: Warehouse;
+    if (userInfo?.homeWarehouse) {
+      myWarehouse = await this.prismaService.warehouse.findUnique({
+        where: { id: req.user.homeWarehouseId },
+      });
+      userInfo.homeWarehouse = myWarehouse;
+    }
 
     return plainToInstance(LoginResponseDto, userInfo, {
       excludeExtraneousValues: true,

@@ -1,4 +1,4 @@
-import { UserInfo } from "./auth";
+import { UserApp, UserInfo } from "./auth";
 import { IDock } from "./dock.type";
 import { IVehicle } from "./vehicle";
 import { Warehouse } from "./warehouse";
@@ -20,7 +20,7 @@ export interface Booking {
   Vehicle?: IVehicle | null;
   Warehouse?: Warehouse | null;
   Dock?: IDock | null | null;
-  Driver?: UserInfo | null;
+  Driver?: UserInfo | UserApp;
 
   createdAt?: Date;
   organizationName?: string;

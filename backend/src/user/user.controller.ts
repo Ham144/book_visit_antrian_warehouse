@@ -9,6 +9,7 @@ import {
   Res,
   Query,
   ParseIntPipe,
+  Param,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { refreshTokenOption, accessTokenOption } from './tokenCookieOptions';
@@ -108,6 +109,15 @@ export class UserController {
     return this.userService.getAllAccount(page, searchKey);
   }
 
+  @Get('/my-drivers')
+  async getMyDrivers(
+    @Query('page', ParseIntPipe) page: number,
+    @Query('searchKey') searchKey: string,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.userService.getMyDrivers(page, searchKey, userInfo);
+  }
+
   @Get('/list-member-management')
   async getAllAccountForMemberManagement(
     @Query('page', ParseIntPipe) page: number,
@@ -136,5 +146,10 @@ export class UserController {
     res.clearCookie('access_token', { path: '/' });
     res.clearCookie('refresh_token', { path: '/' });
     return { message: 'Logout success' };
+  }
+
+  @Delete('/delete/:username')
+  async deleteAppUser(@Param('username') username: string) {
+    return this.userService.deleteAppUser(username);
   }
 }

@@ -6,13 +6,26 @@ import { LoginResponseDto } from './dto/login.dto';
 import { plainToInstance } from 'class-transformer';
 import { UpdateAppUserDto } from './dto/update-user.dto';
 import { TokenPayload } from './dto/token-payload.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createAppUser(body: CreateAppUserDto, userInfo: TokenPayload) {
-    const passwordHash = await bcrypt.hash(body.password, 10);
+    const { password, homeWarehouseId, vendorName, ...rest } = body;
+
+    if (!homeWarehouseId && !vendorName) {
+      throw new BadRequestException(
+        'homeWarehouseId atau vendorName salah satu diperlukan',
+      );
+    } else if (homeWarehouseId && vendorName) {
+      throw new BadRequestException(
+        'homeWarehouseId atau vendorName tidak boleh digunakan bersamaan',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const homeWarehouse = await this.prismaService.warehouse.findUnique({
       where: {
@@ -22,21 +35,11 @@ export class UserService {
 
     await this.prismaService.user.create({
       data: {
-        displayName: body.displayName,
-        username: body.username,
+        ...rest,
         passwordHash: passwordHash,
-        description: body.description,
-        isActive: body.isActive,
-        driverPhone: body.driverPhone,
-        driverLicense: body.driverLicense,
-        homeWarehouseId: homeWarehouse.id,
         accountType: 'APP',
-        warehouseAccess: {
-          connect: {
-            id: homeWarehouse.id,
-          },
-        },
-        mail: body.mail,
+        vendorName: vendorName || null,
+        homeWarehouseId: homeWarehouse?.id || null,
         organizations: {
           connect: {
             name: userInfo.organizationName,
@@ -72,6 +75,41 @@ export class UserService {
     );
   }
 
+  //get myDriver
+  async getMyDrivers(page: number, searchKey: string, userInfo: TokenPayload) {
+    const where: Prisma.UserWhereInput = {
+      homeWarehouseId: userInfo.homeWarehouseId,
+      accountType: 'APP',
+      description: {
+        contains: 'DRIVER',
+      },
+      isActive: true,
+    };
+
+    if (searchKey) {
+      where.username = {
+        contains: searchKey,
+        mode: 'insensitive',
+      };
+    }
+
+    const drivers = await this.prismaService.user.findMany({
+      where,
+      include: {
+        vehicle: true,
+      },
+      take: 10,
+      skip: (page - 1) * 10,
+      orderBy: {
+        createdAt: 'desc', // optional tapi recommended
+      },
+    });
+
+    return plainToInstance(LoginResponseDto, drivers, {
+      excludeExtraneousValues: true,
+    });
+  }
+
   async getAllAccountForMemberManagement(page: number, searchKey: string) {
     const where = searchKey
       ? {
@@ -88,6 +126,10 @@ export class UserService {
         warehouseAccess: {
           select: { name: true },
         },
+        organizations: {
+          select: { name: true },
+        },
+        vehicle: true,
       },
       skip: (page - 1) * 10,
       take: 10,
@@ -117,6 +159,13 @@ export class UserService {
 
     return plainToInstance(LoginResponseDto, updated, {
       excludeExtraneousValues: true,
+    });
+  }
+  async deleteAppUser(username: string) {
+    await this.prismaService.user.delete({
+      where: {
+        username: username,
+      },
     });
   }
 }

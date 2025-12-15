@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { TokenPayload } from "./types/tokenPayload";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get("access_token")?.value;
@@ -26,7 +27,9 @@ export function middleware(req: NextRequest) {
     // === Manual decode JWT ===
     // Decode token untuk check expiration dan role
     const payload = token.split(".")[1];
-    const decoded = JSON.parse(Buffer.from(payload, "base64").toString());
+    const decoded: TokenPayload = JSON.parse(
+      Buffer.from(payload, "base64").toString()
+    );
 
     // Check token expiration (exp adalah timestamp dalam detik)
     const exp = decoded?.exp;
@@ -41,12 +44,14 @@ export function middleware(req: NextRequest) {
     }
 
     const description = decoded?.description;
+    const am_i_vendor = decoded?.vendorName ? true : false;
 
     if (!description) {
+      //ini belum login maka lempar ke landing page
       return NextResponse.redirect(new URL("/", req.url));
     } else if (
-      description == "IT" ||
-      description.toUpperCase().includes("ADMIN")
+      //ini akun yang bukan bagian vendor tapi organisasi org dalam
+      !am_i_vendor
     ) {
       // Jika user sudah di halaman admin, biarkan lewat
       if (pathname.startsWith("/admin")) {
@@ -55,7 +60,7 @@ export function middleware(req: NextRequest) {
       // Jika user bukan di halaman admin, redirect ke admin dashboard
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     } else {
-      // Jika user sudah di halaman vendor, biarkan lewat
+      // ini orang luar (vendor)  supir dan admin vendor
       if (pathname.startsWith("/vendor")) {
         return NextResponse.next();
       }

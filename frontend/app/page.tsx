@@ -145,7 +145,10 @@ export default function HomePage() {
                   ? "/admin/dashboard"
                   : "/vendor/booking"
               }
-              onClick={() => {
+              onClick={(e) => {
+                if (!userInfo) {
+                  e.preventDefault();
+                }
                 if (!userInfo) {
                   (
                     document.getElementById("login_modal") as HTMLDialogElement

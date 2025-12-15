@@ -10,6 +10,7 @@ import {
   Check,
   WarehouseIcon,
   Search,
+  Handshake,
 } from "lucide-react";
 import { useUserInfo } from "../UserContext";
 import { useEffect, useRef, useState } from "react";
@@ -20,23 +21,27 @@ import { toast, Toaster } from "sonner";
 import { OrganizationApi } from "@/api/organization.api";
 import { WarehouseApi } from "@/api/warehouse.api";
 import { Organization } from "@/types/organization";
+import { AccountType, UserApp, UserInfo } from "@/types/auth";
 import { Warehouse } from "@/types/warehouse";
-import { AccountType } from "@/types/auth";
 
 export default function Navigation() {
   const { userInfo, setUserInfo } = useUserInfo();
   const searchBar = useRef<HTMLInputElement | null>(null);
   const [accountType, setAccountType] = useState<AccountType>(AccountType.AD);
+  const am_i_vendor = userInfo?.vendorName ? true : false;
+
+  console.log("am_i_vendor ?", am_i_vendor ? "yes you are.." : "nope..");
 
   const [formData, setFormData] = useState({
-    username: "ham b",
-    password: "Catur2025!",
+    username: "oxone Driver",
+    password: "SMD2025!",
     organization: "CATUR SUKSES INTERNASIONAL",
   });
 
   const { data: warehouseAccess } = useQuery({
     queryKey: ["my-access-warehouses"],
     queryFn: WarehouseApi.getMyAccessWarehouses,
+    enabled: am_i_vendor == true,
   });
 
   const { data: myOrganizations } = useQuery({
@@ -52,17 +57,15 @@ export default function Navigation() {
       const res = await AuthApi.loginUserLdap(formData);
       return res;
     },
-    onSuccess: (res: any) => {
-      setUserInfo(res);
+    onSuccess: (res: UserInfo) => {
       (document.getElementById("login_modal") as any)?.close();
-      if (res?.description) {
+      if (!res?.vendorName && res?.homeWarehouse) {
         router.push("/admin/dashboard");
       } else {
         router.push("/vendor/dashboard");
       }
     },
     onError: (er: any) => {
-      console.log(er);
       toast.error(er?.response?.data?.message || "Gagal login");
     },
   });
@@ -73,10 +76,9 @@ export default function Navigation() {
       const res = await AuthApi.loginUserAPP(formData);
       return res;
     },
-    onSuccess: (res: any) => {
-      setUserInfo(res);
+    onSuccess: (res: UserApp) => {
       (document.getElementById("login_modal") as any)?.close();
-      if (res?.description) {
+      if (!res?.vendorName && res?.homeWarehouse) {
         router.push("/admin/dashboard");
       } else {
         router.push("/vendor/dashboard");
@@ -275,64 +277,129 @@ export default function Navigation() {
                   </div>
 
                   {/* Warehouse Switcher */}
-                  <div className="dropdown dropdown-end">
-                    <div
-                      tabIndex={0}
-                      className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
-                    >
-                      <WarehouseIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">
-                          {userInfo?.homeWarehouse?.name || "Main Warehouse"}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          Warehouse
-                        </p>
+                  {am_i_vendor ? (
+                    <div className="dropdown dropdown-end">
+                      <div
+                        tabIndex={0}
+                        className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                      >
+                        <Handshake className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">
+                            {userInfo?.vendorName || "Terjadi kesalahan"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            Vendor
+                          </p>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
                       </div>
-                      <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
-                    </div>
 
-                    <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
-                      {warehouseAccess?.length > 0 &&
-                        warehouseAccess?.map((warehouse: Warehouse) => (
-                          <li key={warehouse.id}>
-                            <button
-                              onClick={() =>
-                                handleSwitchWarehouse(warehouse.id)
-                              }
-                              className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
-                                warehouse.id === userInfo?.homeWarehouse.id
-                                  ? "bg-green-50 text-green-700 border border-green-200"
-                                  : "hover:bg-gray-50 text-gray-700"
-                              }`}
-                            >
-                              <WarehouseIcon
-                                className={`w-4 h-4 flex-shrink-0 ${
-                                  warehouse.id === userInfo?.homeWarehouse.id
-                                    ? "text-green-500"
-                                    : "text-gray-400"
+                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                        {warehouseAccess?.length > 0 &&
+                          warehouseAccess?.map((warehouse: Warehouse) => (
+                            <li key={warehouse.id}>
+                              <button
+                                onClick={() =>
+                                  handleSwitchWarehouse(warehouse.id)
+                                }
+                                className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+                                  warehouse.id === userInfo?.homeWarehouse?.id
+                                    ? "bg-green-50 text-green-700 border border-green-200"
+                                    : "hover:bg-gray-50 text-gray-700"
                                 }`}
-                              />
-                              <div className="flex-1 text-left">
-                                <p className="font-medium text-sm">
-                                  {warehouse.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {warehouse.location}
-                                </p>
-                                <p className="text-xs text-gray-700 flex  items-center gap-x-2 mt-2">
-                                  <Building2 size={10} />{" "}
-                                  {warehouse.organizationName}
-                                </p>
-                              </div>
-                              {warehouse.id === userInfo?.homeWarehouse.id && (
-                                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                              )}
-                            </button>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
+                              >
+                                <WarehouseIcon
+                                  className={`w-4 h-4 flex-shrink-0 ${
+                                    warehouse?.id ===
+                                    userInfo?.homeWarehouse?.id
+                                      ? "text-green-500"
+                                      : "text-gray-400"
+                                  }`}
+                                />
+                                <div className="flex-1 text-left">
+                                  <p className="font-medium text-sm">
+                                    {warehouse.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {warehouse.location}
+                                  </p>
+                                  <p className="text-xs text-gray-700 flex  items-center gap-x-2 mt-2">
+                                    <Building2 size={10} />{" "}
+                                    {warehouse.organizationName}
+                                  </p>
+                                </div>
+                                {warehouse.id ===
+                                  userInfo?.homeWarehouse?.id && (
+                                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                )}
+                              </button>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="dropdown dropdown-end">
+                      <div
+                        tabIndex={0}
+                        className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                      >
+                        <WarehouseIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">
+                            {userInfo?.homeWarehouse?.name ||
+                              "Terjadi kesalahan"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            Warehouse
+                          </p>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
+                      </div>
+
+                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                        {warehouseAccess?.length > 0 &&
+                          warehouseAccess?.map((warehouse: Warehouse) => (
+                            <li key={warehouse.id}>
+                              <button
+                                onClick={() =>
+                                  handleSwitchWarehouse(warehouse.id)
+                                }
+                                className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
+                                  warehouse.id === userInfo?.homeWarehouse.id
+                                    ? "bg-green-50 text-green-700 border border-green-200"
+                                    : "hover:bg-gray-50 text-gray-700"
+                                }`}
+                              >
+                                <WarehouseIcon
+                                  className={`w-4 h-4 flex-shrink-0 ${
+                                    warehouse.id === userInfo?.homeWarehouse.id
+                                      ? "text-green-500"
+                                      : "text-gray-400"
+                                  }`}
+                                />
+                                <div className="flex-1 text-left">
+                                  <p className="font-medium text-sm">
+                                    {warehouse.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {warehouse.location}
+                                  </p>
+                                  <p className="text-xs text-gray-700 flex  items-center gap-x-2 mt-2">
+                                    <Building2 size={10} />{" "}
+                                    {warehouse.organizationName}
+                                  </p>
+                                </div>
+                                {warehouse.id ===
+                                  userInfo?.homeWarehouse.id && (
+                                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                )}
+                              </button>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* User Profile Dropdown */}

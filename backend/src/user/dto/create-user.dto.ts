@@ -13,15 +13,19 @@ export class CreateAppUserDto {
 
   @IsString()
   @MinLength(5)
+  @IsNotEmpty()
   password?: string;
 
   @IsString()
+  @IsOptional()
   passwordHash?: string;
 
   @IsString()
+  @IsOptional()
   mail?: string;
 
   @IsString()
+  @IsNotEmpty()
   description: string;
 
   @IsBoolean()
@@ -30,16 +34,20 @@ export class CreateAppUserDto {
 
   @IsString()
   @IsOptional()
-  displayName?: string;
+  displayName: string;
 
   @IsString()
   @IsOptional()
   driverPhone?: string;
 
+  @IsString()
+  @IsOptional()
+  vendorName?: string;
+
   @IsOptional()
   @IsString()
   driverLicense?: string;
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   homeWarehouseId: string;
 }

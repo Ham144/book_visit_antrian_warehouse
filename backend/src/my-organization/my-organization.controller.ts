@@ -16,7 +16,6 @@ import { UpdateMyOrganizationDto } from './dto/update-my-organization.dto';
 import { Auth } from 'src/common/auth.decorator';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
-import { AuthService } from 'src/user/auth.service';
 import {
   accessTokenOption,
   refreshTokenOption,
@@ -24,10 +23,7 @@ import {
 
 @Controller('organization')
 export class MyOrganizationController {
-  constructor(
-    private readonly myOrganizationService: MyOrganizationService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly myOrganizationService: MyOrganizationService) {}
 
   @Post()
   create(@Body() createMyOrganizationDto: CreateMyOrganizationDto) {

@@ -131,6 +131,11 @@ export default function SideNav() {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { userInfo } = useUserInfo();
+
+  console.log(userInfo);
+
+  const am_i_vendor = userInfo?.vendorName ? true : false;
+
   // Collapse when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -179,55 +184,61 @@ export default function SideNav() {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-auto">
-            {adminMenuItems.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
+            {!am_i_vendor &&
+              adminMenuItems.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`flex items-center px-3 py-2 rounded-lg mx-2 my-1 transition-all
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`flex items-center px-3 py-2 rounded-lg mx-2 my-1 transition-all
                     ${active ? "text-teal-600" : "hover:bg-base-200"}
                   `}
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {isOpen && (
-                    <span className="truncate ml-2 text-sm">{item.label}</span>
-                  )}
-                </Link>
-              );
-            })}
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                    {isOpen && (
+                      <span className="truncate ml-2 text-sm">
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
 
             {/* Divider */}
-            {isOpen && (
+            {isOpen && !am_i_vendor && (
               <div className="divider py-3 border-b-2 border-t-2 my-2 mx-2 text-xs text-gray-500">
                 IT Only
               </div>
             )}
 
-            {ITOnlyMenus.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
+            {!am_i_vendor &&
+              ITOnlyMenus.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`flex items-center px-3 py-2 rounded-lg mx-2 my-1 transition-all
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`flex items-center px-3 py-2 rounded-lg mx-2 my-1 transition-all
                     ${active ? "text-teal-600" : "hover:bg-base-200"}
                   `}
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {isOpen && (
-                    <span className="truncate ml-2 text-sm">{item.label}</span>
-                  )}
-                </Link>
-              );
-            })}
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                    {isOpen && (
+                      <span className="truncate ml-2 text-sm">
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
 
             {/* Divider */}
-            {isOpen && (
+            {isOpen && !am_i_vendor && (
               <div className="divider py-3 border-b-2 border-t-2 my-2 mx-2 text-xs text-gray-500">
                 Vendor Only Menu
               </div>
