@@ -25,6 +25,7 @@ export interface UserInfo {
   driverLicense?: string;
   driverPhone?: string;
   vendorName?: string;
+  accountType?: string;
   // Tambahkan field lain sesuai kebutuhan
 }
 

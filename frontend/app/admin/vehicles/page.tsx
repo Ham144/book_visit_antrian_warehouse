@@ -29,7 +29,6 @@ const initialFormData: IVehicle = {
   productionYear: undefined,
   durasiBongkar: 0,
   description: "",
-  maxCapacity: undefined,
   isReefer: false,
   requiresDock: DockRequirement.NONE,
   drivers: [],
@@ -82,6 +81,7 @@ export default function VehiclesPage() {
     onSuccess: () => {
       qq.invalidateQueries({ queryKey: ["vehicles"] });
       toast.success("Kendaraan berhasil diperbarui");
+      (document.getElementById("vehicle-modal") as HTMLDialogElement).close();
     },
     onError: (error: any) => {
       const errorMessage =
@@ -216,9 +216,6 @@ export default function VehiclesPage() {
                           Durasi Bongkar
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
-                          Kapasitas
-                        </th>
-                        <th className="font-semibold text-gray-700 py-4 px-4">
                           Pengemudi
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
@@ -257,15 +254,6 @@ export default function VehiclesPage() {
                                 <span>{vehicle.durasiBongkar} menit</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3">
-                              {vehicle.maxCapacity ? (
-                                <div className="text-sm text-gray-700">
-                                  {vehicle.maxCapacity} KG
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
                             <td className="px-4 py-3 font-bold  text-gray-700">
                               {vehicle?.drivers?.length || 0}
                             </td>
@@ -299,7 +287,14 @@ export default function VehiclesPage() {
                               <div className="flex gap-1">
                                 <button
                                   onClick={() => {
-                                    setFormData(vehicle);
+                                    const names = vehicle.drivers.map(
+                                      (driver) => driver.username
+                                    );
+                                    const rest: IVehicle = {
+                                      ...vehicle,
+                                      driverNames: names,
+                                    };
+                                    setFormData(rest);
                                     (
                                       document.getElementById(
                                         "vehicle-modal"

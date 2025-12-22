@@ -37,6 +37,7 @@ export class BookingService {
     return false;
   }
 
+  // organization admin
   async findAll(filter, userInfo) {
     const bookings = await this.prismaService.booking.findMany({});
     return bookings.map((booking) =>

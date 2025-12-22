@@ -279,7 +279,7 @@ const ForgotPasswordPage = () => {
                       name="otp"
                       value={formData.otp}
                       onChange={handleInputChange}
-                      maxLength="6"
+                      maxLength={6}
                       className="w-full px-4 py-3 text-center text-2xl font-mono bg-teal-50 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all tracking-widest"
                       placeholder="000000"
                       required

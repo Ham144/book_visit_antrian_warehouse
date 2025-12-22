@@ -6,7 +6,6 @@ export interface IVehicle {
   brand?: string;
   vehicleType?: VehicleType;
   productionYear?: number;
-  maxCapacity?: number;
   durasiBongkar: number;
   requiresDock?: DockRequirement;
   drivers: UserInfo[];

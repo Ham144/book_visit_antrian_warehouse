@@ -13,8 +13,6 @@ export class ResponseVehicleDto {
   @Expose()
   vehicleType?: string;
   @Expose()
-  maxCapacity?: number;
-  @Expose()
   durasiBongkar: number;
   @Expose()
   requiresDock?: string;

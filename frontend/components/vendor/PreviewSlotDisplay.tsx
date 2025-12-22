@@ -5,7 +5,6 @@ import { Booking } from "@/types/booking.type";
 import { BusyTimeApi } from "@/api/busyTime.api";
 import { BookingApi } from "@/api/booking.api";
 import { DockApi } from "@/api/dock.api";
-import { Calendar } from "lucide-react";
 import { Vacant } from "@/types/vacant.type";
 import { IDockBusyTime } from "@/types/busyTime.type";
 import { Days } from "@/types/shared.type";
@@ -27,13 +26,13 @@ const PreviewSlotDisplay = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
-  const [notes, setNotes] = useState(formData.notes || "");
+  const [notes, setNotes] = useState(formData?.notes || "");
 
   // Get dock detail which includes vacants and busyTimes
   const { data: dockDetail, isLoading: loadingDock } = useQuery({
-    queryKey: ["dock-detail", formData.dockId],
+    queryKey: ["dock-detail", formData?.dockId],
     queryFn: async () => await DockApi.getDockDetail(formData.dockId!),
-    enabled: !!formData.dockId,
+    enabled: !!formData?.dockId,
   });
 
   // Get busy times for the dock
@@ -41,17 +40,17 @@ const PreviewSlotDisplay = ({
   // The backend busy-time endpoint has a parameter mismatch (expects dockId but service uses warehouseId)
   // So we primarily use dockDetail's busyTimes
   const { data: busyTimesFromApi } = useQuery({
-    queryKey: ["busy-times", formData.dockId],
+    queryKey: ["busy-times", formData?.dockId],
     queryFn: async () => {
       try {
-        return await BusyTimeApi.getAll(formData.dockId!);
+        return await BusyTimeApi.getAll(formData?.dockId!);
       } catch (error) {
         // If API fails (due to backend bug), return empty array
         return [];
       }
     },
     enabled:
-      !!formData.dockId &&
+      !!formData?.dockId &&
       (!dockDetail?.busyTimes || (dockDetail.busyTimes as any[]).length === 0),
   });
 
@@ -61,12 +60,12 @@ const PreviewSlotDisplay = ({
 
   // Get all bookings to filter by dockId
   const { data: allBookings } = useQuery({
-    queryKey: ["bookings", formData.warehouseId],
+    queryKey: ["bookings", formData?.warehouseId],
     queryFn: async () =>
       await BookingApi.getAllBookings({
         warehouseId: formData.warehouseId,
       }),
-    enabled: !!formData.warehouseId,
+    enabled: !!formData?.warehouseId,
   });
 
   // Helper function to normalize time format
@@ -111,20 +110,6 @@ const PreviewSlotDisplay = ({
     return days[date.getDay()];
   };
 
-  // Map Indonesian day name to Days enum
-  const mapDayNameToEnum = (dayName: string): Days | null => {
-    const mapping: Record<string, Days> = {
-      Minggu: Days.MINGGU,
-      Senin: Days.SENIN,
-      Selasa: Days.SELASA,
-      Rabu: Days.RABU,
-      Kamis: Days.KAMIS,
-      Jumat: Days.JUMAT,
-      Sabtu: Days.SABTU,
-    };
-    return mapping[dayName] || null;
-  };
-
   // Map JavaScript day index (0=Sunday) to Days enum
   const mapDayIndexToEnum = (dayIndex: number): Days => {
     const mapping: Days[] = [
@@ -146,7 +131,7 @@ const PreviewSlotDisplay = ({
       (booking: any) =>
         booking.dockId === formData.dockId && booking.status !== "CANCELED"
     );
-  }, [allBookings, formData.dockId]);
+  }, [allBookings, formData?.dockId]);
 
   // Get all days in a week starting from Monday
   const getWeekDays = (weekStart: Date): Date[] => {
@@ -165,12 +150,12 @@ const PreviewSlotDisplay = ({
 
   // Auto-select current week when dock is selected
   useEffect(() => {
-    if (formData.dockId && !selectedWeek) {
+    if (formData?.dockId && !selectedWeek) {
       const today = new Date();
       const currentWeekStart = getStartOfWeek(today);
       handleWeekSelect(currentWeekStart);
     }
-  }, [formData.dockId]);
+  }, [formData?.dockId]);
 
   // Auto-select first day of week when week is selected
   useEffect(() => {
@@ -261,7 +246,7 @@ const PreviewSlotDisplay = ({
     if (!dockBookings) return [];
     const dateString = formatDateToString(date);
     return dockBookings.filter((booking: any) => {
-      if (!booking.arrivalTime) return false;
+      if (!booking?.arrivalTime) return false;
       const bookingDate = new Date(booking.arrivalTime);
       return formatDateToString(bookingDate) === dateString;
     });
@@ -390,20 +375,10 @@ const PreviewSlotDisplay = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold flex items-center mb-2">
-          <Calendar className="w-6 h-6 mr-2 text-primary" />
-          Pilih Tanggal & Waktu
-        </h2>
-        <p className="text-gray-600">
-          Pilih tanggal kunjungan dan waktu slot yang tersedia
-        </p>
-      </div>
-
+    <div className="space-y-6 flex-1">
       {/* Week Selection */}
-      <div className="card bg-white shadow">
-        <div className="card-body">
+      <div className=" bg-white shadow">
+        <div className="flex flex-col p-2">
           <h3 className="text-lg font-medium mb-4">
             Pilih Minggu (bisa book hingga 12 minggu kedepan)
           </h3>
@@ -447,10 +422,17 @@ const PreviewSlotDisplay = ({
       {selectedWeek && (
         <div className="card bg-white shadow">
           <div className="card-body">
-            <h3 className="text-lg font-medium mb-4">Pilih Waktu Kunjungan</h3>
+            <h3 className="text-lg font-medium mb-4">
+              Pilih Waktu Kunjungan{" "}
+              <span className="text-sm text-gray-900">
+                (Catatan: Admin Warehouse bisa saja menggeser waktu anda untuk
+                efesiensi slot)
+              </span>
+            </h3>
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
-                Klik pada area hijau untuk memilih waktu mulai kunjungan
+                Klik pada area hijau untuk memilih waktu mulai kunjungan,
+                perhatikan tanggal yang anda pilih
               </p>
               <p className="text-sm font-medium">
                 Durasi Bongkar:{" "}
@@ -809,7 +791,7 @@ const PreviewSlotDisplay = ({
       </div>
 
       {/* Selected Time Summary */}
-      {(formData.arrivalTime || notes) && (
+      {(formData?.arrivalTime || notes) && (
         <div className="card bg-primary text-primary-content shadow">
           <div className="card-body">
             <h3 className="text-lg font-medium mb-2">Ringkasan Booking</h3>

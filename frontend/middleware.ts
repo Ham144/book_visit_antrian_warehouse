@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import { TokenPayload } from "./types/tokenPayload";
 
 export function middleware(req: NextRequest) {
@@ -53,12 +53,7 @@ export function middleware(req: NextRequest) {
       //ini akun yang bukan bagian vendor tapi organisasi org dalam
       !am_i_vendor
     ) {
-      // Jika user sudah di halaman admin, biarkan lewat
-      if (pathname.startsWith("/admin")) {
-        return NextResponse.next();
-      }
-      // Jika user bukan di halaman admin, redirect ke admin dashboard
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      return NextResponse.next();
     } else {
       // ini orang luar (vendor)  supir dan admin vendor
       if (pathname.startsWith("/vendor")) {

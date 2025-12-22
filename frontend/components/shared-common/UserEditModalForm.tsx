@@ -196,6 +196,7 @@ export default function UserEditModalForm({
                     {/* My Organization Option */}
                     <button
                       type="button"
+                      disabled={!isCreating}
                       onClick={() => {
                         setMemberFor(MemberFor.MY_ORGANIZATION);
                         setFormData({
@@ -203,7 +204,7 @@ export default function UserEditModalForm({
                           vendorName: null,
                         });
                       }}
-                      className={`relative p-5 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
+                      className={`relative p-5 rounded-xl border-2 transition-all duration-300 hover:shadow-lg disabled:cursor-not-allowed ${
                         memberFor === MemberFor.MY_ORGANIZATION
                           ? "border-teal-500 bg-gradient-to-br from-teal-50 to-white shadow-md scale-[1.02]"
                           : "border-teal-200 bg-white hover:border-teal-300 hover:bg-teal-50"
@@ -255,6 +256,7 @@ export default function UserEditModalForm({
                     {/* My Vendor Option */}
                     <button
                       type="button"
+                      disabled={!isCreating}
                       onClick={() => {
                         setMemberFor(MemberFor.VENDOR);
                         setFormData({
@@ -263,7 +265,7 @@ export default function UserEditModalForm({
                           homeWarehouse: null,
                         });
                       }}
-                      className={`relative p-5 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
+                      className={`relative p-5 rounded-xl border-2 transition-all duration-300 hover:shadow-lg disabled:cursor-not-allowed ${
                         memberFor === MemberFor.VENDOR
                           ? "border-teal-500 bg-gradient-to-br from-teal-50 to-white shadow-md scale-[1.02]"
                           : "border-teal-200 bg-white hover:border-teal-300 hover:bg-teal-50"
@@ -353,14 +355,16 @@ export default function UserEditModalForm({
                   </label>
 
                   <select
+                    disabled={am_i_vendor}
                     className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                     value={formData.vendorName || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         vendorName: e.target.value || undefined,
-                      })
-                    }
+                        description: null,
+                      });
+                    }}
                   >
                     <option
                       onClick={(e) => {
@@ -421,8 +425,6 @@ export default function UserEditModalForm({
                 />
               </div>
 
-              {/* Home Warehouse - Simple Version */}
-
               {/* Password - Only for new users */}
               {formData?.accountType === "APP" && (
                 <>
@@ -435,6 +437,7 @@ export default function UserEditModalForm({
                     </label>
                     <div className="relative">
                       <input
+                        autoComplete="off"
                         type={showPassword ? "text" : "password"}
                         className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
                         placeholder="Password"
@@ -445,7 +448,7 @@ export default function UserEditModalForm({
                             password: e.target.value,
                           })
                         }
-                        required={!isCreating}
+                        required={isCreating}
                       />
                       <button
                         type="button"
@@ -471,6 +474,7 @@ export default function UserEditModalForm({
                     <div className="relative">
                       <input
                         type={showConfirmPassword ? "text" : "password"}
+                        autoComplete="off"
                         className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
                         placeholder="Konfirmasi password"
                         value={formData.passwordConfirm || ""}
@@ -480,7 +484,7 @@ export default function UserEditModalForm({
                             passwordConfirm: e.target.value,
                           })
                         }
-                        required={!isCreating}
+                        required={isCreating}
                       />
                       <button
                         type="button"

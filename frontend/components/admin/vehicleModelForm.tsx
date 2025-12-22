@@ -64,8 +64,7 @@ export default function VehilcleModalForm({
     enabled: searchKeyDriver?.length > 1,
   });
 
-  const onSubmit = (e: Event) => {
-    e.preventDefault();
+  const onSubmit = () => {
     if (formData.id) {
       onEdit();
     } else {
@@ -133,7 +132,13 @@ export default function VehilcleModalForm({
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-6 px-6 py-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
+          className="space-y-6 px-6 py-4"
+        >
           {/* ============================= */}
           {/* A. INFORMASI KENDARAAN       */}
           {/* ============================= */}
@@ -252,32 +257,6 @@ export default function VehilcleModalForm({
                   }
                   required
                 />
-              </div>
-
-              {/* Max Capacity */}
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700">
-                    Kapasitas Maksimum (opsional)
-                  </span>
-                </label>
-                <div className="flex items-center gap-x-2">
-                  <input
-                    type="number"
-                    placeholder="5000"
-                    className="input px-2 input-bordered border w-full bg-white border-gray-300 focus:border-leaf-green-500 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                    value={formData.maxCapacity || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        maxCapacity: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      })
-                    }
-                  />
-                  <span className="font-bold"> KG</span>
-                </div>
               </div>
 
               {/* Requires Dock */}

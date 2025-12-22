@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
@@ -82,40 +82,38 @@ export class BookingforVendorService {
       );
     }
 
-    //counter
-    const counter = await this.prismaService.counter.upsert({
+    const organization = await this.prismaService.organization.findFirst({
       where: {
-        organizationName_warehouseId_dockId_date: {
-          date: createBookingDto.arrivalTime,
-          organizationName: userInfo.organizationName,
-          warehouseId: userInfo.homeWarehouseId,
-          dockId: createBookingDto.dockId,
-        },
-      },
-      update: {
-        sequence_value: {
-          increment: 1,
-        },
-      },
-      create: {
-        date: createBookingDto.arrivalTime,
-        organizationName: userInfo.organizationName,
-        warehouseId,
-        dockId,
-        sequence_value: 1,
+        name: userInfo.organizationName,
       },
     });
+    const abbr = organization.name
+      .toUpperCase()
+      .split(' ')
+      .map((word) => word[0])
+      .join('');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const randStr = Array(6)
+      .fill(0)
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join('');
+    const code = `${abbr}-${randStr}`;
 
     await this.prismaService.booking.create({
       data: {
         status: 'IN_PROGRESS',
         arrivalTime: arrivalTime,
+        code: code,
         actualFinishTime: null,
         estimatedFinishTime: estimatedFinishTime,
         Vehicle: { connect: { id: vehicleId } },
         Warehouse: { connect: { id: warehouseId } },
         Dock: { connect: { id: dockId } },
-        counterId: counter.id,
+        createdBy: {
+          connect: {
+            username: userInfo.username,
+          },
+        },
         driver: {
           connect: {
             username: driverUsername,
@@ -130,6 +128,22 @@ export class BookingforVendorService {
     });
 
     return HttpStatus.ACCEPTED;
+  }
+
+  async findAllForVendor(userInfo: TokenPayload) {
+    const bookings = await this.prismaService.booking.findMany({
+      where: {
+        organization: {
+          name: userInfo.organizationName,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    return plainToInstance(ResponseBookingDto, bookings, {
+      excludeExtraneousValues: true,
+    });
   }
 
   async findOne(id: string) {
@@ -184,21 +198,19 @@ export class BookingforVendorService {
   ) {
     const { canceledReason } = body;
 
-    const isMine = await this.prismaService.booking.findUnique({
+    const isMine = await this.prismaService.booking.findFirst({
       where: {
         id,
+        // createByUsername: userInfo.username,
       },
     });
 
     if (!isMine) {
-      const isAdmin =
-        userInfo.description.toUpperCase() == 'IT' ||
-        userInfo.description.toUpperCase().includes('ADMIN');
-
-      if (!isAdmin) {
-        throw new Error('Anda tidak bisa menghapus booking bukan milik Anda');
-      }
+      throw new BadRequestException(
+        'tidak bisa menghapus booking yang bukan buatan anda',
+      );
     }
+
     await this.prismaService.booking.update({
       where: {
         id,

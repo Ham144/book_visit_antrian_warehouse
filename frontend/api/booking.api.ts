@@ -13,7 +13,7 @@ export const BookingApi = {
     const res = await axiosInstance.get("/api/booking", { params });
     return res.data;
   },
-  getDetailById: async (id: string) => {
+  getDetailById: async (id: string): Promise<Booking> => {
     const res = await axiosInstance.get(`/api/booking/detail/${id}`);
     return res.data;
   },
@@ -29,8 +29,10 @@ export const BookingApi = {
     const res = await axiosInstance.get("/api/booking/upcoming");
     return res.data;
   },
-  cancelBooking: async (id: string) => {
-    const res = await axiosInstance.delete(`/api/booking/cancel/${id}`);
+  cancelBooking: async (id: string, canceledReason: string) => {
+    const res = await axiosInstance.delete(`/api/booking/cancel/${id}`, {
+      data: { canceledReason },
+    });
     return res.data;
   },
 };

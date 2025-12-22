@@ -1,25 +1,22 @@
 "use client";
 import React from "react";
-import { Edit, Warehouse, Users, Calendar, UserCheck } from "lucide-react";
-import {
-  Warehouse as WarehouseType,
-  WarehouseCreateDto,
-} from "@/types/warehouse";
+import { Edit, WarehouseIcon, Users, Calendar, UserCheck } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { WarehouseApi } from "@/api/warehouse.api";
 import { toast } from "sonner";
 import { useUserInfo } from "@/components/UserContext";
 import WarehouseModalForm from "@/components/admin/warehouseModalForm";
+import { Warehouse } from "@/types/warehouse";
 
 const MyWarehousePage = () => {
   const { userInfo } = useUserInfo();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [formData, setFormData] = React.useState<WarehouseCreateDto>({
+  const [formData, setFormData] = React.useState<Warehouse>({
     name: "",
     location: "",
     description: "",
-    warehouseAccess: [],
+    userWarehouseAccesses: [],
     isActive: true,
   });
 
@@ -41,7 +38,7 @@ const MyWarehousePage = () => {
         name: myWarehouse.name || "",
         location: myWarehouse.location || "",
         description: myWarehouse.description || "",
-        warehouseAccess: myWarehouse.warehouseAccess || [],
+        userWarehouseAccesses: myWarehouse.userWarehouseAccesses || [],
         isActive: myWarehouse.isActive ?? true,
       });
     }
@@ -53,7 +50,7 @@ const MyWarehousePage = () => {
         name: myWarehouse.name || "",
         location: myWarehouse.location || "",
         description: myWarehouse.description || "",
-        warehouseAccess: myWarehouse.warehouseAccess || [],
+        userWarehouseAccesses: myWarehouse.userWarehouseAccesses || [],
         isActive: myWarehouse.isActive ?? true,
       });
       setIsModalOpen(true);
@@ -61,7 +58,7 @@ const MyWarehousePage = () => {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (data: WarehouseCreateDto) => {
+    mutationFn: async (data: Warehouse) => {
       if (!warehouseId) throw new Error("Warehouse ID tidak ditemukan");
       return await WarehouseApi.updateWarehouse({
         id: warehouseId,
@@ -112,7 +109,7 @@ const MyWarehousePage = () => {
   const userWarehouseAccesses =
     (myWarehouse as any).userWarehouseAccesses || [];
   const bookings = myWarehouse.bookings || [];
-  const members = myWarehouse.members || [];
+  const members = myWarehouse.userWarehouseAccesses || [];
 
   return (
     <div className="flex">
@@ -142,7 +139,7 @@ const MyWarehousePage = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-3 bg-leaf-green-100 rounded-lg">
-                    <Warehouse className="w-6 h-6 text-leaf-green-600" />
+                    <WarehouseIcon className="w-6 h-6 text-leaf-green-600" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">

@@ -47,7 +47,7 @@ const OrganizationFormModal = ({
   };
 
   const handleAddAccount = (user: UserInfo) => {
-    if (!formData.accounts.find((acc) => acc.id === user.id)) {
+    if (!formData.accounts.find((acc) => acc.username === user.username)) {
       setFormData((prev) => ({
         ...prev,
         accounts: [...prev.accounts, user],
@@ -62,7 +62,7 @@ const OrganizationFormModal = ({
   const handleRemoveAccount = (userId: string) => {
     setFormData((prev) => ({
       ...prev,
-      accounts: prev.accounts.filter((acc) => acc.id !== userId),
+      accounts: prev.accounts.filter((acc) => acc.username !== userId),
     }));
   };
 
@@ -238,7 +238,7 @@ const OrganizationFormModal = ({
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.accounts.map((account) => (
                   <div
-                    key={account.id}
+                    key={account.username}
                     className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg"
                   >
                     <span className="text-sm font-medium text-green-800">
@@ -246,7 +246,7 @@ const OrganizationFormModal = ({
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveAccount(account.id!)}
+                      onClick={() => handleRemoveAccount(account.username!)}
                       className="p-1 hover:bg-green-100 rounded-full transition-colors"
                     >
                       <X className="w-3 h-3 text-green-500" />

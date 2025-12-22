@@ -125,6 +125,14 @@ export class UserController {
   ) {
     return this.userService.getAllAccountForMemberManagement(page, searchKey);
   }
+  @Get('/list-member-vendor')
+  async getVendorMemberOnly(
+    @Query('page', ParseIntPipe) page: number,
+    @Query('searchKey') searchKey: string,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.userService.getVendorMemberOnly(page, searchKey, userInfo);
+  }
 
   @Post('/create')
   async createAppUser(

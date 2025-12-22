@@ -8,6 +8,8 @@ export class ResponseBookingDto {
   @Expose()
   id: string;
   @Expose()
+  code?: string;
+  @Expose()
   vehicleId: string;
   @Expose()
   warehouseId: string;
@@ -22,14 +24,15 @@ export class ResponseBookingDto {
   actualFinishTime?: string | null;
   @Expose()
   status: string;
-  @Expose({ groups: ['detail'] })
-  notes?: string | null;
   @Expose()
   driverUsername: string;
-  @Expose()
-  counterId?: number;
-  canceledReason?: string;
 
+  @Expose({ groups: ['detail'] })
+  createdByUsername?: string;
+  @Expose({ groups: ['detail'] })
+  canceledReason?: string;
+  @Expose({ groups: ['detail'] })
+  notes?: string | null;
   @Expose({ groups: ['detail'] })
   Vehicle?: ResponseVehicleDto;
   @Expose({ groups: ['detail'] })
@@ -38,7 +41,6 @@ export class ResponseBookingDto {
   Dock?: ResponseDockDto;
   @Expose({ groups: ['detail'] })
   Driver?: LoginResponseDto;
-
-  @Expose()
+  @Expose({ groups: ['detail'] })
   organizationName: string;
 }

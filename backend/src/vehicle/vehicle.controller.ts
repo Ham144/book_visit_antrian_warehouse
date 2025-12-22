@@ -26,9 +26,9 @@ export class VehicleController {
     return this.vehicleService.findAll();
   }
 
-  @Get('/my-vehicles')
+  @Get('/vendor-vehicles')
   getMyVehicle(@Auth() userInfo: any) {
-    return this.vehicleService.getMyVehicles(userInfo);
+    return this.vehicleService.getVendorVehicles(userInfo);
   }
 
   @Get('/detail/:id')

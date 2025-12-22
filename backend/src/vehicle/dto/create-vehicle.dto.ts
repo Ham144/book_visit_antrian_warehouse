@@ -34,11 +34,6 @@ export class CreateVehicleDto {
   @IsNumber()
   durasiBongkar: number;
 
-  @IsString({ each: true })
-  @IsOptional()
-  @IsArray()
-  driverNames?: string[];
-
   @IsString()
   @IsOptional()
   description?: string;

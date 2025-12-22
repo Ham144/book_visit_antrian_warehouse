@@ -192,7 +192,7 @@ export class AuthService {
 
     //daftarkan vendor baru jika ada
     const vendor = userLDAP['description'].toUpperCase().split('_')[1] || null;
-    if (userLDAP['physicalDeliveryOfficeName'] && vendor) {
+    if (vendor) {
       await this.prismaService.vendor.upsert({
         where: {
           name: vendor,
@@ -422,7 +422,7 @@ export class AuthService {
     let userInfo: LoginResponseDto = req.user;
 
     let myWarehouse: Warehouse;
-    if (userInfo?.homeWarehouse) {
+    if (userInfo?.homeWarehouseId) {
       myWarehouse = await this.prismaService.warehouse.findUnique({
         where: { id: req.user.homeWarehouseId },
       });

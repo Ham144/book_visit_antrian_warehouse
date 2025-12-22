@@ -2,6 +2,7 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
 import { Expose } from 'class-transformer';
+import { ResponseVehicleDto } from 'src/vehicle/dto/response-vehicle.dto';
 
 export class LoginResponseDto {
   @Expose()
@@ -17,6 +18,9 @@ export class LoginResponseDto {
   homeWarehouse?: responseWarehouseDto;
 
   @Expose()
+  homeWarehouseId?: string;
+
+  @Expose()
   isActive?: boolean;
 
   @Expose()
@@ -30,6 +34,12 @@ export class LoginResponseDto {
 
   @Expose()
   vendorName?: string;
+
+  @Expose({ groups: ['detail'] })
+  vehicle?: ResponseVehicleDto;
+
+  @Expose({ groups: ['detail'] })
+  vehicleId?: string;
 
   @Expose({ groups: ['login'] })
   refresh_token?: string;

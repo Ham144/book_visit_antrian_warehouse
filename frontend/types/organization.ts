@@ -1,9 +1,9 @@
-import { Booking } from "@/lib/booking.type";
 import { IDock } from "./dock.type";
 import { IVehicle } from "./vehicle";
 import { Warehouse } from "./warehouse";
 import { UserInfo } from "./auth";
 import { SubscriptionPlan } from "./shared.type";
+import { Booking } from "./booking.type";
 
 export interface Organization {
   name: string;

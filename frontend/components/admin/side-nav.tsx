@@ -21,6 +21,7 @@ import {
   Building2,
   PenTool,
   Crown,
+  ArrowRight,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
@@ -122,7 +123,6 @@ export const vendorMenutItems = [
     href: "/vendor/member-management",
   },
   { id: "reports", label: "Reports", icon: BarChart3, href: "/vendor/reports" },
-  { id: "vehicles", label: "Vehicles", icon: Truck, href: "/vendor/vehicles" },
 ];
 
 export default function SideNav() {
@@ -131,8 +131,6 @@ export default function SideNav() {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { userInfo } = useUserInfo();
-
-  console.log(userInfo);
 
   const am_i_vendor = userInfo?.vendorName ? true : false;
 
@@ -171,14 +169,11 @@ export default function SideNav() {
             className="btn btn-ghost w-full flex items-center justify-between  transition-colors translate-x-2"
           >
             {isOpen ? (
-              <>
-                <span className="font-semibold text-sm flex items-center truncate">
-                  {String(userInfo?.organizationName) || "Org's name"}
-                </span>
-                {!isOpen && <ChevronLeft size={20} />}
-              </>
+              <span>COLLAPSE</span>
             ) : (
-              <ChevronRight size={20} className="mx-auto" />
+              <span>
+                <ArrowRight />
+              </span>
             )}
           </button>
 

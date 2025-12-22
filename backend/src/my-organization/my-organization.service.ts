@@ -184,11 +184,22 @@ export class MyOrganizationService {
       await this.prismaService.organization.findFirst({
         where: {
           name: name,
-          warehouses: {
-            some: {
-              id: userInfo.homeWarehouseId,
+          OR: [
+            {
+              warehouses: {
+                some: {
+                  id: userInfo.homeWarehouseId,
+                },
+              },
             },
-          },
+            {
+              vendors: {
+                some: {
+                  name: userInfo.vendorName,
+                },
+              },
+            },
+          ],
         },
       });
     if (!usercheckcompatibleWH_ORG) {

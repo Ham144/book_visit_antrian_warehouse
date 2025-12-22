@@ -118,7 +118,7 @@ const MemberManagementPage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                      Manajemen Member and access group saya
+                      Manajemen Semua Member
                     </h1>
                     <p className="text-gray-600">
                       Kelola member dan hak akses warehouse disini
@@ -209,104 +209,116 @@ const MemberManagementPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {accounts?.map((account: UserInfo, index) => (
-                          <tr
-                            key={index}
-                            className={`hover:bg-gray-50 transition-colors ${
-                              index % 2 === 0 ? "bg-gray-25" : "bg-white"
-                            }`}
-                          >
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-2">
-                                <User2 className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
-                                <span className="font-semibold text-gray-800">
-                                  {account.username}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              {account.description ? (
-                                <div className="flex items-center space-x-1 text-gray-700">
-                                  <IdCardIcon className="w-4 h-4 text-gray-400" />
-                                  <span className="text-sm">
-                                    {account.description}
+                        {accounts?.length ? (
+                          accounts?.map((account: UserInfo, index) => (
+                            <tr
+                              key={index}
+                              className={`hover:bg-gray-50 transition-colors ${
+                                index % 2 === 0 ? "bg-gray-25" : "bg-white"
+                              }`}
+                            >
+                              <td className="px-4 py-3">
+                                <div className="flex items-center space-x-2">
+                                  <User2 className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
+                                  <span className="font-semibold text-gray-800">
+                                    {account.username}
                                   </span>
                                 </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 max-w-xs">
-                              {account.homeWarehouse ? (
-                                <span className="text-sm line-clamp-2">
-                                  {account.homeWarehouse.name}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-1 text-gray-700">
-                                <Building2 className="w-4 h-4 text-gray-400" />
-                                <span className="font-medium text-sm">
-                                  {account.warehouseAccess.length}
-                                </span>
-                                <Plus
-                                  className="w-4 h-4 text-gray-400 cursor-pointer"
-                                  onClick={() =>
-                                    router.push("/admin/all-warehouse")
-                                  }
-                                />
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  account.isActive
-                                    ? "bg-leaf-green-100 text-leaf-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                <div
-                                  className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                              </td>
+                              <td className="px-4 py-3">
+                                {account.description ? (
+                                  <div className="flex items-center space-x-1 text-gray-700">
+                                    <IdCardIcon className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm">
+                                      {account.description}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">
+                                    -
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-gray-700 max-w-xs">
+                                {account.homeWarehouse ? (
+                                  <span className="text-sm line-clamp-2">
+                                    {account.homeWarehouse.name || "-"}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">
+                                    bagian vendor
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center space-x-1 text-gray-700">
+                                  <Building2 className="w-4 h-4 text-gray-400" />
+                                  <span className="font-medium text-sm">
+                                    {account.warehouseAccess.length}
+                                  </span>
+                                  <Plus
+                                    className="w-4 h-4 text-gray-400 cursor-pointer"
+                                    onClick={() =>
+                                      router.push("/admin/all-warehouse")
+                                    }
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                     account.isActive
-                                      ? "bg-leaf-green-500"
-                                      : "bg-red-500"
+                                      ? "bg-leaf-green-100 text-leaf-green-800"
+                                      : "bg-red-100 text-red-800"
                                   }`}
-                                ></div>
-                                {account.isActive ? "Aktif" : "Tidak Aktif"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-1 items-center gap-x-2">
-                                <button
-                                  onClick={() => {
-                                    handleOpenEdit(account);
-                                  }}
-                                  className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
-                                  title="Edit user"
                                 >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(account);
-                                    (
-                                      document.getElementById(
-                                        "delete-app-user"
-                                      ) as HTMLDialogElement
-                                    )?.showModal();
-                                  }}
-                                  className={`btn text-red-400 font-bold  ${
-                                    account.homeWarehouse ? "" : ""
-                                  } hover:bg-red-50 hover:text-red-600 transition-colors`}
-                                >
-                                  <Trash2 className="w-4 h-4 " />
-                                </button>
-                              </div>
+                                  <div
+                                    className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                      account.isActive
+                                        ? "bg-leaf-green-500"
+                                        : "bg-red-500"
+                                    }`}
+                                  ></div>
+                                  {account.isActive ? "Aktif" : "Tidak Aktif"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-1 items-center gap-x-2">
+                                  <button
+                                    onClick={() => {
+                                      handleOpenEdit(account);
+                                    }}
+                                    className="btn btn-sm btn-ghost hover:bg-leaf-green-50 hover:text-leaf-green-600 text-gray-500 transition-colors"
+                                    title="Edit user"
+                                  >
+                                    <Edit size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedUser(account);
+                                      (
+                                        document.getElementById(
+                                          "delete-app-user"
+                                        ) as HTMLDialogElement
+                                      )?.showModal();
+                                    }}
+                                    className={`btn text-red-400 font-bold  ${
+                                      account.homeWarehouse ? "" : ""
+                                    } hover:bg-red-50 hover:text-red-600 transition-colors`}
+                                  >
+                                    <Trash2 className="w-4 h-4 " />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={7} className="text-center py-4">
+                              Tidak ada data
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>

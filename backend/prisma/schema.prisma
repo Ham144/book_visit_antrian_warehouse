@@ -94,12 +94,10 @@ model Vehicle {
   vehicleType    VehicleType
   productionYear Int?
 
-  maxCapacity   Int?
   durasiBongkar Int
 
   requiresDock DockRequirement @default(NONE)
 
-  drivers     User[]
   description String?
   isActive    Boolean @default(true)
   bookings Booking[]
@@ -149,6 +147,7 @@ model DockBusyTime {
 
 model Booking {
   id                  String        @id @default(cuid())
+  code String? //kode antrian
   warehouseId         String
   dockId              String?
   vehicleId           String
@@ -163,12 +162,14 @@ model Booking {
   Dock      Dock?     @relation(fields: [dockId], references: [id])
 
   driverUsername       String
-  driver         User    @relation(fields: [driverUsername], references: [username])
-  counterId      Int
+  driver         User    @relation("bookingDriver", fields: [driverUsername], references: [username])
+  
   canceledReason String?
 
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+  createByUsername String?
+  createdBy User? @relation("bookingCreatedBy", fields: [createByUsername], references: [username])
   organizationName String
   organization     Organization @relation(fields: [organizationName], references: [name])
 }
@@ -183,7 +184,7 @@ enum BookingStatus {
 model User {
   username     String   @id
   passwordHash String? // kalau pakai auth lokal
-  description  String? //e.g: DRIVER_{vendor}
+  description  String? @default("ADMIN")
   isActive     Boolean  @default(true)
   displayName  String
   createdAt    DateTime @default(now())
@@ -196,17 +197,14 @@ model User {
   // homeWarehouse = staff biasa (nullable)
   homeWarehouseId String?
   homeWarehouse   Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
-  //one-to-many
-  vehicleId       String?
-  vehicle         Vehicle?   @relation(fields: [vehicleId], references: [id])
 
   accountType AccountType @default(AD)
 
-  // many-to-many access (admin area)
+  //many-to-many 
   warehouseAccess Warehouse[]
-
-  //many-to-many booking
-  bookings Booking[]
+  createdBooking Booking[] @relation("bookingCreatedBy")
+  bookingAsDriver Booking[] @relation("bookingDriver") 
+  
   vendorName String?
   vendor Vendor? @relation(fields: [vendorName], references: [name])
   
@@ -226,7 +224,7 @@ enum AccountType {
 }
 
 model Counter {
-  id               Int      @id @default(autoincrement())
+  id               String      @id @default(uuid())
   organizationName String
   warehouseId      String
   dockId           String

@@ -12,6 +12,7 @@ import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Auth } from 'src/common/auth.decorator';
 import { BookingforVendorService } from './booking-vendor.service';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Controller('booking')
 export class BookingController {
@@ -25,27 +26,31 @@ export class BookingController {
     return this.bookingForVendorService.create(createBookingDto, userInfo);
   }
 
-  @Get()
+  @Get('/all')
   findAll(@Query() filter, @Auth() userInfo: any) {
     return this.bookingService.findAll(filter, userInfo);
   }
 
-  @Get(':id')
+  @Get()
+  findAllForVendor(@Auth() userInfo: any) {
+    return this.bookingForVendorService.findAllForVendor(userInfo);
+  }
+
+  @Get('/detail/:id')
   findOne(@Param('id') id: string) {
     return this.bookingForVendorService.findOne(id);
   }
 
-  @Patch('/unload/:id')
-  unLoad(@Param('id') id: string) {
-    return this.bookingForVendorService.unLoad(id, new Date());
+  @Patch('/updateStatus/:id')
+  finish(
+    @Param('id') id: string,
+    @Body() body,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.bookingForVendorService.finish(id, body);
   }
 
-  @Patch('/finish/:id')
-  finish(@Param('id') id: string) {
-    return this.bookingForVendorService.finish(id, new Date());
-  }
-
-  @Delete(':id')
+  @Delete('/cancel/:id')
   cancelBook(@Param('id') id: string, @Body() body, @Auth() userInfo) {
     return this.bookingForVendorService.cancelBook(id, body, userInfo);
   }

@@ -33,15 +33,15 @@ export default function Navigation() {
   console.log("am_i_vendor ?", am_i_vendor ? "yes you are.." : "nope..");
 
   const [formData, setFormData] = useState({
-    username: "oxone Driver",
-    password: "SMD2025!",
+    username: "",
+    password: "",
     organization: "CATUR SUKSES INTERNASIONAL",
   });
 
   const { data: warehouseAccess } = useQuery({
     queryKey: ["my-access-warehouses"],
     queryFn: WarehouseApi.getMyAccessWarehouses,
-    enabled: am_i_vendor == true,
+    enabled: am_i_vendor != true,
   });
 
   const { data: myOrganizations } = useQuery({
@@ -64,6 +64,7 @@ export default function Navigation() {
       } else {
         router.push("/vendor/dashboard");
       }
+      window.location.reload();
     },
     onError: (er: any) => {
       toast.error(er?.response?.data?.message || "Gagal login");
@@ -78,6 +79,7 @@ export default function Navigation() {
     },
     onSuccess: (res: UserApp) => {
       (document.getElementById("login_modal") as any)?.close();
+      window.location.reload();
       if (!res?.vendorName && res?.homeWarehouse) {
         router.push("/admin/dashboard");
       } else {
@@ -366,14 +368,15 @@ export default function Navigation() {
                                   handleSwitchWarehouse(warehouse.id)
                                 }
                                 className={`flex items-center gap-x-3 px-3 py-3 rounded-lg transition-all duration-200 ${
-                                  warehouse.id === userInfo?.homeWarehouse.id
+                                  warehouse?.id === userInfo?.homeWarehouse?.id
                                     ? "bg-green-50 text-green-700 border border-green-200"
                                     : "hover:bg-gray-50 text-gray-700"
                                 }`}
                               >
                                 <WarehouseIcon
                                   className={`w-4 h-4 flex-shrink-0 ${
-                                    warehouse.id === userInfo?.homeWarehouse.id
+                                    warehouse?.id ===
+                                    userInfo?.homeWarehouse?.id
                                       ? "text-green-500"
                                       : "text-gray-400"
                                   }`}
@@ -391,7 +394,7 @@ export default function Navigation() {
                                   </p>
                                 </div>
                                 {warehouse.id ===
-                                  userInfo?.homeWarehouse.id && (
+                                  userInfo?.homeWarehouse?.id && (
                                   <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                                 )}
                               </button>
@@ -499,7 +502,14 @@ export default function Navigation() {
           </div>
           <div className="grid grid-cols-2 gap-2 p-1 bg-teal-50 rounded-xl border border-teal-100 shadow-inner">
             <button
-              onClick={() => setAccountType(AccountType.AD)}
+              onClick={() => {
+                setAccountType(AccountType.AD);
+                setFormData({
+                  ...formData,
+                  username: "yafizham",
+                  password: "Catur2025!",
+                });
+              }}
               className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
                 accountType === AccountType.AD
                   ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg scale-[1.02]"
@@ -528,7 +538,14 @@ export default function Navigation() {
             </button>
 
             <button
-              onClick={() => setAccountType(AccountType.APP)}
+              onClick={() => {
+                setAccountType(AccountType.APP);
+                setFormData({
+                  ...formData,
+                  username: "oxone Driver",
+                  password: "SMD2025!",
+                });
+              }}
               className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
                 accountType === AccountType.APP
                   ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg scale-[1.02]"

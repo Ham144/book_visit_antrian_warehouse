@@ -78,8 +78,7 @@ export class UserService {
   //get myDriver
   async getMyDrivers(page: number, searchKey: string, userInfo: TokenPayload) {
     const where: Prisma.UserWhereInput = {
-      homeWarehouseId: userInfo.homeWarehouseId,
-      accountType: 'APP',
+      vendorName: userInfo.vendorName,
       description: {
         contains: 'DRIVER',
       },
@@ -95,9 +94,6 @@ export class UserService {
 
     const drivers = await this.prismaService.user.findMany({
       where,
-      include: {
-        vehicle: true,
-      },
       take: 10,
       skip: (page - 1) * 10,
       orderBy: {
@@ -111,7 +107,7 @@ export class UserService {
   }
 
   async getAllAccountForMemberManagement(page: number, searchKey: string) {
-    const where = searchKey
+    const where: Prisma.UserWhereInput = searchKey
       ? {
           username: {
             contains: searchKey,
@@ -129,7 +125,6 @@ export class UserService {
         organizations: {
           select: { name: true },
         },
-        vehicle: true,
       },
       skip: (page - 1) * 10,
       take: 10,
@@ -138,6 +133,44 @@ export class UserService {
     return accounts.map((account) =>
       plainToInstance(LoginResponseDto, account, {
         excludeExtraneousValues: true,
+      }),
+    );
+  }
+
+  async getVendorMemberOnly(
+    page: number,
+    searchKey: string,
+    userInfo: TokenPayload,
+  ) {
+    const where: Prisma.UserWhereInput = searchKey
+      ? {
+          username: {
+            contains: searchKey,
+          },
+        }
+      : {};
+
+    if (userInfo?.vendorName) {
+      where.vendorName = userInfo.vendorName;
+    } else {
+      return new BadRequestException('Anda bukan vendor');
+    }
+
+    const accounts = await this.prismaService.user.findMany({
+      where,
+      include: {
+        organizations: {
+          select: { name: true },
+        },
+      },
+      skip: (page - 1) * 10,
+      take: 10,
+    });
+
+    return accounts.map((account) =>
+      plainToInstance(LoginResponseDto, account, {
+        excludeExtraneousValues: true,
+        groups: ['detail'],
       }),
     );
   }

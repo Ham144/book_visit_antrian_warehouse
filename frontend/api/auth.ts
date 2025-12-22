@@ -72,6 +72,20 @@ export const AuthApi = {
     return response.data;
   },
 
+  getVendorMemberOnly: async ({ page = 1, searchKey = "" }: BaseProps) => {
+    let params = new URLSearchParams();
+    if (page) {
+      params.set("page", page.toString());
+    }
+    if (searchKey) {
+      params.set("searchKey", searchKey);
+    }
+    const response = await axiosInstance.get("/api/user/list-member-vendor", {
+      params,
+    });
+    return response.data;
+  },
+
   createAppUser: async (body: UserApp) => {
     const response = await axiosInstance.post("/api/user/create", body);
     return response.data;

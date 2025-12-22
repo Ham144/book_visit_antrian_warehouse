@@ -5,6 +5,7 @@ import { Warehouse } from "./warehouse";
 
 export interface Booking {
   id?: string;
+  code?: string;
   vehicleId: string | null;
   warehouseId: string;
   dockId: string;
@@ -28,7 +29,9 @@ export interface Booking {
 
 export interface BookingFilter {
   searchKey?: string | null;
-  warehouseId?: string | null;
+  warehouseId?: string | null; //untuk admin warehouse
+  page?: number;
+  vendorName?: string | null; //untuk admin vendor
 }
 
 export enum BookingStatus {

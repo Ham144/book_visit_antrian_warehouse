@@ -1,13 +1,8 @@
 import axiosInstance from "@/lib/axios";
-import type {
-  WarehouseCreateDto,
-  WarehouseUpdateDto,
-  Warehouse,
-  GetWarehouseFilter,
-} from "@/types/warehouse";
+import type { Warehouse, WarehouseFilter } from "@/types/warehouse";
 
 export const WarehouseApi = {
-  createWarehouse: async (data: WarehouseCreateDto): Promise<Warehouse> => {
+  createWarehouse: async (data: Warehouse): Promise<Warehouse> => {
     const response = await axiosInstance.post<Warehouse>(
       "/api/warehouse",
       data
@@ -15,7 +10,7 @@ export const WarehouseApi = {
     return response.data;
   },
 
-  updateWarehouse: async (data: WarehouseUpdateDto): Promise<Warehouse> => {
+  updateWarehouse: async (data: Warehouse): Promise<Warehouse> => {
     const response = await axiosInstance.patch<Warehouse>(
       `/api/warehouse/${data.id}`,
       data
@@ -23,7 +18,7 @@ export const WarehouseApi = {
     return response.data;
   },
 
-  getWarehouses: async (filter?: GetWarehouseFilter): Promise<Warehouse[]> => {
+  getWarehouses: async (filter?: WarehouseFilter): Promise<Warehouse[]> => {
     const params = new URLSearchParams();
     if (filter?.searchKey) {
       params.set("searchKey", filter.searchKey);
