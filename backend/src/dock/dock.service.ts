@@ -10,8 +10,8 @@ import { PrismaService } from 'src/common/prisma.service';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { DockFilter, ResponseDockDto } from './dto/response-dock.dto';
 import { plainToInstance } from 'class-transformer';
-import { Days, VehicleType } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
+import { VehicleType, Days } from 'src/common/shared-enum';
 
 @Injectable()
 export class DockService {
@@ -46,7 +46,6 @@ export class DockService {
               })),
             },
           },
-          dockType: rest.dockType,
           organization: {
             connect: {
               name: userInfo.organizationName,
@@ -171,7 +170,7 @@ export class DockService {
   }
 
   async update(id: string, updateDockDto: UpdateDockDto) {
-    const { allowedTypes, vacants, dockType, ...rest } = updateDockDto;
+    const { allowedTypes, vacants, ...rest } = updateDockDto;
     const existingDock = await this.prismaService.dock.findUnique({
       where: { id },
     });
@@ -197,7 +196,6 @@ export class DockService {
               })),
             },
           },
-          dockType,
           allowedTypes: allowedTypes as VehicleType[],
         },
       });

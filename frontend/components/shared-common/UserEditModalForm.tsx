@@ -64,11 +64,6 @@ export default function UserEditModalForm({
     enabled: !!am_i_vendor == false,
   });
 
-  const getDescriptionPreview = (selectedRole: string) => {
-    if (!selectedRole) return "";
-    return `${selectedRole}_${formData.vendorName}`;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.passwordConfirm) {
@@ -514,59 +509,15 @@ export default function UserEditModalForm({
                   </span>
                 </label>
 
-                <div className="relative">
-                  <select
-                    disabled={
-                      memberFor == MemberFor.VENDOR && !formData.vendorName
-                        ? true
-                        : false
-                    }
-                    value={formData.description || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="select select-bordered w-full bg-white border-teal-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-colors rounded-lg pl-10 pr-4 py-3"
-                    required
-                  >
-                    <option value="" disabled className="text-gray-400">
-                      Pilih description (role)
-                    </option>
-                    {["ADMIN", "DRIVER"].map((description) => (
-                      <option
-                        value={getDescriptionPreview(description)}
-                        key={description}
-                        className="capitalize text-gray-700 py-2"
-                      >
-                        {getDescriptionPreview(description)}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <FileText className="w-5 h-5 text-teal-500" />
-                  </div>
-
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-teal-400" />
-                  </div>
-                </div>
-
-                {/* Description Preview */}
-                {formData.description && (
-                  <div className="mt-3 p-3 bg-teal-50 border border-teal-100 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-teal-800">
-                          Deskripsi dipilih:
-                        </p>
-                        <p className="text-teal-600 mt-1">
-                          {formData.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <input
+                  type="text"
+                  placeholder="short description"
+                  className="input input-bordered w-full px-2 "
+                  value={formData.description || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                />
               </div>
               {/* Status */}
               <div className="form-control md:col-span-2">

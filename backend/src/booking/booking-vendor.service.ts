@@ -4,7 +4,7 @@ import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBookingDto } from './dto/response-booking.dto';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
-import { Days } from '@prisma/client';
+import { Days } from 'src/common/shared-enum';
 
 @Injectable()
 export class BookingforVendorService {
@@ -191,11 +191,7 @@ export class BookingforVendorService {
     return HttpStatus.ACCEPTED;
   }
 
-  async cancelBook(
-    id: string,
-    body: { canceledReason: string },
-    userInfo: TokenPayload,
-  ) {
+  async cancelBook(id: string, body: { canceledReason: string }) {
     const { canceledReason } = body;
 
     const isMine = await this.prismaService.booking.findFirst({

@@ -1,11 +1,6 @@
-import {
-  Booking,
-  Dock,
-  SubscriptionPlan,
-  Vehicle,
-  Warehouse,
-} from '@prisma/client';
+import { Booking, Dock, Vehicle, Warehouse } from '@prisma/client';
 import { Expose } from 'class-transformer';
+import { SubscriptionPlan } from 'src/common/shared-enum';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 export class ResponseMyOrganizationDto {

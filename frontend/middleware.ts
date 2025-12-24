@@ -1,11 +1,29 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { TokenPayload } from "./types/tokenPayload";
+import { ROLE, TokenPayload } from "./types/tokenPayload";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get("access_token")?.value;
   const refreshToken = req.cookies.get("refresh_token")?.value;
   const pathname = req.nextUrl.pathname;
+
+  const DRIVER_VENDOR = ["vendor/dashboard"];
+  const ADMIN_VENDOR = [
+    "vendor/dashboard",
+    "vendor/booking",
+    "vendor/history",
+    "vendor/member-management",
+    "vendor/reports",
+  ];
+
+  const USER_ORGANIZATION = [
+    "/admin/dashboard",
+    "/admin/booking",
+    "/admin/history",
+    "/admin/member-management",
+    "/admin/reports",
+  ];
+  // ADMIN_ORGANIZATION = wildcard
 
   // Jika di halaman login, biarkan lewat (tidak perlu check token)
   if (pathname === "/") {
@@ -43,19 +61,27 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    const description = decoded?.description;
+    const role: ROLE = decoded?.role;
     const am_i_vendor = decoded?.vendorName ? true : false;
 
-    if (!description) {
+    if (!role) {
       //ini belum login maka lempar ke landing page
       return NextResponse.redirect(new URL("/", req.url));
     } else if (
       //ini akun yang bukan bagian vendor tapi organisasi org dalam
       !am_i_vendor
     ) {
-      return NextResponse.next();
+      if (role == ROLE.ADMIN_ORGANIZATION) {
+        // admin organization (IT only)
+        return NextResponse.next();
+      } else {
+        //user organization
+        return NextResponse.redirect(new URL("/", req.url));
+      }
     } else {
-      // ini orang luar (vendor)  supir dan admin vendor
+      // ini orang luar (vendor)
+      // supir
+
       if (pathname.startsWith("/vendor")) {
         return NextResponse.next();
       }

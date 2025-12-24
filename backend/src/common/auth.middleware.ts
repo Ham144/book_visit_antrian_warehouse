@@ -31,14 +31,7 @@ export class AuthMiddleware implements NestMiddleware {
       ) as TokenPayload;
 
       // Pastikan req.user ter-set dengan payload yang lengkap
-      req.user = {
-        username: decoded.username,
-        description: decoded.description,
-        homeWarehouseId: decoded?.homeWarehouseId || null,
-        organizationName: decoded.organizationName,
-        vendorName: decoded?.vendorName || null,
-        jti: decoded.jti,
-      };
+      req.user = decoded;
 
       next();
     } catch (error) {

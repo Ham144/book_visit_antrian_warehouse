@@ -15,6 +15,7 @@ import { AuthService } from 'src/user/auth.service';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
+import { ROLE } from 'src/common/shared-enum';
 
 @Injectable()
 export class WarehouseService {
@@ -233,7 +234,7 @@ export class WarehouseService {
     });
 
     const payload: TokenPayload = {
-      description: userInfo.description,
+      role: userInfo.role as ROLE,
       homeWarehouseId: targetWH?.id || null,
       jti: randomUUID(),
       vendorName: userInfo?.vendorName || null,
@@ -264,6 +265,7 @@ export class WarehouseService {
       refresh_token,
       organizationName: userInfo.organizationName,
       description: userInfo.description,
+      role: userInfo.role,
       username: userInfo.username,
       displayName: editedUser.displayName,
       homeWarehouse: targetWH,

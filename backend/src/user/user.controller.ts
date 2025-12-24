@@ -20,6 +20,8 @@ import { AuthService } from './auth.service';
 import { UpdateAppUserDto } from './dto/update-user.dto';
 import { Auth } from 'src/common/auth.decorator';
 import { TokenPayload } from './dto/token-payload.dto';
+import { Authorization } from 'src/common/authorization.decorator';
+import { ROLE } from 'src/common/shared-enum';
 
 @Controller('/user')
 export class UserController {
@@ -96,11 +98,13 @@ export class UserController {
     };
   }
 
+  @Authorization('DRIVER_VENDOR', 'ADMIN_ORGANIZATION')
   @Get('/get-user-info')
   async getUserInfo(@Req() req: Request) {
     return this.authService.getUserInfo(req);
   }
 
+  @Authorization(ROLE.ADMIN_ORGANIZATION)
   @Get('/list')
   async getAllAccount(
     @Query('page', ParseIntPipe) page: number,
@@ -109,6 +113,7 @@ export class UserController {
     return this.userService.getAllAccount(page, searchKey);
   }
 
+  @Authorization(ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION)
   @Get('/my-drivers')
   async getMyDrivers(
     @Query('page', ParseIntPipe) page: number,
@@ -118,6 +123,7 @@ export class UserController {
     return this.userService.getMyDrivers(page, searchKey, userInfo);
   }
 
+  @Authorization(ROLE.ADMIN_ORGANIZATION)
   @Get('/list-member-management')
   async getAllAccountForMemberManagement(
     @Query('page', ParseIntPipe) page: number,
@@ -125,6 +131,8 @@ export class UserController {
   ) {
     return this.userService.getAllAccountForMemberManagement(page, searchKey);
   }
+
+  @Authorization('ADMIN_VENDOR')
   @Get('/list-member-vendor')
   async getVendorMemberOnly(
     @Query('page', ParseIntPipe) page: number,
@@ -134,6 +142,7 @@ export class UserController {
     return this.userService.getVendorMemberOnly(page, searchKey, userInfo);
   }
 
+  @Authorization('ADMIN_VENDOR', 'ADMIN_ORGANIZATION')
   @Post('/create')
   async createAppUser(
     @Body() body: CreateAppUserDto,
@@ -142,11 +151,13 @@ export class UserController {
     return this.userService.createAppUser(body, userInfo);
   }
 
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Patch('/update')
   async updateAccount(@Body() body: UpdateAppUserDto) {
     return this.userService.updateAccount(body);
   }
 
+  @Authorization()
   @Delete('/logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const access_token = req?.cookies['access_token'];
@@ -156,6 +167,7 @@ export class UserController {
     return { message: 'Logout success' };
   }
 
+  @Authorization('ADMIN_VENDOR', 'ADMIN_ORGANIZATION')
   @Delete('/delete/:username')
   async deleteAppUser(@Param('username') username: string) {
     return this.userService.deleteAppUser(username);

@@ -10,21 +10,20 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { ResponseVehicleDto } from './dto/response-vehicle.dto';
 import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
-import { VehicleType } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
+import { VehicleType } from 'src/common/shared-enum';
 
 @Injectable()
 export class VehicleService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(createVehicleDto: CreateVehicleDto, userInfo: LoginResponseDto) {
-    const { vehicleType, requiresDock, ...rest } = createVehicleDto;
+    const { vehicleType, ...rest } = createVehicleDto;
     try {
       await this.prismaService.vehicle.create({
         data: {
           ...rest,
           vehicleType: VehicleType[vehicleType],
-          requiresDock: requiresDock[requiresDock],
           organizationName: userInfo?.organizationName,
         },
       });
@@ -108,9 +107,7 @@ export class VehicleService {
           brand: updateVehicleDto.brand,
           vehicleType: updateVehicleDto.vehicleType,
           productionYear: updateVehicleDto.productionYear,
-          maxCapacity: updateVehicleDto.maxCapacity,
           durasiBongkar: updateVehicleDto.durasiBongkar,
-          requiresDock: updateVehicleDto.requiresDock,
           description: updateVehicleDto.description,
           isActive: updateVehicleDto.isActive,
         },

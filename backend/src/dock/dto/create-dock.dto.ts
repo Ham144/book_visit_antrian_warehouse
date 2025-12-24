@@ -9,7 +9,6 @@ import {
   IsString,
 } from 'class-validator';
 import { Vacant } from './response-dock.dto';
-import { DockType } from '@prisma/client';
 
 export class CreateDockDto {
   @IsNotEmpty()
@@ -24,10 +23,6 @@ export class CreateDockDto {
   @IsArray()
   @IsString({ each: true })
   photos?: string[];
-
-  @IsOptional()
-  @IsString()
-  dockType?: DockType;
 
   @IsOptional()
   @IsArray()

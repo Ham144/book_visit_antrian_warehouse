@@ -7,7 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DockRequirement, VehicleType } from '@prisma/client';
+import { VehicleType } from 'src/common/shared-enum';
 
 export class CreateVehicleDto {
   @IsNotEmpty()
@@ -20,10 +20,6 @@ export class CreateVehicleDto {
   @IsOptional()
   @IsNumber()
   productionYear?: number;
-
-  @IsOptional()
-  @IsString()
-  requiresDock?: DockRequirement;
 
   @IsOptional()
   @IsNumber()

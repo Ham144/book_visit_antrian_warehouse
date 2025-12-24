@@ -1,10 +1,5 @@
-import {
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-  IsObject,
-  IsString,
-} from 'class-validator';
+import { IsArray, IsNotEmpty, IsObject, IsString } from 'class-validator';
+import { SubscriptionPlan } from 'src/common/shared-enum';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 export class CreateMyOrganizationDto {
@@ -29,10 +24,4 @@ export class CreateMyOrganizationDto {
   @IsArray()
   @IsObject({ each: true })
   accounts: LoginResponseDto[];
-}
-
-export enum SubscriptionPlan {
-  TRIAL = 'TRIAL',
-  PRO = 'PRO',
-  PREMIUM = 'PREMIUM',
 }

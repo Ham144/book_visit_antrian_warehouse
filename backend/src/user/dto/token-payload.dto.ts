@@ -1,8 +1,10 @@
+import { ROLE } from 'src/common/shared-enum';
+
 export interface TokenPayload {
   username: string;
-  description: string;
-  homeWarehouseId: string | null;
+  role: ROLE;
+  homeWarehouseId?: string;
+  vendorName?: string;
   organizationName: string;
-  vendorName: string | null;
-  jti: string;
+  jti?: string;
 }

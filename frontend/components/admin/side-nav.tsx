@@ -22,6 +22,7 @@ import {
   PenTool,
   Crown,
   ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
@@ -166,12 +167,15 @@ export default function SideNav() {
           <button
             onClick={() => setIsOpen((v) => !v)}
             type="button"
-            className="btn btn-ghost w-full flex items-center justify-between  transition-colors translate-x-2"
+            className="btn btn-ghost w-full flex items-center justify-between  transition-colors translate-x-2 "
           >
             {isOpen ? (
-              <span>COLLAPSE</span>
+              <span className="flex justify-between w-full px-3 text-slate-700">
+                Tutup
+                <ArrowLeft />
+              </span>
             ) : (
-              <span>
+              <span className="flex justify-between px-3 font-bold text-slate-700">
                 <ArrowRight />
               </span>
             )}

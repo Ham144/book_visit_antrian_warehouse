@@ -1,3 +1,5 @@
+import { SubscriptionPlan } from 'src/common/shared-enum';
+
 export interface Subscription {
   id: string;
   userusername: string;
@@ -5,10 +7,4 @@ export interface Subscription {
   plan: SubscriptionPlan;
   organizationId: string;
   organizations: Object;
-}
-
-export enum SubscriptionPlan {
-  TRIAL,
-  PRO,
-  PREMIUM,
 }

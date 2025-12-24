@@ -11,8 +11,9 @@ import { randomUUID } from 'crypto';
 import { LoginRequestDto, LoginResponseDto } from './dto/login.dto';
 import { TokenPayload } from './dto/token-payload.dto';
 import { plainToInstance } from 'class-transformer';
-import { AccountType, Warehouse } from '@prisma/client';
+import { Warehouse } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { AccountType, ROLE } from 'src/common/shared-enum';
 
 @Injectable()
 export class AuthService {
@@ -212,7 +213,7 @@ export class AuthService {
 
     const payload: TokenPayload = {
       username: user.username,
-      description: user.description,
+      role: user.role as ROLE,
       homeWarehouseId: user.homeWarehouseId || null,
       organizationName: organizationSetting.name,
       vendorName: user.vendorName || null,
@@ -239,11 +240,12 @@ export class AuthService {
     );
 
     userInfo = {
+      ...user,
       access_token,
       refresh_token,
       organizationName: organizationSetting.name,
       homeWarehouse: user.homeWarehouse,
-      ...user,
+      role: user.role as ROLE,
     };
     return plainToInstance(LoginResponseDto, userInfo, {
       excludeExtraneousValues: true,
@@ -296,7 +298,7 @@ export class AuthService {
 
       const payload: TokenPayload = {
         username: user.username,
-        description: user.description,
+        role: user.role as ROLE,
         homeWarehouseId: user?.homeWarehouseId || null,
         vendorName: user.vendorName || null,
         organizationName: organizationSetting.name,
@@ -321,11 +323,12 @@ export class AuthService {
       );
 
       userInfo = {
+        ...user,
         access_token,
         refresh_token,
         organizationName: organizationSetting.name,
         homeWarehouse: user.homeWarehouse,
-        ...user,
+        role: user.role as ROLE,
       };
 
       return plainToInstance(LoginResponseDto, userInfo, {
@@ -376,7 +379,7 @@ export class AuthService {
       const newJti = randomUUID();
       const newPayload: TokenPayload = {
         username: userDB.username,
-        description: userDB?.description,
+        role: userDB?.role as ROLE,
         homeWarehouseId: userDB?.homeWarehouseId || null,
         vendorName: userDB?.vendorName || null,
         organizationName: oldPayload.organizationName,

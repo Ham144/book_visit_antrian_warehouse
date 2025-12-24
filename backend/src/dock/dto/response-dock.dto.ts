@@ -1,5 +1,5 @@
-import { Days } from '@prisma/client';
 import { Expose } from 'class-transformer';
+import { Days } from 'src/common/shared-enum';
 import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
 export class Vacant {

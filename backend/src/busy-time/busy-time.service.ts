@@ -4,7 +4,7 @@ import { UpdateBusyTimeDto } from './dto/update-busy-time.dto';
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBusyTimeDockDto } from './dto/response-busy-time.dto';
-import { Days } from '@prisma/client';
+import { Days } from 'src/common/shared-enum';
 
 @Injectable()
 export class BusyTimeService {

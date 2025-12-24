@@ -2,7 +2,8 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBookingDto } from './dto/response-booking.dto';
-import { Days, DockBusyTime } from '@prisma/client';
+import { Days } from 'src/common/shared-enum';
+import { DockBusyTime } from '@prisma/client';
 
 @Injectable()
 export class BookingService {

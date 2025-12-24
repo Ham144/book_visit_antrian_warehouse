@@ -1,0 +1,76 @@
+//DockBusyTime
+export enum Recurring {
+  DAILY = 'DAILY', // recurringStep menentukan berapa lompatan tiap hari
+  WEEKLY = 'WEEKLY', // customDay
+  MONTHLY = 'MONTHLY', // recurringStep menentukan tanggal berapa dalam 1 bulan
+}
+
+//Subscription.plan
+export enum SubscriptionPlan {
+  TRIAL = 'TRIAL',
+  PRO = 'PRO',
+  PREMIUM = 'PREMIUM',
+}
+
+//vacant.day
+export enum Days {
+  SENIN = 'SENIN',
+  SELASA = 'SELASA',
+  RABU = 'RABU',
+  KAMIS = 'KAMIS',
+  JUMAT = 'JUMAT',
+  SABTU = 'SABTU',
+  MINGGU = 'MINGGU',
+}
+
+//Booking.status
+export enum BookingStatus {
+  IN_PROGRESS = 'IN_PROGRESS',
+  UNLOADING = 'UNLOADING',
+  FINISHED = 'FINISHED',
+  CANCELED = 'CANCELED',
+}
+
+//User.role
+export enum ROLE {
+  DRIVER_VENDOR = 'DRIVER_VENDOR',
+  ADMIN_VENDOR = 'ADMIN_VENDOR',
+  ADMIN_ORGANIZATION = 'ADMIN_ORGANIZATION',
+  USER_ORGANIZATION = 'USER_ORGANIZATION',
+}
+
+//User.accountType
+export enum AccountType {
+  APP = 'APP',
+  AD = 'AD',
+}
+
+//Vehicle.type, Dock.allowedTypes[]
+export enum VehicleType {
+  // Light Vehicle
+  PICKUP = 'PICKUP',
+  PICKUP_BOX = 'PICKUP_BOX',
+  GRANDMAX_PICKUP = 'GRANDMAX_PICKUP',
+  GRANDMAX_BOX = 'GRANDMAX_BOX',
+  VAN = 'VAN',
+
+  // Medium
+  CDE = 'CDE',
+  CDD = 'CDD',
+  CDD_BOX = 'CDD_BOX',
+
+  // Heavy
+  FUSO = 'FUSO',
+  FUSO_BOX = 'FUSO_BOX',
+  TRONTON = 'TRONTON',
+  TRONTON_BOX = 'TRONTON_BOX',
+
+  // Container
+  CONTAINER_20 = 'CONTAINER_20',
+  CONTAINER_40 = 'CONTAINER_40',
+
+  // Special / others
+  WINGBOX = 'WINGBOX',
+  TANKER = 'TANKER',
+  FLATBED = 'FLATBED',
+}

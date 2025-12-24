@@ -10,7 +10,7 @@ datasource db {
 model Subscription {
   id             String           @id @default(uuid())
   start          DateTime
-  plan           SubscriptionPlan @default(TRIAL)
+  plan           String @default("TRIAL")
   organizationId String?          @unique
   organizations  Organization?    @relation(fields: [organizationId], references: [name])
 }
@@ -39,27 +39,7 @@ model Globalsetting {
   updatedAt   DateTime @updatedAt
 }
 
-enum Recurring {
-  DAILY // recurringStep menentukan berapa lompatan tiap hari
-  WEEKLY //customDay
-  MONTHLY //recurringStep menentukan tanggal berapa dalam 1 bulan
-}
 
-enum SubscriptionPlan {
-  TRIAL
-  PRO
-  PREMIUM
-}
-
-enum Days {
-  SENIN
-  SELASA
-  RABU
-  KAMIS
-  JUMAT
-  SABTU
-  MINGGU
-}
 
 model Warehouse {
   id          String  @id @default(uuid())
@@ -83,7 +63,7 @@ model Vacant {
   availableUntil String?
   dockId         String?
   dock           Dock?   @relation(fields: [dockId], references: [id])
-  day            Days?
+  day            String
 
   @@unique([dockId, day])
 }
@@ -91,12 +71,10 @@ model Vacant {
 model Vehicle {
   id             String      @id @default(cuid())
   brand          String
-  vehicleType    VehicleType
+  vehicleType    String
   productionYear Int?
 
   durasiBongkar Int
-
-  requiresDock DockRequirement @default(NONE)
 
   description String?
   isActive    Boolean @default(true)
@@ -115,8 +93,7 @@ model Dock {
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
 
   photos       String[]
-  dockType     DockType
-  allowedTypes VehicleType[] // jenis kendaraan yang boleh masuk ke dock ini
+  allowedTypes String[] // jenis kendaraan yang boleh masuk ke dock ini
 
   isActive Boolean @default(true)
   priority Int?
@@ -139,9 +116,9 @@ model DockBusyTime {
   reason          String
   dockId          String
   dock            Dock      @relation(fields: [dockId], references: [id], onDelete: Cascade)
-  recurring       Recurring //daily hanya ini tanpa recurrintSTEP/recurrintCUSTOM
+  recurring       String //daily hanya ini tanpa recurrintSTEP/recurrintCUSTOM
   recurringStep   Int? //monthly
-  recurringCustom Days[] // weekly
+  recurringCustom String[] // weekly
   createdAt       DateTime  @default(now())
 }
 
@@ -154,7 +131,7 @@ model Booking {
   arrivalTime         DateTime
   estimatedFinishTime DateTime? //ini yag direncakan
   actualFinishTime    DateTime? //ini kenyataannya
-  status              BookingStatus // waiting, in_progress, finished, canceled
+  status              String // lihat shared-enum
   notes               String?
 
   Vehicle   Vehicle   @relation(fields: [vehicleId], references: [id])
@@ -174,17 +151,12 @@ model Booking {
   organization     Organization @relation(fields: [organizationName], references: [name])
 }
 
-enum BookingStatus {
-  IN_PROGRESS
-  UNLOADING
-  FINISHED
-  CANCELED
-}
-
 model User {
   username     String   @id
   passwordHash String? // kalau pakai auth lokal
-  description  String? @default("ADMIN")
+  description  String? //ini hanya untuk inisialisasi ROLE saja pas login pertama
+  role String @default("DRIVER_VENDOR")
+  
   isActive     Boolean  @default(true)
   displayName  String
   createdAt    DateTime @default(now())
@@ -198,7 +170,7 @@ model User {
   homeWarehouseId String?
   homeWarehouse   Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
 
-  accountType AccountType @default(AD)
+  accountType String @default("AD")
 
   //many-to-many 
   warehouseAccess Warehouse[]
@@ -218,10 +190,6 @@ model Vendor {
   organization Organization @relation(fields: [organizationName], references: [name])
 }
 
-enum AccountType {
-  APP
-  AD
-}
 
 model Counter {
   id               String      @id @default(uuid())
@@ -234,27 +202,3 @@ model Counter {
   @@unique([organizationName, warehouseId, dockId, date])
 }
 
-enum DockType {
-  MANUAL
-  FORKLIFT
-  SIDE
-  REEFER
-}
-
-enum VehicleType {
-  PICKUP
-  CDE
-  CDD
-  FUSO
-  TRONTON
-  WINGBOX
-  CONTAINER20
-  CONTAINER40
-}
-
-enum DockRequirement {
-  NONE
-  FORKLIFT
-  SIDE
-  REEFER
-}

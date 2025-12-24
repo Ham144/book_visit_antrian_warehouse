@@ -1,9 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
-import {
-  CreateMyOrganizationDto,
-  SubscriptionPlan,
-} from './create-my-organization.dto';
+import { CreateMyOrganizationDto } from './create-my-organization.dto';
 import { IsObject, IsOptional } from 'class-validator';
+import { SubscriptionPlan } from 'src/common/shared-enum';
 
 export class UpdateMyOrganizationDto extends PartialType(
   CreateMyOrganizationDto,

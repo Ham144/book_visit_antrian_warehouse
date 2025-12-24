@@ -9,8 +9,8 @@ import { AuthService } from 'src/user/auth.service';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
 import { BaseProps } from 'src/common/base.dto';
-import { SubscriptionPlan } from '@prisma/client';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
+import { ROLE, SubscriptionPlan } from 'src/common/shared-enum';
 
 @Injectable()
 export class MyOrganizationService {
@@ -61,8 +61,8 @@ export class MyOrganizationService {
   }
 
   async getAllOrganizations(filter: BaseProps, userInfo: TokenPayload) {
-    if (userInfo.description != 'IT') {
-      throw new ForbiddenException('Anda bukan IT');
+    if (userInfo.role == 'ADMIN_ORGANIZATION') {
+      throw new ForbiddenException('Anda bukan ADMIN_ORGANIZATION');
     }
 
     const { page, searchKey } = filter;
@@ -241,7 +241,7 @@ export class MyOrganizationService {
 
     const payload: TokenPayload = {
       username: user.username,
-      description: user.description,
+      role: user.role as ROLE,
       homeWarehouseId: user?.homeWarehouseId || null,
       vendorName: user?.vendorName || null,
       organizationName: org.name,
@@ -283,7 +283,7 @@ export class MyOrganizationService {
 
   async remove(name: string, userInfo: TokenPayload) {
     //periksa apakah si penghapus adalah member org
-    if (userInfo.description != 'IT') {
+    if (userInfo.role != 'ADMIN_ORGANIZATION') {
       return HttpStatus.FORBIDDEN;
     }
 

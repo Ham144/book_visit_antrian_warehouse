@@ -1,4 +1,3 @@
-import { Recurring } from '@prisma/client';
 import {
   IsArray,
   IsNotEmpty,
@@ -6,6 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Recurring } from 'src/common/shared-enum';
 
 export class CreateBusyTimeDto {
   @IsString()

@@ -1,5 +1,5 @@
-import { Recurring } from '@prisma/client';
 import { Expose } from 'class-transformer';
+import { Recurring } from 'src/common/shared-enum';
 import { ResponseDockDto } from 'src/dock/dto/response-dock.dto';
 
 export class ResponseBusyTimeDockDto {
