@@ -155,7 +155,7 @@ model User {
   username     String   @id
   passwordHash String? // kalau pakai auth lokal
   description  String? //ini hanya untuk inisialisasi ROLE saja pas login pertama
-  role String @default("DRIVER_VENDOR")
+  role String @default("ADMIN_VENDOR")
   
   isActive     Boolean  @default(true)
   displayName  String

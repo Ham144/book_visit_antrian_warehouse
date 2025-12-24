@@ -30,8 +30,6 @@ export default function Navigation() {
   const [accountType, setAccountType] = useState<AccountType>(AccountType.AD);
   const am_i_vendor = userInfo?.vendorName ? true : false;
 
-  console.log("am_i_vendor ?", am_i_vendor ? "yes you are.." : "nope..");
-
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -170,7 +168,9 @@ export default function Navigation() {
                   </div>
                 </h1>
                 <p className="max-md:hidden text-xs text-gray-500 font-medium">
-                  {userInfo?.description ? "Portal Operator" : "Portal Vendor"}
+                  {userInfo?.role.includes("ORGANIZATION")
+                    ? "Portal Perusahaan"
+                    : "Portal Vendor"}
                 </p>
               </div>
             </div>
@@ -231,7 +231,7 @@ export default function Navigation() {
                       <Building2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800 truncate">
-                          {userInfo?.organizationName}
+                          {userInfo.organizationName}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           Organization
@@ -416,7 +416,7 @@ export default function Navigation() {
                         {userInfo?.username}
                       </p>
                       <p className="text-xs text-gray-500 capitalize">
-                        {userInfo?.description || "Vendor"}
+                        {userInfo?.role || "Vendor"}
                       </p>
                     </div>
                     <div className="relative">
@@ -444,7 +444,7 @@ export default function Navigation() {
                               {userInfo?.displayName || userInfo?.username}
                             </p>
                             <p className="text-sm text-gray-500 capitalize">
-                              {userInfo?.description || "Vendor"}
+                              {userInfo?.role}
                             </p>
                             <p className="text-md font-bold text-gray-400 mt-1">
                               {userInfo?.organizationName}
@@ -542,8 +542,8 @@ export default function Navigation() {
                 setAccountType(AccountType.APP);
                 setFormData({
                   ...formData,
-                  username: "oxone Driver",
-                  password: "SMD2025!",
+                  username: "",
+                  password: "mockuser",
                 });
               }}
               className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${

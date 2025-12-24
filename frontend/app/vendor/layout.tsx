@@ -4,8 +4,7 @@ import React from "react";
 const VendorLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex  ">
-      <SideNav />
-      <main className="w-full overflow-y-auto">{children}</main>
+      <SideNav children={children} />
     </div>
   );
 };

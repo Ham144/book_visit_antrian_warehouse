@@ -20,7 +20,6 @@ import type { IVehicle } from "@/types/vehicle";
 import VehilcleModalForm from "@/components/admin/vehicleModelForm";
 import { useUserInfo } from "@/components/UserContext";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
-import { DockRequirement } from "@/types/shared.type";
 
 const initialFormData: IVehicle = {
   driverNames: [],
@@ -30,7 +29,6 @@ const initialFormData: IVehicle = {
   durasiBongkar: 0,
   description: "",
   isReefer: false,
-  requiresDock: DockRequirement.NONE,
   drivers: [],
   isActive: true,
 };

@@ -17,6 +17,7 @@ export interface LoginResponseDto {
 export interface UserInfo {
   username: string;
   description: string;
+  role: string;
   displayName?: string;
   homeWarehouse: Warehouse; //ini adalah warehouse yang sedang di login-in
   isActive?: boolean;
@@ -33,6 +34,7 @@ export interface UserInfo {
 export interface UserApp {
   username: string;
   password?: string;
+  role: string;
   passwordConfirm?: string;
   description?: string;
   displayName?: string;

@@ -15,10 +15,10 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import type { IVehicle } from "@/types/vehicle";
 import { MutateFunction, useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
-import { DockRequirement, VehicleType } from "@/types/shared.type";
+import { VehicleType } from "@/types/shared.type";
 import { TokenPayload } from "@/types/tokenPayload";
 import { Toaster } from "sonner";
-import { UserInfo } from "@/types/auth";
+import { UserApp, UserInfo } from "@/types/auth";
 
 interface VehicleModalFormProps {
   formData: IVehicle;
@@ -27,21 +27,6 @@ interface VehicleModalFormProps {
   onEdit: MutateFunction;
   initialFormData: IVehicle;
 }
-
-// Mapping VehicleType enum to display name and default unload minutes
-const vehicleTypeConfig: Record<
-  VehicleType,
-  { label: string; defaultMinutes: number }
-> = {
-  [VehicleType.PICKUP]: { label: "Pick Up / Engkel", defaultMinutes: 20 },
-  [VehicleType.CDD]: { label: "CDD (Colt Diesel Double)", defaultMinutes: 35 },
-  [VehicleType.CDE]: { label: "CDE (Colt Diesel Engkel)", defaultMinutes: 30 },
-  [VehicleType.FUSO]: { label: "Fuso", defaultMinutes: 45 },
-  [VehicleType.TRONTON]: { label: "Tronton", defaultMinutes: 60 },
-  [VehicleType.WINGBOX]: { label: "Wingbox", defaultMinutes: 50 },
-  [VehicleType.CONTAINER20]: { label: "Container 20ft", defaultMinutes: 70 },
-  [VehicleType.CONTAINER40]: { label: "Container 40ft", defaultMinutes: 90 },
-};
 
 const vehicleTypes = Object.values(VehicleType);
 
@@ -72,7 +57,7 @@ export default function VehilcleModalForm({
     }
   };
   // Handle add driver
-  const handleAddDriver = (driver: TokenPayload) => {
+  const handleAddDriver = (driver: UserApp) => {
     const driverUsername = driver.username;
     const currentDrivers = formData.driverNames || [];
 
@@ -190,22 +175,19 @@ export default function VehilcleModalForm({
                   value={formData.vehicleType || ""}
                   onChange={(e) => {
                     const selected = e.target.value as VehicleType;
-                    const config = vehicleTypeConfig[selected];
                     setFormData({
                       ...formData,
                       vehicleType: selected,
-                      durasiBongkar:
-                        config?.defaultMinutes || formData.durasiBongkar || 30,
+                      durasiBongkar: 90,
                     });
                   }}
                   required
                 >
                   <option value="">Pilih Jenis Kendaraan</option>
                   {vehicleTypes.map((type) => {
-                    const config = vehicleTypeConfig[type];
                     return (
                       <option key={type} value={type}>
-                        {`${config.label} - ${config.defaultMinutes} menit`}
+                        {type}
                       </option>
                     );
                   })}
@@ -257,33 +239,6 @@ export default function VehilcleModalForm({
                   }
                   required
                 />
-              </div>
-
-              {/* Requires Dock */}
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700">
-                    Butuh Dock Khusus (opsional)
-                  </span>
-                </label>
-                <select
-                  className="select px-2 select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-500 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  defaultValue={formData.requiresDock}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      requiresDock: e.target.value
-                        ? (e.target.value as DockRequirement)
-                        : undefined,
-                    })
-                  }
-                >
-                  {Object.values(DockRequirement).map((req) => (
-                    <option key={req} value={req}>
-                      {req}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>
@@ -354,7 +309,7 @@ export default function VehilcleModalForm({
                 {/* Search Results Dropdown */}
                 {searchKeyDriver && drivers && drivers.length > 0 && (
                   <div className="absolute top-full px-2 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                    {drivers.map((driver: TokenPayload) => {
+                    {drivers.map((driver: UserApp) => {
                       const isSelected = formData.driverNames?.some((d) =>
                         typeof d === "string"
                           ? d === driver.username
@@ -418,7 +373,7 @@ export default function VehilcleModalForm({
                     Pengemudi tersedia:
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {drivers.slice(0, 5).map((driver: TokenPayload) => {
+                    {drivers.slice(0, 5).map((driver: UserApp) => {
                       const isSelected = formData.driverNames?.some(
                         (d) => d === driver.username
                       );

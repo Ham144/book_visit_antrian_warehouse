@@ -1,5 +1,6 @@
 import axios from "axios";
 import { BASE_URL } from "./constant";
+import { toast } from "sonner";
 
 const axiosInstance = axios.create({
   withCredentials: true,
@@ -117,7 +118,7 @@ axiosInstance.interceptors.response.use(
     }
 
     if (isForbiddenError) {
-      window.location.href = "/forbidden";
+      toast.error("forbidden route hit.");
     }
 
     return Promise.reject(error);

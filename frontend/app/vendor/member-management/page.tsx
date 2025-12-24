@@ -28,8 +28,8 @@ const MemberManagementPage = () => {
 
   const initialUserAPP: UserApp = {
     username: "",
-    password: "SMD2025!",
-    passwordConfirm: "SMD2025!",
+    password: "mockuser",
+    passwordConfirm: "mockuser",
     description: "",
     displayName: "",
     homeWarehouseId: "",

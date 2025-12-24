@@ -38,6 +38,7 @@ export class WarehouseController {
   }
 
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Get()
   list(@Query() filter: any, @Auth() userInfo: any) {
     return this.warehouseService.getWarehouses(
       userInfo,

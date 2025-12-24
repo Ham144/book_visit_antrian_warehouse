@@ -155,6 +155,9 @@ export class AuthService {
               displayName:
                 userLDAP['displayName'] || userLDAP['name'] || body.username,
               accountType: AccountType['AD'],
+              role: userLDAP['physicalDeliveryOfficeName']
+                ? ROLE.USER_ORGANIZATION
+                : ROLE.ADMIN_VENDOR,
               mail: userLDAP['mail'],
               organizations: {
                 connect: {

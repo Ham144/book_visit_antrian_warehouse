@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "db:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
+    "db:formatAll-seed-studio": "npx prisma migrate reset --force && ts-node -r tsconfig-paths/register prisma/seed.ts && npx prisma studio"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Toaster } from "sonner";
 import { DockApi } from "@/api/dock.api";
-import { VehicleType, DockType } from "@/types/shared.type";
+import { VehicleType } from "@/types/shared.type";
 
 interface DockFormModalProps {
   formData: IDock;
@@ -54,7 +54,6 @@ const DockFormModal = ({
   };
 
   const vehicleTypes = Object.values(VehicleType);
-  const dockTypes = Object.values(DockType);
 
   const toggleVehicleType = (vehicleType: VehicleType) => {
     const currentTypes = formData.allowedTypes || [];
@@ -226,34 +225,6 @@ const DockFormModal = ({
                     </p>
                   </div>
                 )}
-              </div>
-
-              {/* Dock Type */}
-              <div className="form-control">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700 flex items-center">
-                    <WarehouseIcon className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Tipe Dock *
-                  </span>
-                </label>
-                <select
-                  className="select select-bordered w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  value={formData?.dockType || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      dockType: e.target.value as DockType,
-                    })
-                  }
-                  required
-                >
-                  <option value="">Pilih Tipe Dock</option>
-                  {dockTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Priority */}

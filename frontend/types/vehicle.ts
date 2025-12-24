@@ -1,5 +1,5 @@
 import { UserInfo } from "./auth";
-import { DockRequirement, VehicleType } from "./shared.type";
+import { VehicleType } from "./shared.type";
 
 export interface IVehicle {
   id?: string;
@@ -7,7 +7,6 @@ export interface IVehicle {
   vehicleType?: VehicleType;
   productionYear?: number;
   durasiBongkar: number;
-  requiresDock?: DockRequirement;
   drivers: UserInfo[];
   description?: string;
   isActive?: boolean;
