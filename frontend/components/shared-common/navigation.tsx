@@ -11,10 +11,11 @@ import {
   WarehouseIcon,
   Search,
   Handshake,
+  Key,
 } from "lucide-react";
 import { useUserInfo } from "../UserContext";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
 import { toast, Toaster } from "sonner";
@@ -153,9 +154,12 @@ export default function Navigation() {
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50 ">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className={"flex justify-between items-center py-2"}>
           {/* Logo & Brand */}
-          <div className="flex items-center space-x-4 ">
+          <div
+            className="flex items-center space-x-4 hover:cursor-pointer"
+            onClick={() => redirect("/")}
+          >
             <div className="flex items-center space-x-3">
               <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-2.5 rounded-xl shadow-lg">
                 <Truck className="text-white" size={24} />
@@ -223,13 +227,13 @@ export default function Navigation() {
                 {/* Organization & Warehouse Switcher */}
                 <div className="flex items-center gap-x-3">
                   {/* Organization Switcher */}
-                  <div className="dropdown dropdown-end">
+                  <div className="dropdown  dropdown-center">
                     <div
                       tabIndex={0}
-                      className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                      className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-lg transition-all duration-300 cursor-pointer group md:min-w-[160px]"
                     >
                       <Building2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 max-md:hidden">
                         <p className="text-sm font-semibold text-gray-800 truncate">
                           {userInfo.organizationName}
                         </p>
@@ -240,7 +244,7 @@ export default function Navigation() {
                       <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
                     </div>
 
-                    <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                    <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100 overflow-y-auto max-h-[400px]">
                       {myOrganizations?.length > 0 &&
                         myOrganizations?.map((org: Organization) => (
                           <li key={org.name}>
@@ -280,10 +284,10 @@ export default function Navigation() {
 
                   {/* Warehouse Switcher */}
                   {am_i_vendor ? (
-                    <div className="dropdown dropdown-end">
+                    <div className=" dropdown-center ">
                       <div
                         tabIndex={0}
-                        className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                        className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px] "
                       >
                         <Handshake className="w-4 h-4 text-red-500 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -297,7 +301,7 @@ export default function Navigation() {
                         <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
                       </div>
 
-                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100 ">
                         {warehouseAccess?.length > 0 &&
                           warehouseAccess?.map((warehouse: Warehouse) => (
                             <li key={warehouse.id}>
@@ -341,13 +345,13 @@ export default function Navigation() {
                       </ul>
                     </div>
                   ) : (
-                    <div className="dropdown dropdown-end">
+                    <div className="dropdown  dropdown-center ">
                       <div
                         tabIndex={0}
-                        className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group min-w-[160px]"
+                        className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group md:min-w-[160px] "
                       >
                         <WarehouseIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 max-md:hidden ">
                           <p className="text-sm font-semibold text-gray-800 truncate">
                             {userInfo?.homeWarehouse?.name ||
                               "Terjadi kesalahan"}
@@ -359,7 +363,7 @@ export default function Navigation() {
                         <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
                       </div>
 
-                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100 overflow-y-auto max-h-[400px]">
                         {warehouseAccess?.length > 0 &&
                           warehouseAccess?.map((warehouse: Warehouse) => (
                             <li key={warehouse.id}>
@@ -516,25 +520,8 @@ export default function Navigation() {
                   : "bg-white text-teal-700 border border-teal-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-md"
               }`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className={`h-5 w-5 ${
-                  accountType === AccountType.AD
-                    ? "text-teal-100"
-                    : "text-teal-500"
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              Active Directory
+              <WarehouseIcon />
+              <span className="max-md:text-xs">Active Director</span>
             </button>
 
             <button
@@ -552,25 +539,8 @@ export default function Navigation() {
                   : "bg-white text-teal-700 border border-teal-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-md"
               }`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className={`h-5 w-5 ${
-                  accountType === AccountType.APP
-                    ? "text-teal-100"
-                    : "text-teal-500"
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                />
-              </svg>
-              App
+              <Key />
+              <span className="max-md:text-xs">App</span>
             </button>
           </div>
           <form

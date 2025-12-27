@@ -74,3 +74,25 @@ export enum VehicleType {
   TANKER = 'TANKER',
   FLATBED = 'FLATBED',
 }
+
+// Mock vehicle brands data
+export const mockVehicleBrands: string[] = [
+  // Small / light trucks
+  'Suzuki',
+  'Daihatsu',
+  'Toyota',
+  'Hyundai',
+
+  // Medium trucks (most common in Indonesia)
+  'Mitsubishi Fuso',
+  'Hino',
+  'Isuzu',
+
+  // Heavy duty / container
+  'Mercedes Benz',
+  'Volvo',
+  'Scania',
+  'MAN',
+  'FAW',
+  'Foton',
+];

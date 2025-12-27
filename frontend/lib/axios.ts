@@ -118,7 +118,7 @@ axiosInstance.interceptors.response.use(
     }
 
     if (isForbiddenError) {
-      toast.error("forbidden route hit.");
+      toast.error("Anda tidak memiliki hak akses.");
     }
 
     return Promise.reject(error);

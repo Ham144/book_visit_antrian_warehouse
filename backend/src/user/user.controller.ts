@@ -98,7 +98,7 @@ export class UserController {
     };
   }
 
-  @Authorization('DRIVER_VENDOR', 'ADMIN_ORGANIZATION')
+  @Authorization()
   @Get('/get-user-info')
   async getUserInfo(@Req() req: Request) {
     return this.authService.getUserInfo(req);

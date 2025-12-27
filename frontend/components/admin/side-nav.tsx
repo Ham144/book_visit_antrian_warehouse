@@ -21,7 +21,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
 
 const adminMenuItems = [
@@ -33,9 +33,9 @@ const adminMenuItems = [
   },
   {
     id: "slots",
-    label: "Dock Management",
+    label: "Gate Management",
     icon: DoorOpen,
-    href: "/admin/dock",
+    href: "/admin/gate",
   },
   {
     id: "busy-times",
@@ -147,8 +147,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
   // }, []);
 
   return (
-    <div className="max-h-screen overflow-hidden flex flex-col">
-      <div className="flex flex-1 pt-13">
+    <div className="max-h-screen  flex flex-col w-full">
+      <div className="flex flex-1 ">
         {/* SIDEBAR - Fixed dengan efek glassy */}
         <aside
           ref={sidebarRef}
@@ -162,9 +162,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
             ${isOpen ? "w-64" : "w-16"}
             relative
             before:absolute before:inset-0 
-            before:bg-gradient-to-r before:from-emerald-500/5 before:to-transparent
-            before:pointer-events-none
-          `}
+            before:bg-gradient-to-r
+           `}
         >
           {/* tombol tutup buka  */}
           <div className="p-3 relative">
@@ -401,7 +400,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex overflow-y-auto flex-col  flex-1 ">
+        <main className="flex overflow-y-auto flex-col  flex-1 max-h-screen w-full">
           {children}
         </main>
       </div>

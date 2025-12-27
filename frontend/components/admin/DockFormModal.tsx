@@ -1,5 +1,5 @@
 import { IDock } from "@/types/dock.type";
-import { MutateFunction, useQueries, useQuery } from "@tanstack/react-query";
+import { MutateFunction, useQuery } from "@tanstack/react-query";
 import React, { Dispatch, SetStateAction, useState } from "react";
 import {
   Warehouse as WarehouseIcon,
@@ -93,7 +93,7 @@ const DockFormModal = ({
                 <MapPin className="w-5 h-5 text-leaf-green-600" />
               </div>
               <h3 className="font-bold text-lg text-gray-800">
-                {formData?.id ? "Edit Dock" : "Tambah Dock Baru"}
+                {formData?.id ? "Edit Gate" : "Tambah Gate Baru"}
               </h3>
             </div>
             <button
@@ -113,7 +113,7 @@ const DockFormModal = ({
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
                     <Activity className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Nama Dock *
+                    Nama Gate *
                   </span>
                 </label>
                 <input
@@ -143,7 +143,7 @@ const DockFormModal = ({
                   required
                 >
                   <option value={formData?.warehouseId}>
-                    {formData.warehouse?.name || ""}
+                    {formData?.warehouse?.name || ""}
                   </option>
                 </select>
               </div>
@@ -153,7 +153,7 @@ const DockFormModal = ({
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
                     <Image className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Foto Dock
+                    Foto Gate
                   </span>
                 </label>
 
@@ -197,7 +197,7 @@ const DockFormModal = ({
                       >
                         <img
                           src={photo}
-                          alt={`Dock photo ${index + 1}`}
+                          alt={`Gate photo ${index + 1}`}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
@@ -324,7 +324,7 @@ const DockFormModal = ({
                 <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-primary border px-2  checked:border-leaf-green-500 checked:bg-leaf-green-500"
+                    className="checkbox checkbox-primary border px-2  checked:border-leaf-green-500 checked:bg-leaf-green-500 text-white"
                     checked={formData?.isActive ?? true}
                     onChange={(e) =>
                       setFormData({ ...formData, isActive: e.target.checked })
@@ -387,7 +387,7 @@ const DockFormModal = ({
                         <input
                           type="time"
                           className="input input-bordered input-sm w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                          value={vacant.availableUntil as string}
+                          value={vacant?.availableUntil as string}
                           onChange={(e) => {
                             const time = e.target.value;
                             const updatedVacants = [
@@ -425,7 +425,7 @@ const DockFormModal = ({
               type="submit"
               className="btn btn-primary hover:bg-leaf-green-600 hover:border-leaf-green-600 transition-colors px-8"
             >
-              {formData?.id ? "Perbarui Dock" : "Tambah Dock"}
+              {formData?.id ? "Perbarui Gate" : "Tambah Gate"}
             </button>
           </div>
         </form>

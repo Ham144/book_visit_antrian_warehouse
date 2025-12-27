@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { VehicleService } from './vehicle.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { Auth } from 'src/common/auth.decorator';
 import { Authorization } from 'src/common/authorization.decorator';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Controller('vehicle')
 export class VehicleController {
@@ -23,16 +25,24 @@ export class VehicleController {
     return this.vehicleService.create(createVehicleDto, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Get()
-  findAll() {
-    return this.vehicleService.findAll();
+  findAll(
+    @Query('page') page: number,
+    @Query('searchKey') searchKey: string,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.vehicleService.findAll(page, searchKey, userInfo);
   }
 
   @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR', 'USER_ORGANIZATION')
   @Get('/vendor-vehicles')
-  getMyVehicle(@Auth() userInfo: any) {
-    return this.vehicleService.getVendorVehicles(userInfo);
+  getMyVehicles(
+    @Query('page') page: number,
+    @Query('searchKey') searchKey: string,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.vehicleService.findAll(page, searchKey, userInfo);
   }
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')

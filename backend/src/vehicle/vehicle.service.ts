@@ -12,6 +12,8 @@ import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { VehicleType } from 'src/common/shared-enum';
+import { BaseProps } from 'src/common/base.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class VehicleService {
@@ -33,12 +35,28 @@ export class VehicleService {
     }
   }
 
-  async findAll() {
+  async findAll(page: number, searchKey: string, userInfo: TokenPayload) {
     try {
+      let where: Prisma.VehicleWhereInput = {
+        // filter fixed vendorName nanti
+      };
+      if (searchKey) {
+        where.OR = [
+          {
+            brand: {
+              contains: searchKey,
+            },
+          },
+        ];
+      }
+
       const vehicles = await this.prismaService.vehicle.findMany({
+        where,
         orderBy: {
           createdAt: 'asc',
         },
+        skip: (page - 1) * 10,
+        take: 10,
       });
 
       return vehicles.map((vehicle) =>
@@ -47,17 +65,37 @@ export class VehicleService {
         }),
       );
     } catch (error) {
-      throw new InternalServerErrorException('Gagal mengambil daftar vehicle');
+      throw new InternalServerErrorException(error.message);
     }
   }
 
   //note: saat ini find all & getVendorVehicles masih sama hasilnya
-  async getVendorVehicles(userInfo: TokenPayload) {
+  async getVendorVehicles(
+    page: number,
+    searchKey: string,
+    userInfo: TokenPayload,
+  ) {
     try {
+      const where: Prisma.VehicleWhereInput = {
+        // filter fixed vendorName nanti
+      };
+      if (searchKey) {
+        where.OR = [
+          {
+            brand: {
+              contains: searchKey,
+            },
+          },
+        ];
+      }
+
       const vehicles = await this.prismaService.vehicle.findMany({
+        where,
         orderBy: {
           createdAt: 'asc',
         },
+        skip: (page - 1) * 10,
+        take: 10,
       });
 
       return vehicles.map((vehicle) =>
@@ -66,7 +104,7 @@ export class VehicleService {
         }),
       );
     } catch (error) {
-      throw new InternalServerErrorException('Gagal mengambil daftar vehicle');
+      throw new InternalServerErrorException(error.message);
     }
   }
 

@@ -262,16 +262,16 @@ export default function WarehouseModalForm({
 
               {/* Status */}
               <div className="form-control md:col-span-2">
-                <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <label className="label cursor-pointer  text-white ">
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-primary border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
+                    className="checkbox bg-teal-300 border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
                     checked={formData.isActive ?? true}
                     onChange={(e) =>
                       setFormData({ ...formData, isActive: e.target.checked })
                     }
                   />
-                  <span className="label-text font-medium text-gray-700">
+                  <span className="label-text font-medium text-teal-700 ">
                     Status Aktif
                   </span>
                 </label>

@@ -1,7 +1,21 @@
 import { fakerID_ID } from '@faker-js/faker';
-import { Prisma, PrismaClient, User, Vendor, Warehouse } from '@prisma/client';
+import {
+  Dock,
+  Prisma,
+  PrismaClient,
+  User,
+  Vendor,
+  Warehouse,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { AccountType, ROLE } from 'src/common/shared-enum';
+import {
+  AccountType,
+  Days,
+  mockVehicleBrands,
+  Recurring,
+  ROLE,
+  VehicleType,
+} from 'src/common/shared-enum';
 
 async function init() {
   const prisma = new PrismaClient();
@@ -19,10 +33,13 @@ async function init() {
     'PERMATA',
     'GLODOK F',
     'GLODOK A',
-  ];
-  const vendorLength = 100;
-  const accountLength = 10;
+  ]; // jumlah warehouse organisasi
+  const vendorLength = 100; // jumlah vendor
+  const accountLength = 10; // jumlah account untuk tiap role
   const passwordHash = await bcrypt.hash('mockuser', 10);
+  const dockLength = 4; // masing masing perWH dengan masing masing busytime dan vacant
+  const vehicleLength = 50; // jumlah vechicle global
+
   //-----------END length properties----------------------
 
   const organization = await prisma.organization.create({
@@ -154,24 +171,27 @@ async function init() {
     skipDuplicates: true,
   });
 
-  //connect many-to-many
+  //START connect many-to-many
   await prisma.organization.update({
     where: {
       name: organization.name,
     },
     data: {
       accounts: {
-        connect: userOrganizationMock.map((user) => ({
+        connect: userDB.map((user) => ({
           username: user.username,
         })),
       },
     },
   });
-
   for (const warehouse of warehousesDB) {
     const randomRange = Math.floor(Math.random() * userDB.length);
 
     const userWarehouseAccesses = userDB
+      .filter(
+        (u) =>
+          u.role == ROLE.USER_ORGANIZATION || u.role == ROLE.ADMIN_ORGANIZATION,
+      ) //mencegah akun vendor
       .slice(randomRange, randomRange + 7)
       .map((u) => ({ username: u.username }));
 
@@ -187,9 +207,116 @@ async function init() {
     console.log('warehouse:', warehouse.name);
     console.log('userAccess:', userWarehouseAccesses);
   }
+  //END connect many-to-many
 
-  console.log('vendorsDB.count:', vendorsDB.count);
+  //section 2 = [dock(busytime, vacant), vehicle]
+  const docksMock: Prisma.DockCreateManyInput[] = [];
+
+  const busyTimesMock: Prisma.DockBusyTimeCreateManyInput[] = [];
+  const vacantsMock: Prisma.VacantCreateManyInput[] = [];
+
+  const daysArray = Object.values(Days);
+  // ENUM SOURCE (TIDAK DIMUTATE)
+  const vehicleTypes = Object.values(VehicleType);
+
+  for (let wh_idx = 0; wh_idx < warehousesDB.length; wh_idx++) {
+    for (let dock_idx = 0; dock_idx < dockLength; dock_idx++) {
+      // 🔥 CLONE TIAP DOCK
+      const allowedTypes = [...vehicleTypes];
+      const selectedAllowedTypes: string[] = [];
+
+      const count = Math.min(5, allowedTypes.length);
+
+      for (let j = 0; j < count; j++) {
+        const randomIndex = Math.floor(Math.random() * allowedTypes.length);
+
+        // splice return array → ambil index 0
+        const [type] = allowedTypes.splice(randomIndex, 1);
+
+        selectedAllowedTypes.push(type);
+      }
+
+      docksMock.push({
+        name: fakerID_ID.lorem.word({ length: 7 }),
+        warehouseId: warehousesDB[wh_idx].id,
+        allowedTypes: selectedAllowedTypes,
+        organizationName: organization.name,
+        isActive: true,
+        priority: Math.floor(Math.random() * 5) + 1,
+      });
+    }
+  }
+
+  const docksDB = await prisma.dock.createManyAndReturn({
+    data: docksMock,
+    skipDuplicates: true,
+  });
+
+  //buat busytimes dan vacants untuk tiap dock
+  docksDB.forEach((dock: Dock) => {
+    for (let k = 0; k < daysArray.length; k++) {
+      vacantsMock.push({
+        dockId: dock.id,
+        availableFrom: '08:00',
+        availableUntil: '16:00',
+        day: daysArray[k], // "SENIN", "SELASA", dst
+      });
+    }
+
+    busyTimesMock.push({
+      dockId: dock.id,
+      reason: 'Makan siang',
+      recurring: Recurring.WEEKLY,
+      from: '12:00',
+      to: '13:00',
+      recurringCustom: [
+        Days.SENIN,
+        Days.SELASA,
+        Days.RABU,
+        Days.KAMIS,
+        Days.JUMAT,
+        Days.SABTU,
+      ],
+    });
+  });
+
+  const mockVehicles: Prisma.VehicleCreateManyInput[] = [];
+
+  for (let v_idx = 0; v_idx < vehicleLength; v_idx++) {
+    const selectedVehicleBrandIdx = Math.floor(
+      Math.random() * mockVehicleBrands.length,
+    );
+    mockVehicles.push({
+      brand: mockVehicleBrands[selectedVehicleBrandIdx],
+      durasiBongkar: Math.floor(Math.random() * (120 - 30 + 1)) + 30,
+      vehicleType:
+        vehicleTypes[Math.floor(Math.random() * vehicleTypes.length)],
+      description: fakerID_ID.lorem.word({ length: 11 }),
+      productionYear: Math.floor(Math.random() * (2010 - 1999 + 1)) + 1999,
+      isActive: true,
+      organizationName: organization.name,
+    });
+  }
+
+  const busyTimeDB = await prisma.dockBusyTime.createMany({
+    data: busyTimesMock,
+    skipDuplicates: true,
+  });
+  const vacantDB = await prisma.vacant.createMany({
+    data: vacantsMock,
+    skipDuplicates: true,
+  });
+
+  const vehicleDB = await prisma.vehicle.createMany({
+    data: mockVehicles,
+    skipDuplicates: true,
+  });
+  console.log('vendorsDB.length:', vendorsDB.count);
   console.log('warehousesDB.length:', warehousesDB.length);
   console.log('userDB.length:', userDB.length);
+  console.log('docksDB.length:', docksDB.length + ' for each');
+  console.log('busyTimeDB.length:', busyTimeDB.count);
+  console.log('vacantDB.length:', vacantDB.count);
+  console.log('vehicleDB.length:', vehicleDB.count);
 }
 init();

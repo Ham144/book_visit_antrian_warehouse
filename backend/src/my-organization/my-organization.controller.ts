@@ -20,16 +20,19 @@ import {
   accessTokenOption,
   refreshTokenOption,
 } from 'src/user/tokenCookieOptions';
+import { Authorization } from 'src/common/authorization.decorator';
 
 @Controller('organization')
 export class MyOrganizationController {
   constructor(private readonly myOrganizationService: MyOrganizationService) {}
 
+  @Authorization('ADMIN_ORGANIZATION')
   @Post()
   create(@Body() createMyOrganizationDto: CreateMyOrganizationDto) {
     return this.myOrganizationService.create(createMyOrganizationDto);
   }
 
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Post('switch')
   async switchOrganization(
     @Body('name') name: string,
@@ -49,21 +52,25 @@ export class MyOrganizationController {
     return responseWithoutTokens;
   }
 
+  @Authorization("ADMIN_ORGANIZATION")
   @Get()
-  getAllOrganizations(@Query() filter, @Auth() userInfo: TokenPayload) {
-    return this.myOrganizationService.getAllOrganizations(filter, userInfo);
+  getAllOrganizations(@Query() filter) {
+    return this.myOrganizationService.getAllOrganizations(filter);
   }
 
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Get('my-organizations')
   getMyOrganization(@Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.getMyOrganizations(userInfo);
   }
 
-  @Get(':name')
+  @Authorization('ADMIN_ORGANIZATION')
+  @Get('/detail/:name')
   findOne(@Param('name') name: string) {
     return this.myOrganizationService.findOne(name);
   }
 
+  @Authorization('ADMIN_ORGANIZATION')
   @Patch(':name')
   update(
     @Param('name') name: string,
@@ -72,6 +79,7 @@ export class MyOrganizationController {
     return this.myOrganizationService.update(name, updateMyOrganizationDto);
   }
 
+  @Authorization('ADMIN_ORGANIZATION')
   @Delete(':name')
   remove(@Param('name') name: string, @Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.remove(name, userInfo);

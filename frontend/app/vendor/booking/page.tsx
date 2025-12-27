@@ -36,6 +36,7 @@ import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
 import { BookingApi } from "@/api/booking.api";
 import { AuthApi } from "@/api/auth";
 import { UserApp } from "@/types/auth";
+import NotFoundSection from "@/components/NotFoundSection";
 
 type BookingStep = "warehouse" | "driver" | "vehicle" | "dock" | "confirmation";
 
@@ -299,10 +300,10 @@ export default function BookingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 flex-1">
-      <div className=" mx-auto">
+    <div className="min-h-screen w-full bg-gray-50 p-6 flex-1 flex flex-col">
+      <div className="w-full">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 w-full">
           <h1 className="text-3xl font-bold text-gray-900">
             Buat Booking Baru
           </h1>
@@ -313,7 +314,7 @@ export default function BookingPage() {
 
         {/* Progress Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between ">
             {getSteps().map((step, index) => {
               const currentIndex = getCurrentStepIndex();
               const isActive = step.id === bookingStep;
@@ -495,135 +496,143 @@ export default function BookingPage() {
 
         {/* Step 2: Driver Selection */}
         {bookingStep === "driver" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div className="flex flex-col">
-                <h2 className="text-2xl font-semibold mb-2">Pilih Driver</h2>
-                <p className="text-gray-600">Pilih driver untuk booking ini</p>
-              </div>
-              <label className="relative">
-                <input
-                  type="text"
-                  placeholder="Cari Driver.."
-                  className="input w-full max-w-xs border px-2 rounded-md"
-                  value={searchKeyDriver}
-                  onChange={(e) => setSearchKeyDriver(e.target.value)}
-                />
-                <div className="absolute top-0 right-0 w-10 h-full flex items-center justify-center">
-                  <Search />
+          <div className="flex-1">
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col">
+                  <h2 className="text-2xl font-semibold mb-2">Pilih Driver</h2>
+                  <p className="text-gray-600">
+                    Pilih driver untuk booking ini
+                  </p>
                 </div>
-              </label>
+                <label className="relative">
+                  <input
+                    type="text"
+                    placeholder="Cari Driver.."
+                    className="input w-full max-w-xs border px-2 rounded-md"
+                    value={searchKeyDriver}
+                    onChange={(e) => setSearchKeyDriver(e.target.value)}
+                  />
+                  <div className="absolute top-0 right-0 w-10 h-full flex items-center justify-center">
+                    <Search />
+                  </div>
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myDrivers?.map((driver: UserApp) => (
-                <div
-                  key={driver.username}
-                  onClick={() => handleDriverSelect(driver)}
-                  className={`card bg-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer border-2 ${
-                    formData.driverUsername === driver.username
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-transparent hover:border-gray-300"
-                  }`}
-                >
-                  <div className="card-body p-6">
-                    {/* Header dengan nama driver dan status */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User2 className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-bold text-gray-900">
-                              {driver.displayName}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {driver.username || "No Username"}
-                            </p>
+              {myDrivers?.length ? (
+                myDrivers?.map((driver: UserApp) => (
+                  <div
+                    key={driver.username}
+                    onClick={() => handleDriverSelect(driver)}
+                    className={`card bg-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer border-2 ${
+                      formData.driverUsername === driver.username
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-transparent hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="card-body p-6">
+                      {/* Header dengan nama driver dan status */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User2 className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900">
+                                {driver.displayName}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {driver.username || "No Username"}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                        <span
+                          className={`badge px-3 py-1 font-semibold ${
+                            driver.isActive
+                              ? "badge-success bg-green-100 text-green-800 border-green-200"
+                              : "badge-error bg-red-100 text-red-800 border-red-200"
+                          }`}
+                        >
+                          {driver.isActive ? "Aktif" : "Nonaktif"}
+                        </span>
                       </div>
-                      <span
-                        className={`badge px-3 py-1 font-semibold ${
-                          driver.isActive
-                            ? "badge-success bg-green-100 text-green-800 border-green-200"
-                            : "badge-error bg-red-100 text-red-800 border-red-200"
-                        }`}
-                      >
-                        {driver.isActive ? "Aktif" : "Nonaktif"}
-                      </span>
-                    </div>
 
-                    {/* Informasi Vendor */}
-                    {driver.vendorName && (
+                      {/* Informasi Vendor */}
+                      {driver.vendorName && (
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Building className="w-4 h-4 text-gray-500" />
+                            <span className="font-medium">Vendor:</span>
+                            <span className="text-gray-900">
+                              {driver.vendorName}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tipe Akun */}
                       <div className="mb-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <Building className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium">Vendor:</span>
-                          <span className="text-gray-900">
-                            {driver.vendorName}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Shield className="w-4 h-4 text-gray-500" />
+                          <span className="font-medium text-gray-700">
+                            Tipe Akun:
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              driver.accountType === "APP"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {driver.accountType || "Unknown"}
                           </span>
                         </div>
                       </div>
-                    )}
 
-                    {/* Tipe Akun */}
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Shield className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium text-gray-700">
-                          Tipe Akun:
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            driver.accountType === "APP"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
+                      {/* Deskripsi dengan truncate */}
+                      {driver.description && (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <MessageSquare className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-gray-700 line-clamp-2">
+                              {driver.description}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tombol Pilih */}
+                      <div className="mt-4">
+                        <button
+                          className={`btn w-full gap-2 font-medium transition-all ${
+                            formData.driverUsername === driver.username
+                              ? "btn-primary"
+                              : "btn-outline btn-primary hover:bg-primary/10"
                           }`}
                         >
-                          {driver.accountType || "Unknown"}
-                        </span>
+                          {formData.driverUsername === driver.username ? (
+                            <>
+                              <CheckCircle className="w-5 h-5" />
+                              <span>Driver Terpilih</span>
+                            </>
+                          ) : (
+                            <>
+                              <User2 className="w-4 h-4" />
+                              <span>Pilih Driver Ini</span>
+                            </>
+                          )}
+                        </button>
                       </div>
-                    </div>
-
-                    {/* Deskripsi dengan truncate */}
-                    {driver.description && (
-                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <MessageSquare className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-gray-700 line-clamp-2">
-                            {driver.description}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tombol Pilih */}
-                    <div className="mt-4">
-                      <button
-                        className={`btn w-full gap-2 font-medium transition-all ${
-                          formData.driverUsername === driver.username
-                            ? "btn-primary"
-                            : "btn-outline btn-primary hover:bg-primary/10"
-                        }`}
-                      >
-                        {formData.driverUsername === driver.username ? (
-                          <>
-                            <CheckCircle className="w-5 h-5" />
-                            <span>Driver Terpilih</span>
-                          </>
-                        ) : (
-                          <>
-                            <User2 className="w-4 h-4" />
-                            <span>Pilih Driver Ini</span>
-                          </>
-                        )}
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <NotFoundSection />
+              )}
             </div>
           </div>
         )}

@@ -5,7 +5,7 @@ import { BaseProps } from "@/types/shared.type";
 import { MutateFunction, useQuery } from "@tanstack/react-query";
 import { Search, X, Users, Building, Server, Network } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 
 interface OrganizationFormModalProps {
   formData: Organization;
@@ -52,7 +52,7 @@ const OrganizationFormModal = ({
         ...prev,
         accounts: [...prev.accounts, user],
       }));
-    }
+    } else toast("user sudah ditambahkan");
     setAccountsFilter((prev) => ({
       ...prev,
       searchKey: "",
@@ -132,8 +132,7 @@ const OrganizationFormModal = ({
               <h4 className="font-semibold text-gray-800">
                 Active Directory{" "}
                 <span className="text-xs">
-                  (lewati untuk mempertahankan nilai sebelumnya) (nilai sengaja
-                  tidak muncul)
+                  (lewati untuk mempertahankan nilai sebelumnya)
                 </span>
               </h4>
             </div>
@@ -235,11 +234,11 @@ const OrganizationFormModal = ({
 
             {/* Selected Accounts Preview */}
             {formData.accounts?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="grid grid-cols-3 gap-1 ">
                 {formData.accounts.map((account) => (
                   <div
                     key={account.username}
-                    className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg"
+                    className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg justify-between"
                   >
                     <span className="text-sm font-medium text-green-800">
                       {account.displayName || account.username}
@@ -263,7 +262,7 @@ const OrganizationFormModal = ({
                   Tambah User
                 </span>
               </label>
-              <div className="relative">
+              <div className="relative border px-2 font-bold">
                 <input
                   type="text"
                   placeholder="Cari username atau nama..."

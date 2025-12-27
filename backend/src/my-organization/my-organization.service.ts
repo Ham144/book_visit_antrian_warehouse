@@ -60,11 +60,7 @@ export class MyOrganizationService {
     );
   }
 
-  async getAllOrganizations(filter: BaseProps, userInfo: TokenPayload) {
-    if (userInfo.role == 'ADMIN_ORGANIZATION') {
-      throw new ForbiddenException('Anda bukan ADMIN_ORGANIZATION');
-    }
-
+  async getAllOrganizations(filter: BaseProps) {
     const { page, searchKey } = filter;
 
     let where = {};

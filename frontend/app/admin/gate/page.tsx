@@ -12,7 +12,7 @@ import { Days } from "@/types/shared.type";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
 import { Vacant } from "@/types/vacant.type";
 
-export default function DocksPage() {
+export default function GatesPage() {
   const queryClient = useQueryClient();
   const [selectedDockId, setSelectedDockId] = useState<string | null>(null);
   const { userInfo } = useUserInfo();
@@ -125,7 +125,7 @@ export default function DocksPage() {
             <div className="max-w-7xl mx-auto">
               {/* Header */}
               <div className="flex justify-between mb-2 items-center">
-                <h1 className="text-3xl font-bold">Dock Management</h1>
+                <h1 className="text-3xl font-bold">Gate Management</h1>
                 <button
                   onClick={() => {
                     setFormData(initialDock);
@@ -137,7 +137,7 @@ export default function DocksPage() {
                   }}
                   className="btn px-4 btn-primary"
                 >
-                  <Plus size={20} /> New Dock
+                  <Plus size={20} /> New Gate
                 </button>
               </div>
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -146,16 +146,10 @@ export default function DocksPage() {
                     <thead>
                       <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
                         <th className="font-semibold text-gray-700 py-4 px-4">
-                          Nama Dock
+                          Nama Gate
                         </th>
-                        <th className="font-semibold text-gray-700 py-4 px-4">
-                          Tipe Dock
-                        </th>{" "}
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Allow Types
-                        </th>
-                        <th className="font-semibold text-gray-700 py-4 px-4">
-                          Prioritas
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Status
@@ -183,11 +177,6 @@ export default function DocksPage() {
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {dock.dockType || "-"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
                               {dock?.allowedTypes &&
                               dock.allowedTypes.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
@@ -204,33 +193,14 @@ export default function DocksPage() {
                                 <span className="text-gray-400 text-sm">-</span>
                               )}
                             </td>
-                            <td className="px-4 py-3">
-                              {dock.priority ? (
-                                <div className="flex items-center space-x-1">
-                                  <Star className="w-4 h-4 text-yellow-500" />
-                                  <span className="font-medium text-gray-700">
-                                    {dock.priority}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 ">
                               <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                className={`inline-flex  items-start text-start px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                   dock.isActive
                                     ? "bg-leaf-green-100 text-leaf-green-800"
                                     : "bg-red-100 text-red-800"
                                 }`}
                               >
-                                <div
-                                  className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                    dock.isActive
-                                      ? "bg-leaf-green-500"
-                                      : "bg-red-500"
-                                  }`}
-                                ></div>
                                 {dock.isActive ? "Aktif" : "Tidak Aktif"}
                               </span>
                             </td>
@@ -270,7 +240,7 @@ export default function DocksPage() {
                               <MapPin className="w-12 h-12 text-gray-300 mb-2" />
                               <p className="font-medium">Belum ada data dock</p>
                               <p className="text-sm mt-1">
-                                Mulai dengan menambahkan dock pertama
+                                Mulai dengan menambahkan Gate pertama
                               </p>
                             </div>
                           </td>

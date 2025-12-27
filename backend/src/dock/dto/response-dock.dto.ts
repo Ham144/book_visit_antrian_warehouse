@@ -13,33 +13,29 @@ export class ResponseDockDto {
   @Expose()
   id: string;
   @Expose()
-  dockType?: string;
-  @Expose()
   warehouseId?: string;
   @Expose()
   name: string;
   @Expose()
   allowedTypes?: string[];
-  @Expose()
-  maxLength?: number;
-  @Expose()
-  maxWidth?: number;
-  @Expose()
-  maxHeight?: number;
-  @Expose()
-  vacants?: Vacant[];
+
   @Expose()
   isActive?: boolean;
   @Expose()
   priority?: number;
   @Expose()
   busyTimes?: object[];
-  @Expose()
+
+  @Expose({ groups: ['detail'] })
+  vacants?: Vacant[];
+  @Expose({ groups: ['detail'] })
   warehouse?: responseWarehouseDto;
   @Expose({ groups: ['detail'] })
   bookings?: object[];
   @Expose({ groups: ['detail'] })
   photos?: string[];
+  @Expose({ groups: ['detail'] })
+  organizationName?: string;
 }
 
 export class DockFilter {

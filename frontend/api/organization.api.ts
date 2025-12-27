@@ -12,6 +12,12 @@ export const OrganizationApi = {
     return res?.data;
   },
 
+  getDetailOrganization: async (name: string) => {
+    if (!name) return [];
+    const res = await axiosInstance.get(`/api/organization/detail/${name}`);
+    return res?.data;
+  },
+
   updateOrganization: async (name: string, body: Organization) => {
     const res = await axiosInstance.patch(`/api/organization/${name}`, body);
     return res?.data;

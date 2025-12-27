@@ -16,7 +16,6 @@ import type { IVehicle } from "@/types/vehicle";
 import { MutateFunction, useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
 import { VehicleType } from "@/types/shared.type";
-import { TokenPayload } from "@/types/tokenPayload";
 import { Toaster } from "sonner";
 import { UserApp, UserInfo } from "@/types/auth";
 
@@ -142,7 +141,7 @@ export default function VehilcleModalForm({
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
                     <Car className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Merk Kendaraan *
+                    Brand *
                   </span>
                 </label>
                 <select

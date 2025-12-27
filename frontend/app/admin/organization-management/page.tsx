@@ -76,7 +76,7 @@ const OrganizationManagementPage = () => {
     mutationKey: ["organizations", "update"],
     mutationFn: async () =>
       await OrganizationApi.updateOrganization(formData.name, formData),
-    onSuccess: (res) => {
+    onSuccess: () => {
       qq.invalidateQueries({ queryKey: ["organizations"] });
       (
         document.getElementById("OrganizationFormModal") as HTMLDialogElement
@@ -178,7 +178,7 @@ const OrganizationManagementPage = () => {
                     <p className="text-2xl font-bold text-leaf-green-600">
                       {Array.isArray(organizations)
                         ? organizations.reduce(
-                            (acc, org) => acc + (org.warehouses?.length || 0),
+                            (acc, org) => acc + (org.accounts?.length || 0),
                             0
                           )
                         : 0}
@@ -242,11 +242,6 @@ const OrganizationManagementPage = () => {
                               <span className="font-medium">
                                 {org.warehouses?.length || 0}
                               </span>
-                              {org.warehouses && org.warehouses.length > 0 && (
-                                <div className="text-xs text-gray-500 ml-2">
-                                  {org.warehouses.map((w) => w.name).join(", ")}
-                                </div>
-                              )}
                             </div>
                           </td>
 

@@ -3,6 +3,7 @@
 import { AuthApi } from "@/api/auth";
 import { useUserInfo } from "@/components/UserContext";
 import { UserInfo } from "@/types/auth";
+import { ROLE } from "@/types/shared.type";
 import { useQuery } from "@tanstack/react-query";
 import {
   Building,
@@ -116,7 +117,7 @@ export default function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 max-h-screen overflow-auto ">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-teal-600 via-teal-700 to-green-200 text-white py-16 md:py-24">
         <div className="absolute inset-0 bg-black/10"></div>
@@ -141,7 +142,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href={
-                userInfo && userInfo?.description
+                userInfo && userInfo?.homeWarehouse
                   ? "/admin/dashboard"
                   : "/vendor/booking"
               }
@@ -158,7 +159,9 @@ export default function HomePage() {
               className="btn btn-lg bg-white text-blue-700 hover:bg-gray-100 border-0 font-semibold px-8 gap-2"
             >
               <PlayCircle className="w-5 h-5" />
-              {userInfo?.description ? "Lihat Dashboard Admin" : "Mulai Order"}
+              {userInfo?.homeWarehouse
+                ? "Lihat Dashboard Admin"
+                : "Mulai Order"}
             </Link>
           </div>
         </div>

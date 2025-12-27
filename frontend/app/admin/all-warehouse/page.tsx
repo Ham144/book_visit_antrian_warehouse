@@ -11,12 +11,15 @@ import {
   MapPin,
   Users,
   Search,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { WarehouseApi } from "@/api/warehouse.api";
 import type { Warehouse, WarehouseFilter } from "@/types/warehouse";
 import WarehouseModalForm from "@/components/admin/warehouseModalForm";
+import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
 
 const initialFormData: Warehouse = {
   name: "",
@@ -186,8 +189,8 @@ export default function AllWarehousePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex">
-        <main className="flex-1 p-6">
+      <div className="flex flex-col">
+        <main className="flex-1 pb-12 flex-col">
           <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
               {/* Header */}
@@ -223,10 +226,10 @@ export default function AllWarehousePage() {
                         className="input input-bordered w-full pl-10 bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100"
                         value={filter.searchKey}
                         onChange={(e) =>
-                          setFilter((f) => ({
-                            ...f,
+                          setFilter({
                             searchKey: e.target.value,
-                          }))
+                            page: 1,
+                          })
                         }
                       />
                     </div>
@@ -388,10 +391,20 @@ export default function AllWarehousePage() {
                   </div>
                 )}
               </div>
+
+              {/* Pagination */}
+              <PaginationFullTable
+                data={warehouses}
+                filter={filter}
+                isLoading={isLoading}
+                setFilter={setFilter}
+                key={"PaginationFullTable"}
+              />
             </div>
           </div>
         </main>
       </div>
+
       <WarehouseModalForm
         createMutation={createMutation}
         editingId={editingId}

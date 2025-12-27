@@ -1,5 +1,4 @@
 import {
-  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsNumber,
@@ -20,10 +19,6 @@ export class CreateVehicleDto {
   @IsOptional()
   @IsNumber()
   productionYear?: number;
-
-  @IsOptional()
-  @IsNumber()
-  maxCapacity?: number;
 
   @IsNotEmpty()
   @Type(() => Number)

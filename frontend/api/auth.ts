@@ -24,7 +24,7 @@ export const AuthApi = {
     return response.data;
   },
 
-  getUserInfo: async () => {
+  getUserInfo: async (): Promise<UserApp | UserInfo> => {
     const response = await axiosInstance.get("/api/user/get-user-info");
     return response.data;
   },
