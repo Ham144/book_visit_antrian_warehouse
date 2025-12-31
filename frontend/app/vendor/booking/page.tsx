@@ -37,6 +37,8 @@ import { BookingApi } from "@/api/booking.api";
 import { AuthApi } from "@/api/auth";
 import { UserApp } from "@/types/auth";
 import NotFoundSection from "@/components/NotFoundSection";
+import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
+import { BaseProps, BasePropsInit } from "@/types/shared.type";
 
 type BookingStep = "warehouse" | "driver" | "vehicle" | "dock" | "confirmation";
 
@@ -45,12 +47,13 @@ export default function BookingPage() {
   const [bookingStep, setBookingStep] = useState<BookingStep>("warehouse");
 
   //UX states
-  const [pageWarehouse, setPageWarehouse] = useState(1);
-  const [searchKeyWarehouse, setSearchKeyWarehouse] = useState("");
-  const [pageDriver, setPageDriver] = useState(1);
-  const [searchKeyDriver, setSearchKeyDriver] = useState("");
-  const [pageVehicle, setPageVehicle] = useState(1);
-  const [vehicleSearchKey, setVehicleSearchKey] = useState("");
+  const [filterWarehouse, setFilterWarehouse] =
+    useState<BaseProps>(BasePropsInit);
+  useState<BaseProps>(BasePropsInit);
+  const [filterVehicles, setFilterVehicles] =
+    useState<BaseProps>(BasePropsInit);
+  const [filterDriver, setFilterDriver] = useState<BaseProps>(BasePropsInit);
+
   const [isBookCompleted, setIsBookComplted] = useState(false);
 
   const router = useRouter();
@@ -61,7 +64,7 @@ export default function BookingPage() {
     dockId: "",
     arrivalTime: null,
     estimatedFinishTime: null,
-    driverUsername: userInfo?.username,
+    driverUsername: null,
     notes: "",
   };
 
@@ -77,31 +80,22 @@ export default function BookingPage() {
   const [formData, setFormData] = useState<Booking>(initialBookingState);
 
   const { data: warehouses = [], isLoading: loadingWarehouses } = useQuery({
-    queryKey: ["warehouses", pageWarehouse, searchKeyWarehouse],
-    queryFn: async () =>
-      await WarehouseApi.getWarehouses({
-        searchKey: searchKeyWarehouse,
-        page: pageWarehouse,
-      }),
+    queryKey: ["warehouses", filterWarehouse],
+    queryFn: async () => await WarehouseApi.getWarehouses(filterWarehouse),
+    enabled: bookingStep == "warehouse",
   });
 
   const { data: vendorVehicles = [], isLoading: isLoadingvendorVehicles } =
     useQuery({
-      queryKey: ["my-vehicle", pageVehicle, vehicleSearchKey],
-      queryFn: async () =>
-        await VehicleApi.getVendorVehicles({
-          page: pageVehicle,
-          searchKey: vehicleSearchKey,
-        }),
+      queryKey: ["my-vehicle", filterVehicles],
+      queryFn: async () => await VehicleApi.getVendorVehicles(filterVehicles),
+      enabled: bookingStep == "vehicle",
     });
 
   const { data: myDrivers, isLoading: isLoadingMyDrivers } = useQuery({
-    queryKey: ["my-drivers", pageDriver, searchKeyDriver],
-    queryFn: async () =>
-      await AuthApi.getAllMyDrivers({
-        page: pageDriver,
-        searchKey: searchKeyDriver,
-      }),
+    queryKey: ["my-drivers", filterDriver],
+    queryFn: async () => await AuthApi.getAllMyDrivers(filterDriver),
+    enabled: bookingStep == "driver",
   });
 
   const { data: activeDocks, isLoading: loadingDocks } = useQuery({
@@ -110,6 +104,7 @@ export default function BookingPage() {
       if (!formData.warehouseId) return [];
       return await DockApi.getDocksByWarehouseId(formData.warehouseId);
     },
+    enabled: bookingStep == "dock",
   });
 
   const {
@@ -151,7 +146,7 @@ export default function BookingPage() {
         estimatedFinishTime: formData.estimatedFinishTime,
       };
 
-      return BookingApi.createBooking(bookingData);
+      return await BookingApi.createBooking(bookingData);
     },
     onSuccess: () => {
       toast.success("Booking berhasil dibuat");
@@ -301,7 +296,7 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 p-6 flex-1 flex flex-col">
-      <div className="w-full">
+      <div className="w-full pb-28">
         {/* Header */}
         <div className="mb-8 w-full">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -386,8 +381,13 @@ export default function BookingPage() {
                   type="text"
                   placeholder="Cari gudang.."
                   className="input w-full max-w-xs border px-2 rounded-md"
-                  value={searchKeyWarehouse}
-                  onChange={(e) => setSearchKeyWarehouse(e.target.value)}
+                  value={filterWarehouse.searchKey}
+                  onChange={(e) =>
+                    setFilterWarehouse({
+                      ...filterWarehouse,
+                      searchKey: e.target.value,
+                    })
+                  }
                 />
                 <div className="absolute top-0 right-0 w-10 h-full flex items-center justify-center">
                   <Search />
@@ -510,8 +510,13 @@ export default function BookingPage() {
                     type="text"
                     placeholder="Cari Driver.."
                     className="input w-full max-w-xs border px-2 rounded-md"
-                    value={searchKeyDriver}
-                    onChange={(e) => setSearchKeyDriver(e.target.value)}
+                    value={filterDriver.searchKey}
+                    onChange={(e) =>
+                      setFilterDriver({
+                        ...filterDriver,
+                        searchKey: e.target.value,
+                      })
+                    }
                   />
                   <div className="absolute top-0 right-0 w-10 h-full flex items-center justify-center">
                     <Search />
@@ -654,8 +659,13 @@ export default function BookingPage() {
                   type="text"
                   placeholder="Cari Kendaraan..."
                   className="input w-full max-w-xs border px-2 rounded-md"
-                  value={vehicleSearchKey}
-                  onChange={(e) => setVehicleSearchKey(e.target.value)}
+                  value={filterVehicles.searchKey}
+                  onChange={(e) =>
+                    setFilterVehicles({
+                      ...filterVehicles,
+                      searchKey: e.target.value,
+                    })
+                  }
                 />
                 <div className="absolute top-0 right-0 w-10 h-full flex items-center justify-center">
                   <Search />
@@ -784,31 +794,6 @@ export default function BookingPage() {
                               </p>
                             </div>
                           </div>
-
-                          {/* Dock Requirement */}
-                          <div
-                            className={`flex items-center gap-2 p-2 rounded-lg ${
-                              formData.vehicleId === vehicle.id
-                                ? "bg-primary/10"
-                                : "bg-gray-50"
-                            }`}
-                          >
-                            <DockIcon className="w-4 h-4 text-gray-500" />
-                            <div>
-                              <p className="text-xs text-gray-500">Dock</p>
-                              <p
-                                className={`font-semibold ${
-                                  vehicle.requiresDock === "NONE"
-                                    ? "text-green-600"
-                                    : "text-gray-800"
-                                }`}
-                              >
-                                {vehicle.requiresDock === "NONE"
-                                  ? "Tidak spesifik"
-                                  : vehicle.requiresDock}
-                              </p>
-                            </div>
-                          </div>
                         </div>
 
                         {/* vehicle desc */}
@@ -830,12 +815,6 @@ export default function BookingPage() {
                               🚗 {vehicle.productionYear}
                             </span>
                           )}
-                          {vehicle.requiresDock &&
-                            vehicle.requiresDock !== "NONE" && (
-                              <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs">
-                                ⚓ {vehicle.requiresDock}
-                              </span>
-                            )}
                         </div>
                       </div>
 
@@ -863,6 +842,13 @@ export default function BookingPage() {
                     </div>
                   </div>
                 ))}
+                <PaginationFullTable
+                  data={vendorVehicles}
+                  setFilter={setFilterVehicles}
+                  filter={filterVehicles}
+                  isLoading={isLoadingvendorVehicles}
+                  key={"vendorVehicles"}
+                />
               </div>
             )}
           </div>
@@ -905,18 +891,28 @@ export default function BookingPage() {
                     {activeDocks?.map((dock: IDock) => (
                       <div
                         key={dock.id}
-                        onClick={() =>
+                        onClick={() => {
+                          if (
+                            !dock.allowedTypes.includes(
+                              formData.Vehicle.vehicleType
+                            )
+                          ) {
+                            return toast.error("Vehicle Type tidak cocok");
+                          }
                           dock.isActive &&
-                          setFormData((prev) => ({
-                            ...prev,
-                            dockId: dock.id,
-                            Dock: dock,
-                          }))
-                        }
+                            setFormData((prev) => ({
+                              ...prev,
+                              dockId: dock.id,
+                              Dock: dock,
+                            }));
+                        }}
                         className={`card bg-white border rounded-lg transition-all cursor-pointer hover:shadow-md ${
                           formData.dockId === dock.id
                             ? "border-primary shadow-md bg-primary/5"
-                            : !dock.isActive
+                            : !dock.isActive ||
+                              !dock.allowedTypes.includes(
+                                formData.Vehicle.vehicleType
+                              )
                             ? "border-gray-200 opacity-60 cursor-not-allowed"
                             : "border-gray-200 hover:border-primary/50"
                         }`}
@@ -974,42 +970,22 @@ export default function BookingPage() {
                             )}
                           </div>
 
-                          {/* Dock Type */}
-                          <div className="mb-3">
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                dock.dockType === "SIDE"
-                                  ? "bg-blue-100 text-blue-800 border border-blue-200"
-                                  : "bg-gray-100 text-gray-800 border border-gray-200"
-                              }`}
-                            >
-                              {dock.dockType}
-                            </span>
-                          </div>
-
                           {/* Allowed Vehicles */}
                           {dock.allowedTypes &&
                             dock.allowedTypes.length > 0 && (
                               <div className="mb-3">
                                 <p className="text-xs text-gray-500 mb-1">
-                                  Tipe kendaraan:
+                                  Kendaraan yang di izinkan:
                                 </p>
                                 <div className="flex flex-wrap gap-1">
-                                  {dock.allowedTypes
-                                    .slice(0, 3)
-                                    .map((type, i) => (
-                                      <span
-                                        key={i}
-                                        className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
-                                      >
-                                        {type}
-                                      </span>
-                                    ))}
-                                  {dock.allowedTypes.length > 3 && (
-                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-xs">
-                                      +{dock.allowedTypes.length - 3}
+                                  {dock.allowedTypes.map((type, i) => (
+                                    <span
+                                      key={i}
+                                      className="px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                                    >
+                                      {type}
                                     </span>
-                                  )}
+                                  ))}
                                 </div>
                               </div>
                             )}
@@ -1064,6 +1040,7 @@ export default function BookingPage() {
                       <PreviewSlotDisplay
                         formData={formData}
                         onUpdateFormData={handleUpdateFormData}
+                        mode="create"
                       />
                       {/* Continue Button */}
                       {formData.arrivalTime && formData.estimatedFinishTime && (
@@ -1166,27 +1143,27 @@ export default function BookingPage() {
                       </div>
                       <h3 className="text-xl font-bold">Informasi Driver</h3>
                     </div>
-                    {formData.Driver ? (
+                    {formData.driver ? (
                       <div className="space-y-3">
                         <div>
                           <p className="text-sm text-gray-500">Nama Driver</p>
                           <p className="font-semibold text-lg">
-                            {formData.Driver.displayName || "N/A"}
+                            {formData.driver.displayName || "N/A"}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Username</p>
                           <p className="font-medium">
-                            {formData.Driver.username || "N/A"}
+                            {formData.driver.username || "N/A"}
                           </p>
                         </div>
-                        {formData.Driver.vendorName && (
+                        {formData.driver.vendorName && (
                           <div className="flex items-center gap-2">
                             <Building className="w-4 h-4 text-gray-500" />
                             <div>
                               <p className="text-sm text-gray-500">Vendor</p>
                               <p className="font-medium">
-                                {formData.Driver.vendorName}
+                                {formData.driverUsername}
                               </p>
                             </div>
                           </div>
@@ -1249,11 +1226,6 @@ export default function BookingPage() {
                           <div>
                             <p className="text-sm text-gray-500">
                               Dock Requirement
-                            </p>
-                            <p className="font-medium">
-                              {formData.Vehicle.requiresDock === "NONE"
-                                ? "Tidak spesifik"
-                                : formData.Vehicle.requiresDock}
                             </p>
                           </div>
                         </div>
@@ -1442,9 +1414,19 @@ export default function BookingPage() {
 
             {/* Action Buttons */}
             {isBookCompleted ? (
-              <div className="card bg-white shadow w-32">
-                <div className="card-body">
-                  <button className="btn btn-primary px-4">Buat Baru</button>
+              <div className="card bg-white shadow min-w-full">
+                <div className="card-body w-full">
+                  <button
+                    onClick={() => {
+                      setFormData(initialBookingState);
+                      setBookingStep("warehouse");
+                      router.push("/vendor/booking");
+                    }}
+                    className="btn w-full
+                   btn-primary px-4"
+                  >
+                    Buat Baru
+                  </button>
                 </div>
               </div>
             ) : (

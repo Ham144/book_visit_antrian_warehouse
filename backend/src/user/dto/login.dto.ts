@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { ResponseVehicleDto } from 'src/vehicle/dto/response-vehicle.dto';
 import { ROLE } from 'src/common/shared-enum';
 
@@ -18,6 +18,7 @@ export class LoginResponseDto {
   displayName: string;
 
   @Expose()
+  @Type(() => responseWarehouseDto)
   homeWarehouse?: responseWarehouseDto;
 
   @Expose()
@@ -30,6 +31,7 @@ export class LoginResponseDto {
   organizationName: string;
 
   @Expose()
+  @Type(() => responseWarehouseDto)
   warehouseAccess?: responseWarehouseDto[];
 
   @Expose()
@@ -39,6 +41,7 @@ export class LoginResponseDto {
   vendorName?: string;
 
   @Expose({ groups: ['detail'] })
+  @Type(() => ResponseVehicleDto)
   vehicle?: ResponseVehicleDto;
 
   @Expose({ groups: ['detail'] })

@@ -30,7 +30,7 @@ export class DockController {
     return this.dockService.getDocksByWarehouseId(id);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Get('/detail/:id')
   findOne(@Param('id') id: string) {
     return this.dockService.findOne(id);

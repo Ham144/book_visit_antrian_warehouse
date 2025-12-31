@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
+import { ROLE } from "@/types/shared.type";
 
 const adminMenuItems = [
   {
@@ -30,68 +31,95 @@ const adminMenuItems = [
     label: "Dashboard",
     icon: LayoutDashboard,
     href: "/admin/dashboard",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
   {
     id: "slots",
     label: "Gate Management",
     icon: DoorOpen,
     href: "/admin/gate",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
   {
     id: "busy-times",
     label: "Busy Times",
     icon: Clock,
     href: "/admin/busy-times",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
-  { id: "queue", label: "Live Queue", icon: Tv2, href: "/admin/queue" },
-  { id: "reports", label: "Reports", icon: BarChart3, href: "/admin/reports" },
-  { id: "vehicles", label: "Vehicles", icon: Truck, href: "/admin/vehicles" },
+  {
+    id: "queue",
+    label: "Live Queue",
+    icon: Tv2,
+    href: "/admin/queue",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: BarChart3,
+    href: "/admin/reports",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
+  },
+  {
+    id: "vehicles",
+    label: "Vehicles",
+    icon: Truck,
+    href: "/admin/vehicles",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
+  },
   {
     id: "my warehouse",
     label: "My Warehouse",
     icon: WarehouseIcon,
     href: "/admin/my-warehouse",
-  },
-  {
-    id: "members management",
-    label: "members Management",
-    icon: Users2Icon,
-    href: "/admin/member-management",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
   {
     id: "warehouse setting",
     label: "Warehouse Setting",
     icon: Settings,
     href: "/admin/settings",
-  },
-  {
-    id: "All Warehouses",
-    label: "All Warehouses",
-    icon: Building2,
-    href: "/admin/all-warehouse",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
 ];
 
 const ITOnlyMenus = [
   //IT Only---------
-
+  {
+    id: "All Warehouses",
+    label: "All Warehouses",
+    icon: Building2,
+    href: "/admin/all-warehouse",
+    roles: [ROLE.ADMIN_ORGANIZATION],
+  },
   {
     id: "Organization Management",
     label: "Organization Management",
     icon: Crown,
     href: "/admin/organization-management",
+    roles: [ROLE.ADMIN_ORGANIZATION],
+  },
+  {
+    id: "members management",
+    label: "members Management",
+    icon: Users2Icon,
+    href: "/admin/member-management",
+    roles: [ROLE.ADMIN_ORGANIZATION],
   },
   {
     id: "Organization Setting",
     label: "Organization Setting",
     icon: Settings2Icon,
     href: "/admin/organization-settings",
+    roles: [ROLE.ADMIN_ORGANIZATION],
   },
   {
     id: "Global Setting",
     label: "Global Setting",
     icon: PenTool,
     href: "/admin/global-settings",
+    roles: [ROLE.ADMIN_ORGANIZATION],
   },
 ];
 
@@ -101,26 +129,36 @@ export const vendorMenutItems = [
     label: "Dashboard",
     icon: LayoutDashboard,
     href: "/vendor/dashboard",
+    roles: [ROLE.DRIVER_VENDOR, ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
   },
   {
     id: "booking",
     label: "Plan Visit",
     icon: Rocket,
     href: "/vendor/booking",
+    roles: [ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
   },
   {
     id: "history",
     label: "History Booking",
     icon: Clock,
     href: "/vendor/history",
+    roles: [ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
   },
   {
     id: "Members",
     label: "Member Management",
     icon: Users,
     href: "/vendor/member-management",
+    roles: [ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
   },
-  { id: "reports", label: "Reports", icon: BarChart3, href: "/vendor/reports" },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: BarChart3,
+    href: "/vendor/reports",
+    roles: [ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
+  },
 ];
 
 export default function SideNav({ children }: { children: React.ReactNode }) {
@@ -129,8 +167,6 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { userInfo } = useUserInfo();
-
-  const am_i_vendor = userInfo?.vendorName ? true : false;
 
   // Collapse when clicking outside
   // useEffect(() => {
@@ -198,8 +234,8 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                   </div>
                 </span>
               ) : (
-                <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-sm">
-                  <ArrowRight size={16} className="text-white" />
+                <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-sm px-1">
+                  <ArrowRight size={26} className="text-white" />
                 </div>
               )}
             </button>
@@ -207,8 +243,11 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-auto px-2 max-h-screen pb-32 ">
-            {!am_i_vendor &&
-              adminMenuItems.map((item) => {
+            {adminMenuItems
+              .filter((item) =>
+                item.roles.some((role) => userInfo?.role === role)
+              )
+              .map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
 
@@ -265,86 +304,9 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                 );
               })}
 
-            {/* Divider dengan efek glassy */}
-            {isOpen && !am_i_vendor && (
-              <div className="relative py-4 mx-3">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-emerald-200/50"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className=" text-xs font-semibold bg-gradient-to-r from-emerald-50/80 to-teal-50/80 backdrop-blur-sm text-emerald-600 rounded-full py-1 px-4 border border-emerald-200/50">
-                    IT Only
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {!am_i_vendor &&
-              ITOnlyMenus.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`
-                      group flex items-center px-3 py-3 rounded-xl mx-1 my-1
-                      transition-all duration-300 relative overflow-hidden
-                      ${
-                        active
-                          ? "bg-gradient-to-r from-teal-500 to-teal-400 text-white shadow-md shadow-teal-200"
-                          : "text-teal-700 hover:bg-teal-50/80 hover:shadow-sm"
-                      }
-                      ${isOpen ? "justify-start" : "justify-center"}
-                    `}
-                  >
-                    {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-teal-300 rounded-r-full"></div>
-                    )}
-
-                    <div
-                      className={`
-                      flex items-center justify-center transition-all duration-300
-                      ${
-                        active
-                          ? "text-white"
-                          : "text-teal-500 group-hover:text-teal-600"
-                      }
-                    `}
-                    >
-                      <Icon size={20} className="flex-shrink-0" />
-                    </div>
-
-                    {isOpen && (
-                      <span
-                        className={`
-                        truncate ml-3 text-sm font-medium transition-all duration-300
-                        ${active ? "text-white" : "text-teal-700"}
-                      `}
-                      >
-                        {item.label}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-
-            {/* Divider untuk Vendor */}
-            {isOpen && !am_i_vendor && (
-              <div className="relative py-4 mx-3">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-emerald-200/50"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className=" text-xs font-semibold bg-gradient-to-r from-amber-50/80 to-orange-50/80 backdrop-blur-sm text-amber-700 rounded-full py-1 px-4 border border-amber-200/50">
-                    Vendor Only Menu
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {vendorMenutItems.map((item) => {
+            {ITOnlyMenus.filter((item) =>
+              item.roles.some((role) => userInfo?.role === role)
+            ).map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href;
 
@@ -353,6 +315,60 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                   key={item.id}
                   href={item.href}
                   className={`
+                      group flex items-center px-3 py-3 rounded-xl mx-1 my-1
+                      transition-all duration-300 relative overflow-hidden
+                      ${
+                        active
+                          ? "bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-md shadow-blue-200"
+                          : "text-blue-700 hover:bg-blue-50/80 hover:shadow-sm"
+                      }
+                      ${isOpen ? "justify-start" : "justify-center"}
+                    `}
+                >
+                  {active && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-300 rounded-r-full"></div>
+                  )}
+
+                  <div
+                    className={`
+                      flex items-center justify-center transition-all duration-300
+                      ${
+                        active
+                          ? "text-white"
+                          : "text-blue-500 group-hover:text-blue-600"
+                      }
+                    `}
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                  </div>
+
+                  {isOpen && (
+                    <span
+                      className={`
+                        truncate ml-3 text-sm font-medium transition-all duration-300
+                        ${active ? "text-white" : "text-blue-700"}
+                      `}
+                    >
+                      {item.label}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+
+            {vendorMenutItems
+              .filter((item) =>
+                item.roles.some((role) => userInfo?.role === role)
+              )
+              .map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`
                     group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                     transition-all duration-300 relative overflow-hidden
                     ${
@@ -362,13 +378,13 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                     }
                     ${isOpen ? "justify-start" : "justify-center"}
                   `}
-                >
-                  {active && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-amber-300 rounded-r-full"></div>
-                  )}
+                  >
+                    {active && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-amber-300 rounded-r-full"></div>
+                    )}
 
-                  <div
-                    className={`
+                    <div
+                      className={`
                     flex items-center justify-center transition-all duration-300
                     ${
                       active
@@ -376,23 +392,23 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                         : "text-amber-500 group-hover:text-amber-600"
                     }
                   `}
-                  >
-                    <Icon size={20} className="flex-shrink-0" />
-                  </div>
+                    >
+                      <Icon size={20} className="flex-shrink-0" />
+                    </div>
 
-                  {isOpen && (
-                    <span
-                      className={`
+                    {isOpen && (
+                      <span
+                        className={`
                       truncate ml-3 text-sm font-medium transition-all duration-300
                       ${active ? "text-white" : "text-amber-700"}
                     `}
-                    >
-                      {item.label}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+                      >
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
           </nav>
 
           {/* Glassy bottom effect */}
@@ -400,7 +416,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex overflow-y-auto flex-col  flex-1 max-h-screen w-full">
+        <main className="flex  flex-col  flex-1 max-h-screen w-full overflow-y-auto">
           {children}
         </main>
       </div>

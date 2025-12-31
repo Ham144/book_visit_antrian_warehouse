@@ -19,6 +19,10 @@
   .btn {
     @apply border-border;
     background-color: transparent;
+    @apply px-4;
+  }
+  .badge {
+    @apply px-3 font-bold text-white;
   }
 
   .btn-primary {

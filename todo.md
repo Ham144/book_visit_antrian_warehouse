@@ -36,7 +36,10 @@ start 12/11/2025
 [x]add: setup opsi allowedTypes
 [x] mod: VehicleType sudah sanget lengkap untuk semua tipe
 [x] REMINDER: Jangan pernah pakai enum di database lagi!!
-[] add: member management
+[x] add: member management
+[x] add: live queue untuk melihat booking vendor, preview detail booking vendor, mengatur ulang waktu booking vendor
+[] add: warehouse setting untuk ruling berbeda tiap warehouse
+[] add: My Warehouse belum tau buat apa
 [] add: dashboard driver & vendor admin
 
 //update antrian booking

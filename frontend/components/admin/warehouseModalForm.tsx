@@ -58,7 +58,7 @@ export default function WarehouseModalForm({
   const { data: accounts } = useQuery({
     queryKey: ["warehouse-members", searchKeyAccess],
     queryFn: () =>
-      AuthApi.getAllAccount({
+      AuthApi.getAllAccountForMemberManagement({
         page: 1,
         searchKey: searchKeyAccess || "",
       }),

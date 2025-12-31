@@ -5,6 +5,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
+import { ROLE } from 'src/common/shared-enum';
 
 export class CreateAppUserDto {
   @IsNotEmpty()
@@ -27,6 +28,10 @@ export class CreateAppUserDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsString()
+  @IsNotEmpty()
+  role: ROLE;
 
   @IsBoolean()
   @IsOptional()

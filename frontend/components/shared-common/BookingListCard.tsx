@@ -1,4 +1,5 @@
-import { Booking, BookingStatus } from "@/types/booking.type";
+import { Booking } from "@/types/booking.type";
+import { BookingStatus } from "@/types/shared.type";
 import React, { SetStateAction, Dispatch } from "react";
 
 interface BookingListCardProps {
@@ -7,6 +8,7 @@ interface BookingListCardProps {
   selectedBookingId: string | null;
 }
 
+//ini untuk /vendor/history
 const BookingListCard = ({
   booking,
   setSelectedBookingId,
@@ -59,7 +61,7 @@ const BookingListCard = ({
                   : "bg-blue-100 text-blue-800"
               }`}
             >
-              {BookingStatus[booking.status]}
+              {booking.code}
             </span>
           </div>
           <span className="text-sm text-gray-600">

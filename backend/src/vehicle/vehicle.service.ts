@@ -12,7 +12,6 @@ import { plainToInstance } from 'class-transformer';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { VehicleType } from 'src/common/shared-enum';
-import { BaseProps } from 'src/common/base.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()

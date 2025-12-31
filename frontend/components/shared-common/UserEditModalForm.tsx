@@ -20,12 +20,14 @@ import {
   Check,
   Building2,
   Handshake,
+  Shield,
 } from "lucide-react";
 import { Dispatch, SetStateAction, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { useUserInfo } from "../UserContext";
 import { IVendor } from "@/types/vendor.type";
 import { VendorApi } from "@/api/vendor.api";
+import { ROLE } from "@/types/shared.type";
 
 export enum MemberFor {
   VENDOR = "VENDOR",
@@ -84,7 +86,7 @@ export default function UserEditModalForm({
 
   return (
     <dialog id="UserEditModalForm" className="modal">
-      <div className="modal-box w-full max-w-2xl p-0 overflow-hidden bg-white">
+      <div className="modal-box w-full max-w-2xl p-0 overflow-hidden bg-white ">
         {/* Header */}
         <div className="bg-leaf-green-50 border-b border-leaf-green-100 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -110,7 +112,7 @@ export default function UserEditModalForm({
           className="space-y-6 px-6 py-4 h-[90vh] overflow-y-auto"
         >
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className=" flex flex-col">
               {/* Username */}
               <div className="form-control md:col-span-2">
                 <label className="label py-2">
@@ -130,7 +132,6 @@ export default function UserEditModalForm({
                   required
                 />
               </div>
-
               {/* Display Name */}
               <div className="form-control">
                 <label className="label py-2">
@@ -149,7 +150,6 @@ export default function UserEditModalForm({
                   }
                 />
               </div>
-
               {/* Driver Phone */}
               <div className="form-control">
                 <label className="label py-2">
@@ -168,7 +168,6 @@ export default function UserEditModalForm({
                   }
                 />
               </div>
-
               {/* memberFor selection : untuk sisi vendor atau admin organizasi */}
               {!am_i_vendor && (
                 <div className="form-control col-span-2">
@@ -178,7 +177,7 @@ export default function UserEditModalForm({
                         <VenetianMaskIcon className="w-5 h-5 text-teal-600" />
                       </div>
                       <div>
-                        <span className="block">Member For</span>
+                        <span className="block">Member Untuk Pihak</span>
                         <span className="text-sm font-normal text-gray-500">
                           Apakah akun ini untuk organisasi Anda atau vendor
                           anda?
@@ -310,7 +309,6 @@ export default function UserEditModalForm({
                   </div>
                 </div>
               )}
-
               {memberFor == MemberFor.MY_ORGANIZATION ? (
                 <div className="form-control col-span-2">
                   <label className="label py-2 ">
@@ -383,26 +381,71 @@ export default function UserEditModalForm({
                 </div>
               )}
 
-              {/* Driver License */}
-              <div className="form-control">
-                <label className="label py-2">
+              {/* ROLE */}
+              <div className="form-control col-span-2">
+                <label className="label py-2 ">
                   <span className="label-text font-medium text-gray-700 flex items-center">
-                    <IdCard className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    SIM Pengemudi
+                    <Shield className="w-4 h-4 mr-2 text-leaf-green-500" />
+                    Tentukan role akun
                   </span>
                 </label>
-                <input
-                  type="text"
-                  className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  placeholder="SIM A, SIM B1, SIM B2"
-                  value={formData.driverLicense || ""}
+
+                <select
+                  className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                  value={formData.role || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, driverLicense: e.target.value })
+                    setFormData({
+                      ...formData,
+                      role: e.target.value || undefined,
+                    })
                   }
-                />
+                >
+                  <option value="empty">Pilih Role Tersedia</option>
+                  {MemberFor.VENDOR === memberFor
+                    ? Object.values(ROLE)
+                        .filter((r) => r.includes("VENDOR"))
+                        .map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))
+                    : Object.values(ROLE)
+                        .filter((r) => r.includes("ORGANIZATION"))
+                        .map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                </select>
               </div>
+
+              {formData.role == ROLE.DRIVER_VENDOR && (
+                <>
+                  {/* Driver License */}
+                  <div className="form-control">
+                    <label className="label py-2">
+                      <span className="label-text font-medium text-gray-700 flex items-center">
+                        <IdCard className="w-4 h-4 mr-2 text-leaf-green-500" />
+                        SIM Pengemudi
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                      placeholder="SIM A, SIM B1, SIM B2"
+                      value={formData.driverLicense || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          driverLicense: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </>
+              )}
               {/* mail */}
-              <div className="form-control">
+              <div className="form-control w-full">
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
                     <Mail className="w-4 h-4 mr-2 text-leaf-green-500" />
@@ -419,86 +462,86 @@ export default function UserEditModalForm({
                   }
                 />
               </div>
+              {/* Password & confirm pass - Only for new users */}
+              <div className="flex flex-1  ">
+                {formData?.accountType === "APP" && (
+                  <div className="flex gap-x-2 items-center w-full">
+                    <div className="form-control flex-1">
+                      <label className="label py-2">
+                        <span className="label-text font-medium text-gray-700 flex items-center">
+                          <Lock className="w-4 h-4 mr-2 text-leaf-green-500" />
+                          Password *
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          autoComplete="off"
+                          type={showPassword ? "text" : "password"}
+                          className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
+                          placeholder="Password"
+                          value={formData.password || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              password: e.target.value,
+                            })
+                          }
+                          required={isCreating}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-              {/* Password - Only for new users */}
-              {formData?.accountType === "APP" && (
-                <>
-                  <div className="form-control">
-                    <label className="label py-2">
-                      <span className="label-text font-medium text-gray-700 flex items-center">
-                        <Lock className="w-4 h-4 mr-2 text-leaf-green-500" />
-                        Password *
-                      </span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        autoComplete="off"
-                        type={showPassword ? "text" : "password"}
-                        className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
-                        placeholder="Password"
-                        value={formData.password || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            password: e.target.value,
-                          })
-                        }
-                        required={isCreating}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        {showPassword ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                      </button>
+                    <div className="form-control flex-1">
+                      <label className="label py-2">
+                        <span className="label-text font-medium text-gray-700 flex items-center">
+                          <Lock className="w-4 h-4 mr-2 text-leaf-green-500" />
+                          Konfirmasi Password *
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          autoComplete="off"
+                          className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
+                          placeholder="Konfirmasi password"
+                          value={formData.passwordConfirm || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              passwordConfirm: e.target.value,
+                            })
+                          }
+                          required={isCreating}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="form-control">
-                    <label className="label py-2">
-                      <span className="label-text font-medium text-gray-700 flex items-center">
-                        <Lock className="w-4 h-4 mr-2 text-leaf-green-500" />
-                        Konfirmasi Password *
-                      </span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        autoComplete="off"
-                        className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
-                        placeholder="Konfirmasi password"
-                        value={formData.passwordConfirm || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            passwordConfirm: e.target.value,
-                          })
-                        }
-                        required={isCreating}
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
+                )}
+              </div>
               {/* Description */}
               <div className="form-control md:col-span-2">
                 <label className="label py-2">

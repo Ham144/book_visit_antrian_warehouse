@@ -1,27 +1,33 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { ROLE, TokenPayload } from "./types/tokenPayload";
+import { TokenPayload } from "./types/tokenPayload";
+import { ROLE } from "./types/shared.type";
 
 export function middleware(req: NextRequest) {
   const token = req.cookies.get("access_token")?.value;
   const refreshToken = req.cookies.get("refresh_token")?.value;
   const pathname = req.nextUrl.pathname;
 
-  const DRIVER_VENDOR = ["vendor/dashboard"];
+  const DRIVER_VENDOR = ["/vendor/dashboard", "/vendor/booking"];
   const ADMIN_VENDOR = [
-    "vendor/dashboard",
-    "vendor/booking",
-    "vendor/history",
-    "vendor/member-management",
-    "vendor/reports",
+    "/vendor/dashboard",
+    "/vendor/booking",
+    "/vendor/history",
+    "/vendor/member-management",
+    "/vendor/reports",
+    "/admin/all-warehouse",
   ];
 
   const USER_ORGANIZATION = [
     "/admin/dashboard",
+    "/admin/gate",
     "/admin/booking",
-    "/admin/history",
-    "/admin/member-management",
+    "/admin/busy-times",
+    "/admin/queue",
     "/admin/reports",
+    "/admin/vehicles",
+    "/admin/my-warehouse",
+    "/admin/settings",
   ];
   // ADMIN_ORGANIZATION = wildcard
 
@@ -76,17 +82,27 @@ export function middleware(req: NextRequest) {
         return NextResponse.next();
       } else {
         //user organization
-        return NextResponse.redirect(new URL("/", req.url));
+        if (USER_ORGANIZATION.includes(pathname)) {
+          return NextResponse.next();
+        }
+        return NextResponse.redirect(new URL("/forbidden", req.url));
       }
     } else {
       // ini orang luar (vendor)
-      // supir
-
-      if (pathname.startsWith("/vendor")) {
-        return NextResponse.next();
+      if (role == ROLE.DRIVER_VENDOR) {
+        // admin vendor
+        if (DRIVER_VENDOR.includes(pathname)) {
+          return NextResponse.next();
+        }
+        return NextResponse.redirect(new URL("/forbidden", req.url));
+      } else {
+        //ini supir vendor
+        if (ADMIN_VENDOR.includes(pathname)) {
+          return NextResponse.next();
+        }
+        return NextResponse.redirect(new URL("/forbidden", req.url));
       }
       // Jika user bukan di halaman vendor, redirect ke vendor dashboard
-      return NextResponse.redirect(new URL("/vendor/dashboard", req.url));
     }
   } catch (err) {
     // Token invalid/malformed

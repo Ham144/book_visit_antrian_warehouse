@@ -8,18 +8,25 @@ import { DockApi } from "@/api/dock.api";
 import { Vacant } from "@/types/vacant.type";
 import { IDockBusyTime } from "@/types/busyTime.type";
 import { Days } from "@/types/shared.type";
+import { IDock } from "@/types/dock.type";
 import decimalToMinutes from "@/lib/decimaltoHHMM";
 import hhmmToMinutes from "@/lib/hhmmToMinutes";
 
 interface PreviewSlotDisplayProps {
   formData: Booking;
   onUpdateFormData: (updates: Partial<Booking>) => void;
+  mode?: "preview" | "create" | "justify";
+  currentBookingId?: string; // For highlighting current booking slot
 }
 
 const PreviewSlotDisplay = ({
   formData,
   onUpdateFormData,
+  mode = "create",
+  currentBookingId,
 }: PreviewSlotDisplayProps) => {
+  const isReadOnly = mode === "preview";
+
   // Internal state for visual representation
   const [visualStartTime, setVisualStartTime] = useState<string | null>(null);
   const [visualEndTime, setVisualEndTime] = useState<string | null>(null);
@@ -27,6 +34,14 @@ const PreviewSlotDisplay = ({
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<Date | null>(null);
   const [notes, setNotes] = useState(formData?.notes || "");
+
+  // Get available docks for warehouse (for dock selector in create mode)
+  const { data: availableDocks } = useQuery({
+    queryKey: ["docks", formData?.warehouseId],
+    queryFn: async () =>
+      await DockApi.getDocksByWarehouseId(formData.warehouseId!),
+    enabled: !!formData?.warehouseId && !isReadOnly,
+  });
 
   // Get dock detail which includes vacants and busyTimes
   const { data: dockDetail, isLoading: loadingDock } = useQuery({
@@ -62,8 +77,9 @@ const PreviewSlotDisplay = ({
   const { data: allBookings } = useQuery({
     queryKey: ["bookings", formData?.warehouseId],
     queryFn: async () =>
-      await BookingApi.getAllBookings({
+      await BookingApi.getAllBookingsForWarehouse({
         warehouseId: formData.warehouseId,
+        page: 1,
       }),
     enabled: !!formData?.warehouseId,
   });
@@ -151,18 +167,45 @@ const PreviewSlotDisplay = ({
   // Auto-select current week when dock is selected
   useEffect(() => {
     if (formData?.dockId && !selectedWeek) {
-      const today = new Date();
-      const currentWeekStart = getStartOfWeek(today);
-      handleWeekSelect(currentWeekStart);
+      if (formData?.arrivalTime && mode === "preview") {
+        // In preview mode, select the week of the booking's arrival time
+        const arrivalDate = new Date(formData.arrivalTime);
+        const bookingWeekStart = getStartOfWeek(arrivalDate);
+        handleWeekSelect(bookingWeekStart);
+        handleDateSelect(arrivalDate);
+        // Set visual times from booking
+        const arrivalTimeStr = `${String(arrivalDate.getHours()).padStart(
+          2,
+          "0"
+        )}:${String(arrivalDate.getMinutes()).padStart(2, "0")}:00`;
+        setVisualStartTime(arrivalTimeStr);
+        if (formData.estimatedFinishTime) {
+          const finishDate = new Date(formData.estimatedFinishTime);
+          const finishTimeStr = `${String(finishDate.getHours()).padStart(
+            2,
+            "0"
+          )}:${String(finishDate.getMinutes()).padStart(2, "0")}:00`;
+          setVisualEndTime(finishTimeStr);
+        }
+      } else {
+        const today = new Date();
+        const currentWeekStart = getStartOfWeek(today);
+        handleWeekSelect(currentWeekStart);
+      }
     }
-  }, [formData?.dockId]);
+  }, [formData?.dockId, formData?.arrivalTime, mode]);
 
   // Auto-select first day of week when week is selected
   useEffect(() => {
-    if (selectedWeek && weekDays.length > 0 && !selectedDate) {
+    if (
+      selectedWeek &&
+      weekDays.length > 0 &&
+      !selectedDate &&
+      mode !== "preview"
+    ) {
       handleDateSelect(weekDays[0]);
     }
-  }, [selectedWeek, weekDays.length]);
+  }, [selectedWeek, weekDays.length, mode]);
 
   // Calculate available schedules for all days in selected week
   const availableSchedulesByDay = useMemo(() => {
@@ -241,15 +284,39 @@ const PreviewSlotDisplay = ({
     );
   };
 
+  // Filter bookings to exclude current booking
+  const filteredDockBookings = useMemo(() => {
+    if (!dockBookings) return [];
+    return dockBookings.filter(
+      (booking: any) =>
+        booking.id !== currentBookingId && booking.status !== "CANCELED"
+    );
+  }, [dockBookings, currentBookingId]);
+
   // Get bookings for a specific date
   const getDateBookings = (date: Date): any[] => {
-    if (!dockBookings) return [];
+    if (!filteredDockBookings) return [];
     const dateString = formatDateToString(date);
-    return dockBookings.filter((booking: any) => {
+    return filteredDockBookings.filter((booking: any) => {
       if (!booking?.arrivalTime) return false;
       const bookingDate = new Date(booking.arrivalTime);
       return formatDateToString(bookingDate) === dateString;
     });
+  };
+
+  // Get current booking for highlighting
+  const getCurrentBooking = (date: Date): any | null => {
+    if (!currentBookingId || !formData?.arrivalTime) return null;
+    const dateString = formatDateToString(date);
+    const bookingDate = new Date(formData.arrivalTime);
+    if (formatDateToString(bookingDate) === dateString) {
+      return {
+        id: currentBookingId,
+        arrivalTime: formData.arrivalTime,
+        estimatedFinishTime: formData.estimatedFinishTime,
+      };
+    }
+    return null;
   };
 
   // Get start of week (Monday) from a date
@@ -310,8 +377,21 @@ const PreviewSlotDisplay = ({
     return ((clampedTimeHour - startHour) / hoursCount) * 100;
   };
 
+  // Handle dock change
+  const handleDockChange = (dockId: string) => {
+    onUpdateFormData({ dockId });
+    // Reset selected times when dock changes
+    setVisualStartTime(null);
+    setVisualEndTime(null);
+    setSelectedDate(null);
+    setSelectedDay(null);
+    setSelectedWeek(null);
+  };
+
   // Handle click on time track
   const handleClickOnTrack = (day: string, clickedTimeDecimal: number) => {
+    if (isReadOnly) return;
+
     if (!formData.Vehicle?.durasiBongkar) {
       toast.error("Durasi bongkar kendaraan tidak tersedia");
       return;
@@ -376,11 +456,49 @@ const PreviewSlotDisplay = ({
 
   return (
     <div className="space-y-6 flex-1">
+      {/* Dock Selector (only in create mode) */}
+      {!isReadOnly &&
+        availableDocks &&
+        availableDocks.length &&
+        mode == "justify" && (
+          <div className="card bg-white shadow">
+            <div className="card-body p-4">
+              <label className="label">
+                <span className="label-text font-medium">Pilih Dock/Gate</span>
+              </label>
+              <select
+                className="select select-bordered w-full"
+                value={formData.dockId || ""}
+                onChange={(e) => handleDockChange(e.target.value)}
+              >
+                <option value="">Pilih dock...</option>
+                {availableDocks
+                  .filter((dock: IDock) => {
+                    // Filter docks by vehicle type compatibility
+                    if (!formData.Vehicle?.vehicleType || !dock.allowedTypes) {
+                      return true;
+                    }
+                    return dock.allowedTypes.includes(
+                      formData.Vehicle.vehicleType
+                    );
+                  })
+                  .map((dock: IDock) => (
+                    <option key={dock.id} value={dock.id}>
+                      {dock.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+        )}
+
       {/* Week Selection */}
       <div className=" bg-white shadow">
         <div className="flex flex-col p-2">
           <h3 className="text-lg font-medium mb-4">
-            Pilih Minggu (bisa book hingga 12 minggu kedepan)
+            {isReadOnly
+              ? "Minggu Booking"
+              : "Pilih Minggu (bisa book hingga 12 minggu kedepan)"}
           </h3>
           <div className="flex overflow-x-auto gap-2 pb-4">
             {availableWeeks.map((weekStart, index) => {
@@ -394,10 +512,13 @@ const PreviewSlotDisplay = ({
               return (
                 <button
                   key={index}
-                  onClick={() => handleWeekSelect(weekStart)}
+                  onClick={() => !isReadOnly && handleWeekSelect(weekStart)}
+                  disabled={isReadOnly}
                   className={`flex flex-col items-center justify-center p-4 min-w-[140px] rounded-lg border-2 transition-all ${
                     isSelected
                       ? "border-primary bg-primary text-white"
+                      : isReadOnly
+                      ? "border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed"
                       : "border-gray-200 bg-gray-50 hover:border-gray-300"
                   }`}
                 >
@@ -423,21 +544,25 @@ const PreviewSlotDisplay = ({
         <div className="card bg-white shadow">
           <div className="card-body">
             <h3 className="text-lg font-medium mb-4">
-              Pilih Waktu Kunjungan{" "}
-              <span className="text-sm text-gray-900">
-                (Catatan: Admin Warehouse bisa saja menggeser waktu anda untuk
-                efesiensi slot)
-              </span>
+              {isReadOnly ? "Waktu Kunjungan" : "Pilih Waktu Kunjungan"}{" "}
+              {!isReadOnly && (
+                <span className="text-sm text-gray-900">
+                  (Catatan: Admin Warehouse bisa saja menggeser waktu anda untuk
+                  efesiensi slot)
+                </span>
+              )}
             </h3>
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                Klik pada area hijau untuk memilih waktu mulai kunjungan,
-                perhatikan tanggal yang anda pilih
-              </p>
+              {!isReadOnly && (
+                <p className="text-sm text-gray-600 mb-2">
+                  Klik pada area hijau untuk memilih waktu mulai kunjungan,
+                  perhatikan tanggal yang anda pilih
+                </p>
+              )}
               <p className="text-sm font-medium">
                 Durasi Bongkar:{" "}
                 <span className="text-primary">
-                  {formData.Vehicle?.durasiBongkar || 0} menit
+                  {formData?.Vehicle?.durasiBongkar || 0} menit
                 </span>
               </p>
             </div>
@@ -447,7 +572,7 @@ const PreviewSlotDisplay = ({
                 <div className="flex justify-center items-center py-16">
                   <span className="loading loading-spinner loading-lg text-primary"></span>
                 </div>
-              ) : !formData.dockId ? (
+              ) : !formData?.dockId ? (
                 <div className="text-center p-4 bg-base-300 rounded">
                   <p className="text-sm text-gray-600">
                     Silakan pilih dock terlebih dahulu
@@ -464,7 +589,7 @@ const PreviewSlotDisplay = ({
                   <div className="flex mb-2">
                     <div className="w-[14%] min-w-16"></div>
                     <div className="flex-1 grid grid-cols-12 border-b">
-                      {hours.map((hour) => (
+                      {hours?.map((hour) => (
                         <div
                           key={hour}
                           className="text-center text-xs font-medium"
@@ -486,16 +611,22 @@ const PreviewSlotDisplay = ({
                     // Get busy times and bookings for this date
                     const applicableBusyTimes = getApplicableBusyTimes(date);
                     const dateBookings = getDateBookings(date);
+                    const currentBooking = getCurrentBooking(date);
 
                     return (
                       <div key={dayIdx} className="mb-6">
                         {/* Day Header */}
                         <div className="mb-2">
                           <button
-                            onClick={() => handleDateSelect(date)}
+                            onClick={() =>
+                              !isReadOnly && handleDateSelect(date)
+                            }
+                            disabled={isReadOnly}
                             className={`text-sm font-semibold px-3 py-1 rounded transition-all ${
                               isDateSelected
                                 ? "bg-primary text-white"
+                                : isReadOnly
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                           >
@@ -630,6 +761,7 @@ const PreviewSlotDisplay = ({
                                   {/* Available slot bar (clickable area) */}
                                   <div
                                     onClick={(e) => {
+                                      if (isReadOnly) return;
                                       // Only allow clicking if this date is selected
                                       const bar = e.currentTarget;
                                       const rect = bar.getBoundingClientRect();
@@ -667,7 +799,9 @@ const PreviewSlotDisplay = ({
                                       );
                                     }}
                                     className={`absolute h-full rounded opacity-70 z-10 transition-opacity ${
-                                      isDateSelected
+                                      isReadOnly
+                                        ? "bg-gray-300 cursor-not-allowed opacity-50"
+                                        : isDateSelected
                                         ? "bg-success cursor-pointer hover:opacity-90"
                                         : "bg-gray-300 cursor-not-allowed opacity-50"
                                     }`}
@@ -780,6 +914,7 @@ const PreviewSlotDisplay = ({
           <h3 className="text-lg font-medium mb-4">Catatan Tambahan</h3>
           <textarea
             value={notes}
+            disabled={mode == "preview" || mode == "justify"}
             onChange={handleNotesChange}
             placeholder="Tambahkan catatan atau instruksi khusus untuk kunjungan Anda..."
             className="textarea textarea-bordered border px-2 w-full h-32"

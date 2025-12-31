@@ -1,12 +1,5 @@
 import { fakerID_ID } from '@faker-js/faker';
-import {
-  Dock,
-  Prisma,
-  PrismaClient,
-  User,
-  Vendor,
-  Warehouse,
-} from '@prisma/client';
+import { Dock, Prisma, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import {
   AccountType,
@@ -103,22 +96,22 @@ async function init() {
   for (let i = 0; i < warehousesName.length; i++) {
     for (let j = 0; j < accountLength; j++) {
       //10 akun USER_ORGANIZATION untuk warehouses[i]
-      const username_USER_ORGANIZATION = fakerID_ID.person.firstName();
+      const fullName = fakerID_ID.person.fullName();
       userOrganizationMock.push({
-        username: username_USER_ORGANIZATION,
-        displayName: fakerID_ID.person.fullName(),
+        username: fullName.split(' ')[0],
+        displayName: fullName,
         description: 'APP USER',
         driverLicense: null,
         passwordHash: passwordHash,
         driverPhone: fakerID_ID.phone.number(),
         isActive: true,
-        mail: `${username_USER_ORGANIZATION}@catur.co.id`,
+        mail: `${fullName.split(' ')[0]}@catur.co.id`,
         accountType: AccountType.APP,
         createdAt: new Date(),
         role: ROLE.USER_ORGANIZATION as string,
         updatedAt: new Date(),
         vendorName: null,
-        homeWarehouseId: warehousesMock[i].id,
+        homeWarehouseId: warehousesDB[i].id,
       });
     }
   }
@@ -127,16 +120,17 @@ async function init() {
   for (let i = 0; i < vendorLength; i++) {
     for (let j = 0; j < accountLength; j++) {
       //10 akun ADMIN_VENDOR untuk warehouses[i]
-      const username_ADMIN_VENDOR = fakerID_ID.person.firstName();
+      const fullName = fakerID_ID.person.fullName();
+
       adminVendorMock.push({
-        username: username_ADMIN_VENDOR,
-        displayName: fakerID_ID.person.fullName(),
+        username: fullName.split(' ')[0],
+        displayName: fullName,
         description: 'APP USER',
         driverLicense: null,
         passwordHash: passwordHash,
         driverPhone: fakerID_ID.phone.number(),
         isActive: true,
-        mail: `${username_ADMIN_VENDOR}@${vendorsMock[i].name}.org`,
+        mail: `${fullName.split(' ')[0]}@${vendorsMock[i].name}.org`,
         accountType: AccountType.APP,
         createdAt: new Date(),
         role: ROLE.ADMIN_VENDOR as string,
@@ -147,16 +141,16 @@ async function init() {
 
     for (let j = 0; j < accountLength; j++) {
       //10 akun DRIVER_VENDOR untuk warehouses[i]
-      const username_DRIVER_VENDOR = fakerID_ID.person.firstName();
+      const fullName = fakerID_ID.person.fullName();
       driverAccontMock.push({
-        username: username_DRIVER_VENDOR,
-        displayName: fakerID_ID.person.fullName(),
+        username: fullName.split(' ')[0],
+        displayName: fullName,
         description: 'APP USER',
         driverLicense: 'SIM A',
         passwordHash: passwordHash,
         driverPhone: fakerID_ID.phone.number(),
         isActive: true,
-        mail: `${username_DRIVER_VENDOR}@${vendorsMock[i].name}.org`,
+        mail: `${fullName.split(' ')[0]}@${vendorsMock[i].name}.org`,
         accountType: AccountType.APP,
         createdAt: new Date(),
         role: ROLE.DRIVER_VENDOR as string,

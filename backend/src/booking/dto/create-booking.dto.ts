@@ -11,14 +11,24 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   dockId?: string;
+  //visit times
   @Type(() => Date)
   @IsDate()
   @IsNotEmpty()
   arrivalTime: Date;
-  @IsDate()
-  @IsNotEmpty()
   @Type(() => Date)
-  estimatedFinishTime: Date;
+  @IsDate()
+  @IsOptional()
+  actualArrivalTime?: Date;
+  //unloading times
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  actualStartTime?: Date;
+  @Type(() => Date)
+  @IsDate()
+  @IsOptional()
+  actualFinishTime?: Date;
   @IsOptional()
   @IsString()
   notes?: string;

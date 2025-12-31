@@ -12,18 +12,27 @@ export class BookingforVendorService {
 
   async create(createBookingDto: CreateBookingDto, userInfo: TokenPayload) {
     const {
-      estimatedFinishTime,
       vehicleId,
       warehouseId,
       dockId,
       arrivalTime,
       driverUsername,
+      ...rest
     } = createBookingDto;
 
     function HHMM_to_minutes(hhmm: string): number {
       const [h, m] = hhmm.split(':').map(Number);
       return h * 60 + m;
     }
+    const vehicle = await this.prismaService.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+      },
+    });
+    const estimatedFinishTime = new Date(arrivalTime);
+    estimatedFinishTime.setMinutes(
+      estimatedFinishTime.getMinutes() + vehicle.durasiBongkar,
+    );
 
     const bookingFrom = arrivalTime.getHours() * 60 + arrivalTime.getMinutes();
     const bookingTo =
@@ -60,6 +69,21 @@ export class BookingforVendorService {
         throw new Error(
           `Waktu terkait overlap busy time ${busyTimes[overLapIdx].reason}, antara ${busyTimes[overLapIdx].from} sampai ${busyTimes[overLapIdx].to}`,
         );
+    }
+
+    //cek apakah boleh allowedTypes
+    const allowedTypesSuccess = await this.prismaService.dock.findFirst({
+      where: {
+        id: dockId,
+        allowedTypes: {
+          has: vehicle.vehicleType,
+        },
+      },
+    });
+    if (!allowedTypesSuccess) {
+      throw new BadRequestException(
+        'tipe kendaraan tidak didukung di gate ini',
+      );
     }
 
     //cek overlap to another booking
@@ -105,7 +129,6 @@ export class BookingforVendorService {
         arrivalTime: arrivalTime,
         code: code,
         actualFinishTime: null,
-        estimatedFinishTime: estimatedFinishTime,
         Vehicle: { connect: { id: vehicleId } },
         Warehouse: { connect: { id: warehouseId } },
         Dock: { connect: { id: dockId } },
@@ -124,6 +147,7 @@ export class BookingforVendorService {
             name: userInfo.organizationName,
           },
         },
+        ...rest,
       },
     });
 

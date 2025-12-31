@@ -8,9 +8,9 @@ import { ResponseMyOrganizationDto } from './dto/response-my-organization.dto';
 import { AuthService } from 'src/user/auth.service';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
-import { BaseProps } from 'src/common/base.dto';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { ROLE, SubscriptionPlan } from 'src/common/shared-enum';
+import { BaseProps } from 'src/common/shared-interface';
 
 @Injectable()
 export class MyOrganizationService {

@@ -39,8 +39,6 @@ model Globalsetting {
   updatedAt   DateTime @updatedAt
 }
 
-
-
 model Warehouse {
   id          String  @id @default(uuid())
   name        String  @unique
@@ -108,7 +106,6 @@ model Dock {
   organization     Organization @relation(fields: [organizationName], references: [name])
 }
 
-
 model DockBusyTime {
   id              String    @id @default(cuid())
   from            String
@@ -128,8 +125,11 @@ model Booking {
   warehouseId         String
   dockId              String?
   vehicleId           String
+  //visit times
   arrivalTime         DateTime
-  estimatedFinishTime DateTime? //ini yag direncakan
+  actualArrivalTime   DateTime? //ini konfirmasi sudah sampai
+  //unloading times
+  actualStartTime DateTime?
   actualFinishTime    DateTime? //ini kenyataannya
   status              String // lihat shared-enum
   notes               String?

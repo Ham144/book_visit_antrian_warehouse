@@ -7,6 +7,7 @@ import { plainToInstance } from 'class-transformer';
 import { UpdateAppUserDto } from './dto/update-user.dto';
 import { TokenPayload } from './dto/token-payload.dto';
 import { Prisma } from '@prisma/client';
+import { ROLE } from 'src/common/shared-enum';
 
 @Injectable()
 export class UserService {
@@ -27,11 +28,14 @@ export class UserService {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const homeWarehouse = await this.prismaService.warehouse.findUnique({
-      where: {
-        id: body.homeWarehouseId,
-      },
-    });
+    let homeWarehouse;
+    if (rest.role.includes('ORGANIZATION')) {
+      homeWarehouse = await this.prismaService.warehouse.findUnique({
+        where: {
+          id: body.homeWarehouseId,
+        },
+      });
+    }
 
     await this.prismaService.user.create({
       data: {
@@ -50,38 +54,11 @@ export class UserService {
     return HttpStatus.CREATED;
   }
 
-  async getAllAccount(page: number, searchKey: string) {
-    const where = searchKey
-      ? {
-          username: {
-            contains: searchKey,
-          },
-        }
-      : {};
-
-    const accounts = await this.prismaService.user.findMany({
-      where,
-      include: {
-        homeWarehouse: true,
-      },
-      skip: (page - 1) * 10,
-      take: 10,
-    });
-
-    return accounts.map((account) =>
-      plainToInstance(LoginResponseDto, account, {
-        excludeExtraneousValues: true,
-      }),
-    );
-  }
-
   //get myDriver
   async getMyDrivers(page: number, searchKey: string, userInfo: TokenPayload) {
     const where: Prisma.UserWhereInput = {
       vendorName: userInfo.vendorName,
-      description: {
-        contains: 'DRIVER',
-      },
+      role: ROLE.DRIVER_VENDOR,
       isActive: true,
     };
 
@@ -106,14 +83,26 @@ export class UserService {
     });
   }
 
-  async getAllAccountForMemberManagement(page: number, searchKey: string) {
-    const where: Prisma.UserWhereInput = searchKey
-      ? {
-          username: {
-            contains: searchKey,
-          },
-        }
-      : {};
+  //untuk admin_organization
+  async getAllAccountForMemberManagement(
+    page: number,
+    searchKey: string,
+    userInfo: TokenPayload,
+  ) {
+    const where: Prisma.UserWhereInput = {
+      organizations: {
+        some: {
+          name: userInfo.organizationName,
+        },
+      },
+    };
+
+    if (searchKey) {
+      where.username = {
+        contains: searchKey,
+        mode: 'insensitive',
+      };
+    }
 
     const accounts = await this.prismaService.user.findMany({
       where,

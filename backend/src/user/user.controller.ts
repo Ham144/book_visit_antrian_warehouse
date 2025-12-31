@@ -104,15 +104,6 @@ export class UserController {
     return this.authService.getUserInfo(req);
   }
 
-  @Authorization(ROLE.ADMIN_ORGANIZATION)
-  @Get('/list')
-  async getAllAccount(
-    @Query('page', ParseIntPipe) page: number,
-    @Query('searchKey') searchKey: string,
-  ) {
-    return this.userService.getAllAccount(page, searchKey);
-  }
-
   @Authorization(ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION)
   @Get('/my-drivers')
   async getMyDrivers(
@@ -123,13 +114,18 @@ export class UserController {
     return this.userService.getMyDrivers(page, searchKey, userInfo);
   }
 
-  @Authorization(ROLE.ADMIN_ORGANIZATION)
+  @Authorization('ADMIN_ORGANIZATION')
   @Get('/list-member-management')
   async getAllAccountForMemberManagement(
     @Query('page', ParseIntPipe) page: number,
     @Query('searchKey') searchKey: string,
+    @Auth() userInfo: TokenPayload,
   ) {
-    return this.userService.getAllAccountForMemberManagement(page, searchKey);
+    return this.userService.getAllAccountForMemberManagement(
+      page,
+      searchKey,
+      userInfo,
+    );
   }
 
   @Authorization('ADMIN_VENDOR')

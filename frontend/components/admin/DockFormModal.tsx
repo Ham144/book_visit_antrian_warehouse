@@ -386,8 +386,8 @@ const DockFormModal = ({
                         </label>
                         <input
                           type="time"
-                          className="input input-bordered input-sm w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                          value={vacant?.availableUntil as string}
+                          className="input input-bordered input-sm w-full bg-white border px-2 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                          value={vacant?.availableUntil?.toString() || ""}
                           onChange={(e) => {
                             const time = e.target.value;
                             const updatedVacants = [

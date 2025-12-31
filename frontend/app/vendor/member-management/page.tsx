@@ -4,6 +4,7 @@ import ConfirmationModal from "@/components/shared-common/confirmationModal";
 import UserEditModalForm from "@/components/shared-common/UserEditModalForm";
 import { useUserInfo } from "@/components/UserContext";
 import { UserApp } from "@/types/auth";
+import { ROLE } from "@/types/shared.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Edit,
@@ -14,7 +15,7 @@ import {
   User,
   User2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +26,8 @@ interface MemberManagementFilter {
 
 const MemberManagementPage = () => {
   const { userInfo } = useUserInfo();
+
+  if (userInfo.homeWarehouse) redirect("/admin/member-management");
 
   const initialUserAPP: UserApp = {
     username: "",
@@ -39,6 +42,7 @@ const MemberManagementPage = () => {
     driverLicense: "",
     accountType: "APP",
     driverPhone: "",
+    role: ROLE.DRIVER_VENDOR,
     vendorName: userInfo?.vendorName,
   };
   const [formData, setFormData] = useState<UserApp>(initialUserAPP);

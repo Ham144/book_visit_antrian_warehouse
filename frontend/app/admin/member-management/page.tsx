@@ -4,11 +4,9 @@ import ConfirmationModal from "@/components/shared-common/confirmationModal";
 import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
 import UserEditModalForm from "@/components/shared-common/UserEditModalForm";
 import { UserApp, UserInfo } from "@/types/auth";
-import { ROLE } from "@/types/tokenPayload";
+import { ROLE } from "@/types/shared.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
-  ArrowRight,
   Building2,
   Edit,
   IdCardIcon,
@@ -213,8 +211,8 @@ const MemberManagementPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {accounts?.length ? (
-                        accounts?.map((account: UserInfo, index) => (
+                      {accounts?.length > 0 ? (
+                        accounts?.map((account: UserInfo, index: number) => (
                           <tr
                             key={index}
                             className={`hover:bg-gray-50 transition-colors ${
@@ -256,7 +254,7 @@ const MemberManagementPage = () => {
                               <div className="flex items-center space-x-1 text-gray-700">
                                 <Building2 className="w-4 h-4 text-gray-400" />
                                 <span className="font-medium text-sm">
-                                  {account.warehouseAccess.length}
+                                  {account?.warehouseAccess?.length}
                                 </span>
                                 <Plus
                                   className="w-4 h-4 text-gray-400 cursor-pointer"

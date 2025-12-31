@@ -2,6 +2,7 @@ import { UserApp, UserInfo } from "./auth";
 import { IDock } from "./dock.type";
 import { IVehicle } from "./vehicle";
 import { Warehouse } from "./warehouse";
+import { BookingStatus } from "./shared.type";
 
 export interface Booking {
   id?: string;
@@ -9,19 +10,20 @@ export interface Booking {
   vehicleId: string | null;
   warehouseId: string;
   dockId: string;
-  arrivalTime: Date | null;
-  estimatedFinishTime: Date | null;
-  actualFinishTime?: Date | null;
+  arrivalTime: string;
+  actualArrivalTime?: string; //ini konfirmasi sudah sampai
+  //unloading times
+  actualStartTime?: string;
+  actualFinishTime?: string;
   status?: BookingStatus;
   notes?: string | null;
   driverUsername?: string;
   counterId?: number;
   canceledReason?: string;
-
   Vehicle?: IVehicle | null;
   Warehouse?: Warehouse | null;
   Dock?: IDock | null | null;
-  Driver?: UserInfo | UserApp;
+  driver?: UserInfo | UserApp;
 
   createdAt?: Date;
   organizationName?: string;
@@ -32,11 +34,5 @@ export interface BookingFilter {
   warehouseId?: string | null; //untuk admin warehouse
   page?: number;
   vendorName?: string | null; //untuk admin vendor
-}
-
-export enum BookingStatus {
-  UNLOADING = "UNLOADING",
-  IN_PROGRESS = " IN_PROGRESS",
-  FINISHED = "FINISHED",
-  CANCELED = "CANCELED",
+  date?: string | null;
 }

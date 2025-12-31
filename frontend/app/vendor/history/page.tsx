@@ -1,17 +1,9 @@
 "use client";
 
-import {
-  X,
-  Truck,
-  Eye,
-  Target,
-  Search,
-  ArrowLeft,
-  ArrowRight,
-} from "lucide-react";
+import { Truck, Search, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Booking, BookingFilter, BookingStatus } from "@/types/booking.type";
+import { Booking, BookingFilter } from "@/types/booking.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
 import DetailBookingModal from "@/components/shared-common/DetailBookingModal";
@@ -25,20 +17,17 @@ export default function HistoryPage() {
   const { userInfo } = useUserInfo();
 
   //pagination
-  const [historyPage, setHistoryPage] = useState(1);
-  const [searchKeyBooking, setSearchKeyBooking] = useState("");
+  const [filter, setFilter] = useState<BookingFilter>({
+    searchKey: "",
+    page: 1,
+  });
 
   //cancel states
   const [canceledReason, setCanceledReason] = useState<string>("");
 
   const { data: bookings } = useQuery({
-    queryKey: ["bookings", historyPage, searchKeyBooking],
-    queryFn: async () =>
-      await BookingApi.getAllBookings({
-        searchKey: searchKeyBooking,
-        page: historyPage,
-        vendorName: userInfo?.vendorName,
-      }),
+    queryKey: ["bookings", filter],
+    queryFn: async () => await BookingApi.getAllBookingsForVendor(filter),
     enabled: !!userInfo,
   });
 
@@ -74,10 +63,12 @@ export default function HistoryPage() {
           <label className="relative">
             <input
               type="text"
-              placeholder="Cari gudang.."
-              className="input w-full max-w-xs border px-2 rounded-md"
-              value={searchKeyBooking}
-              onChange={(e) => setSearchKeyBooking(e.target.value)}
+              placeholder="Cari supir/kode/brand mobil.."
+              className="input md:w-[400px] border px-2 rounded-md"
+              value={filter?.searchKey}
+              onChange={(e) =>
+                setFilter({ ...filter, searchKey: e.target.value })
+              }
             />
             <div className="absolute top-0 right-0 w-10 h-full flex items-center justify-center">
               <Search />
@@ -99,7 +90,7 @@ export default function HistoryPage() {
                 <BookingListCard
                   booking={booking}
                   selectedBookingId={selectedBookingId}
-                  setSelectedBookingId={setSearchKeyBooking}
+                  setSelectedBookingId={setSelectedBookingId}
                   key={booking.id}
                 />
               ))}
@@ -109,18 +100,24 @@ export default function HistoryPage() {
         <div className="flex items-center p-3 justify-between space-x-2">
           <button
             onClick={() => {
-              if (historyPage > 1) {
-                setHistoryPage(historyPage - 1);
+              if (filter.page > 1) {
+                setFilter((prev) => ({
+                  ...prev,
+                  page: prev.page - 1,
+                }));
               }
             }}
             className="btn btn-primary w-40"
           >
             <ArrowLeft size={16} className="mr-1" /> Previous page
           </button>
-          <span className="text-lg font-bold ">{historyPage}</span>
+          <span className="text-lg font-bold ">{filter.page}</span>
           <button
             onClick={() => {
-              setHistoryPage(historyPage + 1);
+              setFilter((prev) => ({
+                ...prev,
+                page: prev.page + 1,
+              }));
             }}
             className="btn btn-primary w-40"
           >

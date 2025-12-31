@@ -52,13 +52,13 @@ export class MyOrganizationController {
     return responseWithoutTokens;
   }
 
-  @Authorization("ADMIN_ORGANIZATION")
+  @Authorization('ADMIN_ORGANIZATION')
   @Get()
   getAllOrganizations(@Query() filter) {
     return this.myOrganizationService.getAllOrganizations(filter);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization()
   @Get('my-organizations')
   getMyOrganization(@Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.getMyOrganizations(userInfo);

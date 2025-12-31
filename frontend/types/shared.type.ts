@@ -1,7 +1,14 @@
+import { Booking } from "./booking.type";
+
 export interface BaseProps {
   page?: number;
   searchKey?: string;
 }
+
+export const BasePropsInit: BaseProps = {
+  page: 1,
+  searchKey: "",
+};
 
 //DockBusyTime
 export enum Recurring {
@@ -30,10 +37,11 @@ export enum Days {
 
 //Booking.status
 export enum BookingStatus {
-  IN_PROGRESS = "IN_PROGRESS",
-  UNLOADING = "UNLOADING",
-  FINISHED = "FINISHED",
-  CANCELED = "CANCELED",
+  IN_PROGRESS = "IN_PROGRESS", //ini yang sudah book
+  UNLOADING = "UNLOADING", //ini sangat unique tidak boleh ada 2 dalam 1 dock
+  FINISHED = "FINISHED", //ini yang sudah selesai
+  CANCELED = "CANCELED", //ini yang sudah dibatalkan
+  WAITING = "DELAYED",
 }
 
 //User.role
@@ -78,4 +86,8 @@ export enum VehicleType {
   WINGBOX = "WINGBOX",
   TANKER = "TANKER",
   FLATBED = "FLATBED",
+}
+
+export interface InventoryBooking extends Booking {
+  type: "delayed" | "canceled";
 }

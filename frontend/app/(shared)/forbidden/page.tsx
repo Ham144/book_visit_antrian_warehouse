@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldAlert, Lock } from "lucide-react";
+import { ShieldAlert, Lock, Home } from "lucide-react";
 
 const ForbiddenPage = () => {
   return (
@@ -35,15 +35,21 @@ const ForbiddenPage = () => {
             Access Denied
           </h2>
           <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-            You don't have permission to access this page. This area is
-            restricted to authorized users only.
+            Anda tidak memiliki izin untuk mengakses halaman ini. Area ini
+            dibatasi hanya untuk pengguna tertentu yang memiliki izin saja.
           </p>
+          <a
+            href="/"
+            className="btn btn-primary py-3 items-center hover:bg-green-300 my-3"
+          >
+            <Home /> Home
+          </a>
         </div>
 
         {/* Additional Help */}
         <div className="mt-10 pt-6 border-t border-gray-200">
           <p className="text-gray-500 text-sm">
-            If you believe this is an error, please contact your administrator.
+            Jika Anda percaya ini adalah kesalahan, silakan hubungi IT.
           </p>
         </div>
       </div>

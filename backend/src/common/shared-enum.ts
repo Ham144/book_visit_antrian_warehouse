@@ -25,10 +25,10 @@ export enum Days {
 
 //Booking.status
 export enum BookingStatus {
-  IN_PROGRESS = 'IN_PROGRESS',
-  UNLOADING = 'UNLOADING',
-  FINISHED = 'FINISHED',
-  CANCELED = 'CANCELED',
+  IN_PROGRESS = 'IN_PROGRESS', //ini yang sudah book
+  UNLOADING = 'UNLOADING', //ini sangat unique tidak boleh ada 2 dalam 1 dock
+  FINISHED = 'FINISHED', //ini yang sudah selesai
+  CANCELED = 'CANCELED', //ini yang sudah dibatalkan
 }
 
 //User.role

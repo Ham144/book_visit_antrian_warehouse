@@ -33,6 +33,7 @@ export default function HomePage() {
       }
     },
   });
+  const am_i_vendor = userInfo?.vendorName ? true : false;
   const stats = [
     {
       label: "Total Warehouse",
@@ -142,9 +143,13 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href={
-                userInfo && userInfo?.homeWarehouse
-                  ? "/admin/dashboard"
-                  : "/vendor/booking"
+                userInfo && !am_i_vendor
+                  ? userInfo?.role == ROLE.ADMIN_ORGANIZATION
+                    ? "/admin/member-management"
+                    : "/admin/dashboard"
+                  : userInfo?.role == ROLE.ADMIN_VENDOR
+                  ? "/vendor/dashboard"
+                  : "/vendor/dashboard"
               }
               onClick={(e) => {
                 if (!userInfo) {

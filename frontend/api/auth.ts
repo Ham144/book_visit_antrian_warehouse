@@ -34,14 +34,6 @@ export const AuthApi = {
     return response.data;
   },
 
-  getAllAccount: async ({ page, searchKey }: BaseProps) => {
-    let params = new URLSearchParams();
-    params.set("page", page.toString());
-    params.set("searchKey", searchKey);
-    const response = await axiosInstance.get("/api/user/list", { params });
-    return response.data;
-  },
-
   getAllMyDrivers: async ({ page, searchKey }: BaseProps) => {
     let params = new URLSearchParams();
     if (page) {

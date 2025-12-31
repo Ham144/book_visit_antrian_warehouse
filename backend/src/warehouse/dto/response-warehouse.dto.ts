@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 
 export class responseWarehouseDto {
@@ -17,14 +17,17 @@ export class responseWarehouseDto {
   @Expose()
   organizationName?: string;
   @Expose()
+  @Type(() => LoginResponseDto)
   userWarehouseAccesses?: LoginResponseDto[];
 
   @Expose({ groups: ['detail'] })
+  @Type(() => LoginResponseDto)
   homeMembers?: LoginResponseDto[];
   @Expose({ groups: ['detail'] })
   bookings?: object[];
   @Expose({ groups: ['detail'] })
   createdAt?: Date;
   @Expose({ groups: ['detail'] })
-  driver?: object[];
+  @Type(() => LoginResponseDto)
+  driver?: LoginResponseDto[];
 }

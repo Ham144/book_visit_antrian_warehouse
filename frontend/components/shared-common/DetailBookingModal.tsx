@@ -14,12 +14,15 @@ import {
   Hash,
   BarChart3,
   Timer,
-  Thermometer,
   AlertTriangle,
   Info,
+  Settings,
+  Edit,
+  Printer,
 } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { useRouter } from "next/navigation";
+import { Booking } from "@/types/booking.type";
+import { toast } from "sonner";
 
 const DetailBookingModal = ({ id }: { id: string }) => {
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -27,6 +30,13 @@ const DetailBookingModal = ({ id }: { id: string }) => {
     queryFn: async () => await BookingApi.getDetailById(id),
     enabled: !!id,
   });
+
+  const router = useRouter();
+  const handleEdit = (booking: Booking) => {
+    toast("bisa mengedit driver saja, selain itu cancel saja");
+    return;
+    router.push(`/vendor/booking/edit?bookingId=${booking.id}`);
+  };
 
   if (isLoadingBooking) {
     return (
@@ -48,7 +58,7 @@ const DetailBookingModal = ({ id }: { id: string }) => {
       case "PENDING":
         return {
           color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          icon: <Clock className="w-4 h-4" />,
+          icon: <Clock className="w-6 h-6" />,
           label: "Menunggu",
         };
       case "COMPLETED":
@@ -133,18 +143,20 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                     <Clock className="w-5 h-5 text-blue-600" />
                     <div>
                       <p className="text-sm text-gray-600">Waktu Kedatangan</p>
-                      <p className="text-xl font-bold">
-                        {new Date(booking?.arrivalTime).toLocaleString(
-                          "id-ID",
-                          {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
+                      <p className="text-lg font-bold text-gray-900">
+                        {booking?.arrivalTime
+                          ? new Date(booking.arrivalTime).toLocaleString(
+                              "id-ID",
+                              {
+                                weekday: "long",
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )
+                          : "-"}
                       </p>
                     </div>
                   </div>
@@ -154,19 +166,20 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                   <div className="flex items-center gap-3 mb-2">
                     <Clock className="w-5 h-5 text-green-600" />
                     <div>
-                      <p className="text-sm text-gray-600">Waktu Kedatangan</p>
-                      <p className="text-xl font-bold">
-                        {new Date(booking?.arrivalTime).toLocaleString(
-                          "id-ID",
-                          {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
+                      <p className="text-sm text-gray-600">Estimasi Selesai</p>
+                      <p className="text-lg font-bold text-gray-900">
+                        {booking?.estimatedFinishTime
+                          ? new Date(
+                              booking.estimatedFinishTime
+                            ).toLocaleString("id-ID", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
                       </p>
                     </div>
                   </div>
@@ -181,9 +194,17 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                           Waktu Selesai Aktual
                         </p>
                         <p className="text-lg font-bold text-gray-900">
-                          {new Date(
-                            booking.actualFinishTime
-                          ).toLocaleDateString("id-ID")}
+                          {new Date(booking.actualFinishTime).toLocaleString(
+                            "id-ID",
+                            {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
                         </p>
                       </div>
                     </div>
@@ -191,11 +212,28 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                 )}
               </div>
 
-              {/* Progress Bar */}
+              {/* Progress Bar - Durasi */}
               <div className="mt-6">
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>Progress Booking</span>
-                  <span>{booking?.status}</span>
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Durasi Estimasi Bongkar</span>
+                  <span className="font-medium">
+                    {booking?.Vehicle?.durasiBongkar || 0} menit
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full"
+                    style={{
+                      width: `${Math.min(
+                        ((booking?.Vehicle?.durasiBongkar || 0) / 180) * 100,
+                        100
+                      )}%`,
+                    }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0 menit</span>
+                  <span>~3 jam</span>
                 </div>
               </div>
             </div>
@@ -213,49 +251,50 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                           <Car className="w-5 h-5 text-primary" />
                           Informasi Kendaraan
                         </h5>
+                        <span
+                          className={`px-2 py-1 rounded text-sm ${
+                            booking?.Vehicle?.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {booking?.Vehicle?.isActive ? "Aktif" : "Nonaktif"}
+                        </span>
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Merek</span>
                           <span className="font-medium">
-                            {booking?.Vehicle.brand}
+                            {booking?.Vehicle?.brand || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Tipe</span>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                            {booking?.Vehicle?.vehicleType}
+                          <span className="text-gray-600">Tipe Kendaraan</span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">
+                            {booking?.Vehicle?.vehicleType || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Tahun</span>
+                          <span className="text-gray-600">Tahun Produksi</span>
                           <span className="font-medium">
-                            {booking.Vehicle.productionYear}
+                            {booking?.Vehicle?.productionYear || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Durasi Bongkar</span>
                           <span className="font-medium">
-                            {booking.Vehicle.durasiBongkar} menit
+                            {booking?.Vehicle?.durasiBongkar || 0} menit
                           </span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Requires Dock</span>
-                          <span
-                            className={`px-2 py-1 rounded text-sm ${
-                              booking.Vehicle.requiresDock === "NONE"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-amber-100 text-amber-800"
-                            }`}
-                          >
-                            {booking.Vehicle.requiresDock}
-                          </span>
-                        </div>
-                        {booking.Vehicle.isReefer && (
-                          <div className="flex items-center gap-2 text-sm text-cyan-700 bg-cyan-50 p-2 rounded">
-                            <Thermometer className="w-4 h-4" />
-                            <span>Kendaraan Reefer (Pendingin)</span>
+                        {booking?.Vehicle?.description && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Deskripsi
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              {booking.Vehicle.description}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -272,20 +311,37 @@ const DetailBookingModal = ({ id }: { id: string }) => {
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Nama</span>
+                          <span className="text-gray-600">Nama Gudang</span>
                           <span className="font-medium">
-                            {booking.Warehouse.name}
+                            {booking?.Warehouse?.name || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Lokasi</span>
-                          <span className="font-medium">
-                            {booking.Warehouse.location}
+                          <span className="font-medium text-right max-w-[60%]">
+                            {booking?.Warehouse?.location || "-"}
                           </span>
                         </div>
-                        {booking.Warehouse.description && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <p className="text-sm text-gray-600">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Status</span>
+                          <span
+                            className={`px-2 py-1 rounded text-sm ${
+                              booking?.Warehouse?.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {booking?.Warehouse?.isActive
+                              ? "Aktif"
+                              : "Nonaktif"}
+                          </span>
+                        </div>
+                        {booking?.Warehouse?.description && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <p className="text-sm text-gray-600 mb-1">
+                              Deskripsi
+                            </p>
+                            <p className="text-sm text-gray-700 line-clamp-3">
                               {booking.Warehouse.description}
                             </p>
                           </div>
@@ -307,60 +363,49 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                             <Star
                               key={i}
                               className={`w-3 h-3 ${
-                                i < booking.Dock.priority
+                                i < (booking?.Dock?.priority || 0)
                                   ? "text-yellow-500 fill-yellow-500"
                                   : "text-gray-300"
                               }`}
                             />
                           ))}
+                          <span className="text-xs text-gray-600 ml-1">
+                            {booking?.Dock?.priority || 0}
+                          </span>
                         </div>
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Nama</span>
+                          <span className="text-gray-600">Nama Dock</span>
                           <span className="font-medium">
-                            {booking.Dock.name}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Tipe</span>
-                          <span
-                            className={`px-2 py-1 rounded text-sm ${
-                              booking.Dock.dockType === "REEFER"
-                                ? "bg-cyan-100 text-cyan-800"
-                                : booking.Dock.dockType === "SIDE"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {booking.Dock.dockType}
+                            {booking?.Dock?.name || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Status</span>
                           <span
-                            className={`badge p-2 ${
-                              booking.Dock.isActive
-                                ? "badge-success"
-                                : "badge-error"
+                            className={`px-2 py-1 rounded text-sm ${
+                              booking?.Dock?.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                           >
-                            {booking.Dock.isActive ? "Aktif" : "Nonaktif"}
+                            {booking?.Dock?.isActive ? "Aktif" : "Nonaktif"}
                           </span>
                         </div>
 
-                        {booking.Dock.allowedTypes &&
+                        {booking?.Dock?.allowedTypes &&
                           booking.Dock.allowedTypes.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-gray-100">
+                            <div className="mt-4 pt-4 border-t border-gray-100">
                               <p className="text-sm text-gray-600 mb-2">
                                 Tipe Kendaraan yang Diizinkan:
                               </p>
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex flex-wrap gap-1.5">
                                 {booking.Dock.allowedTypes.map((type, i) => (
                                   <span
                                     key={i}
-                                    className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                                    className={`px-2 py-1 rounded text-xs `}
                                   >
                                     {type}
                                   </span>
@@ -375,18 +420,59 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                   {/* Driver Info Card */}
                   <div className="card bg-white border border-gray-200 shadow-sm">
                     <div className="card-body">
-                      <h5 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                        <User className="w-5 h-5 text-primary" />
-                        Informasi Driver
-                      </h5>
+                      <div className="flex items-center justify-between mb-4">
+                        <h5 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <User className="w-5 h-5 text-primary" />
+                          Informasi Driver
+                        </h5>
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            booking?.driver?.accountType === "APP"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {booking?.driver?.accountType || "VENDOR"}
+                        </span>
+                      </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Username</span>
-                          <span className="font-medium">
-                            {booking.driverUsername}
+                          <span className="text-gray-600">Nama Lengkap</span>
+                          <span className="font-medium text-right">
+                            {booking?.driver?.displayName || "-"}
                           </span>
                         </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Username</span>
+                          <span className="font-mono font-medium">
+                            {booking?.driver?.username ||
+                              booking?.driverUsername ||
+                              "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Role</span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                            {booking?.driver?.role || "DRIVER"}
+                          </span>
+                        </div>
+                        {booking?.driver?.vendorName && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Vendor</span>
+                            <span className="font-medium text-right">
+                              {booking.driver.vendorName}
+                            </span>
+                          </div>
+                        )}
+                        {booking?.driver?.description && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-sm text-gray-600">Keterangan</p>
+                            <p className="text-sm text-gray-700 mt-1">
+                              {booking.driver.description}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -404,23 +490,37 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                         Metadata Booking
                       </h5>
 
-                      <div className="space-y-3">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-gray-600">ID Booking</span>
-                          <span className="font-mono text-sm">
-                            {booking.id}
-                          </span>
-                          <span className="text-gray-600">Dibuat</span>
-                          <span className="text-sm">
-                            {format(
-                              new Date(booking.createdAt || new Date()),
-                              "dd/MM/yy HH:mm"
-                            )}
-                          </span>
-                          <span className="text-gray-600">Organisasi</span>
-                          <span className="font-medium">
-                            {booking.organizationName}
-                          </span>
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600">ID Booking</p>
+                          <p className="font-mono text-sm bg-gray-50 p-2 rounded border break-all">
+                            {booking?.id}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600">Dibuat Pada</p>
+                          <p className="text-sm font-medium">
+                            {booking?.createdAt
+                              ? new Date(booking.createdAt).toLocaleString(
+                                  "id-ID",
+                                  {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )
+                              : "-"}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-600">Organisasi</p>
+                          <p className="font-medium text-gray-900">
+                            {booking?.organizationName || "-"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -435,17 +535,20 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                       </h5>
 
                       <div className="space-y-4">
-                        {booking.notes ? (
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <p className="text-gray-700">{booking.notes}</p>
+                        {booking?.notes ? (
+                          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p className="text-gray-700 whitespace-pre-line">
+                              {booking.notes}
+                            </p>
                           </div>
                         ) : (
-                          <div className="text-center py-4 text-gray-500">
+                          <div className="text-center py-6 text-gray-400 border border-dashed border-gray-300 rounded-lg">
+                            <FileText className="w-8 h-8 mx-auto mb-2" />
                             <p>Tidak ada catatan</p>
                           </div>
                         )}
 
-                        {booking.canceledReason && (
+                        {booking?.canceledReason && (
                           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <div className="flex items-center gap-2 mb-2 text-red-800">
                               <AlertTriangle className="w-5 h-5" />
@@ -453,11 +556,30 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                                 Alasan Pembatalan
                               </span>
                             </div>
-                            <p className="text-red-700">
+                            <p className="text-red-700 whitespace-pre-line">
                               {booking.canceledReason}
                             </p>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="card bg-white border border-gray-200 shadow-sm">
+                    <div className="card-body">
+                      <h5 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                        <Settings className="w-5 h-5 text-primary" />
+                        Aksi
+                      </h5>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => handleEdit(booking?.id)}
+                          className="btn btn-outline btn-primary w-full"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Booking
+                        </button>
                       </div>
                     </div>
                   </div>

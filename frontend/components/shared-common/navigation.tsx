@@ -244,9 +244,9 @@ export default function Navigation() {
                       <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
                     </div>
 
-                    <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100 overflow-y-auto max-h-[400px]">
-                      {myOrganizations?.length > 0 &&
-                        myOrganizations?.map((org: Organization) => (
+                    {myOrganizations?.length > 0 && (
+                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100 overflow-y-auto max-h-[400px]">
+                        {myOrganizations?.map((org: Organization) => (
                           <li key={org.name}>
                             <button
                               onClick={() => handleSwitchOrganization(org.name)}
@@ -279,10 +279,10 @@ export default function Navigation() {
                             </button>
                           </li>
                         ))}
-                    </ul>
+                      </ul>
+                    )}
                   </div>
 
-                  {/* Warehouse Switcher */}
                   {am_i_vendor ? (
                     <div className=" dropdown-center ">
                       <div
@@ -301,9 +301,9 @@ export default function Navigation() {
                         <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors duration-200" />
                       </div>
 
-                      <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100 ">
-                        {warehouseAccess?.length > 0 &&
-                          warehouseAccess?.map((warehouse: Warehouse) => (
+                      {warehouseAccess && warehouseAccess.length > 0 && (
+                        <ul className="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-80 mt-2 border border-gray-100">
+                          {warehouseAccess.map((warehouse: Warehouse) => (
                             <li key={warehouse.id}>
                               <button
                                 onClick={() =>
@@ -330,7 +330,7 @@ export default function Navigation() {
                                   <p className="text-xs text-gray-500">
                                     {warehouse.location}
                                   </p>
-                                  <p className="text-xs text-gray-700 flex  items-center gap-x-2 mt-2">
+                                  <p className="text-xs text-gray-700 flex items-center gap-x-2 mt-2">
                                     <Building2 size={10} />{" "}
                                     {warehouse.organizationName}
                                   </p>
@@ -342,10 +342,12 @@ export default function Navigation() {
                               </button>
                             </li>
                           ))}
-                      </ul>
+                        </ul>
+                      )}
                     </div>
                   ) : (
                     <div className="dropdown  dropdown-center ">
+                      {/* Warehouse Switcher */}
                       <div
                         tabIndex={0}
                         className="flex items-center gap-x-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl hover:border-green-300 hover:shadow-lg transition-all duration-300 cursor-pointer group md:min-w-[160px] "
