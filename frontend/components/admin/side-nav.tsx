@@ -34,6 +34,13 @@ const adminMenuItems = [
     roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
   {
+    id: "queue",
+    label: "Live Queue",
+    icon: Tv2,
+    href: "/admin/queue",
+    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
+  },
+  {
     id: "slots",
     label: "Gate Management",
     icon: DoorOpen,
@@ -47,13 +54,7 @@ const adminMenuItems = [
     href: "/admin/busy-times",
     roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
-  {
-    id: "queue",
-    label: "Live Queue",
-    icon: Tv2,
-    href: "/admin/queue",
-    roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
-  },
+
   {
     id: "reports",
     label: "Reports",

@@ -63,7 +63,6 @@ export default function BookingPage() {
     warehouseId: "",
     dockId: "",
     arrivalTime: null,
-    estimatedFinishTime: null,
     driverUsername: null,
     notes: "",
   };
@@ -72,6 +71,7 @@ export default function BookingPage() {
 
   //url state query
   const [params, setParams] = useState(useSearchParams());
+  const driverUsernameParam = params.get("driverUsername");
   const vehicleIdParam = params.get("vehicleId");
   const warehouseIdParam = params.get("warehouseId");
   const dockIdParam = params.get("dockId");
@@ -101,7 +101,6 @@ export default function BookingPage() {
   const { data: activeDocks, isLoading: loadingDocks } = useQuery({
     queryKey: ["docks", formData.warehouseId],
     queryFn: async () => {
-      if (!formData.warehouseId) return [];
       return await DockApi.getDocksByWarehouseId(formData.warehouseId);
     },
     enabled: bookingStep == "dock",
@@ -126,24 +125,11 @@ export default function BookingPage() {
       if (!formData.arrivalTime) {
         throw new Error("Waktu kedatangan harus dipilih");
       }
-      if (!formData.estimatedFinishTime) {
-        throw new Error("Waktu selesai estimasi harus dihitung");
-      }
-
-      // Validate that estimatedFinishTime is after arrivalTime
-      if (
-        formData.arrivalTime &&
-        formData.estimatedFinishTime &&
-        new Date(formData.estimatedFinishTime) <= new Date(formData.arrivalTime)
-      ) {
-        throw new Error("Waktu selesai harus setelah waktu kedatangan");
-      }
 
       // Prepare booking data
       const bookingData: Booking = {
         ...formData,
         arrivalTime: formData.arrivalTime,
-        estimatedFinishTime: formData.estimatedFinishTime,
       };
 
       return await BookingApi.createBooking(bookingData);
@@ -172,7 +158,6 @@ export default function BookingPage() {
     setFormData({
       ...formData,
       driverUsername: driver.username,
-      Driver: driver,
     });
     setBookingStep("vehicle");
     let full = window.location.href + `&driverUsername=${driver.username}`;
@@ -187,14 +172,31 @@ export default function BookingPage() {
     router.push(full);
   };
 
+  const handleDockSelection = (Dock: IDock, arrivalTime) => {
+    if (!Dock.id) return;
+    console.log(arrivalTime);
+    console.log(formData.Vehicle.durasiBongkar);
+    setFormData({
+      ...formData,
+      dockId: Dock.id,
+      Dock: Dock,
+      arrivalTime: arrivalTime,
+      estimatedFinishTime: arrivalTime
+        ? arrivalTime.getTime() + formData.Vehicle.durasiBongkar * 60 * 1000
+        : null,
+    });
+    setBookingStep("confirmation");
+    let full = window.location.href + `&dockId=${Dock.id}`;
+    router.push(full);
+  };
+
   const handleFinish = () => {
     // Validate that all required fields are filled
     if (
       !formData.warehouseId ||
       !formData.vehicleId ||
       !formData.dockId ||
-      !formData.arrivalTime ||
-      !formData.estimatedFinishTime
+      !formData.arrivalTime
     ) {
       toast.error("Mohon lengkapi semua data sebelum melanjutkan");
       return;
@@ -224,12 +226,28 @@ export default function BookingPage() {
         case "driver":
           setFormData((prev) => ({
             ...prev,
-            driverUsername: "",
-            driverName: "",
+            driverUsername: null,
+            driverName: null,
+            vehicleId: null,
+            Vehicle: null,
+            dockId: null,
+            Dock: null,
+            arrivalTime: null,
+            estimatedFinishTime: null,
+            notes: null,
           }));
           break;
         case "vehicle":
-          setFormData((prev) => ({ ...prev, vehicleId: "", Vehicle: null }));
+          setFormData((prev) => ({
+            ...prev,
+            vehicleId: null,
+            Vehicle: null,
+            dockId: null,
+            Dock: null,
+            arrivalTime: null,
+            estimatedFinishTime: null,
+            notes: null,
+          }));
           break;
         case "dock":
           setFormData((prev) => ({
@@ -283,14 +301,32 @@ export default function BookingPage() {
   };
 
   useEffect(() => {
-    if (vehicleIdParam || warehouseIdParam || dockIdParam || notesParam) {
-      setFormData({
-        ...formData,
-        vehicleId: vehicleIdParam || "",
-        warehouseId: warehouseIdParam || "",
-        dockId: dockIdParam || "",
-        notes: notesParam || "",
-      });
+    if (
+      vehicleIdParam ||
+      warehouseIdParam ||
+      driverUsernameParam ||
+      dockIdParam ||
+      notesParam
+    ) {
+      if (warehouseIdParam) {
+        const warehouseObj = warehouses.find((w) => w.id === warehouseIdParam);
+        handleWarehouseSelect(warehouseObj as Warehouse);
+      }
+
+      if (driverUsernameParam) {
+        const driverObj = myDrivers.find(
+          (d) => d.username === driverUsernameParam
+        );
+        handleDriverSelect(driverObj as UserApp);
+      }
+      if (vehicleIdParam) {
+        const vehicleObj = vendorVehicles.find((v) => v.id === vehicleIdParam);
+        handleVehicleSelect(vehicleObj as IVehicle);
+      }
+      if (dockIdParam) {
+        const dockObj = activeDocks.find((d) => d.id === dockIdParam);
+        handleDockSelection(dockObj, null);
+      }
     }
   }, []);
 
@@ -642,6 +678,7 @@ export default function BookingPage() {
           </div>
         )}
 
+        {/* Step 3: Vehicle Selection */}
         {bookingStep === "vehicle" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -865,7 +902,7 @@ export default function BookingPage() {
               <p className="text-gray-600">
                 Pilih dock yang tersedia di{" "}
                 <span className="font-semibold">
-                  {formData.Warehouse.name || "gudang ini"}
+                  {formData?.Warehouse?.name || "gudang ini"}
                 </span>
               </p>
             </div>
@@ -891,21 +928,7 @@ export default function BookingPage() {
                     {activeDocks?.map((dock: IDock) => (
                       <div
                         key={dock.id}
-                        onClick={() => {
-                          if (
-                            !dock.allowedTypes.includes(
-                              formData.Vehicle.vehicleType
-                            )
-                          ) {
-                            return toast.error("Vehicle Type tidak cocok");
-                          }
-                          dock.isActive &&
-                            setFormData((prev) => ({
-                              ...prev,
-                              dockId: dock.id,
-                              Dock: dock,
-                            }));
-                        }}
+                        onClick={() => handleDockSelection(dock, null)}
                         className={`card bg-white border rounded-lg transition-all cursor-pointer hover:shadow-md ${
                           formData.dockId === dock.id
                             ? "border-primary shadow-md bg-primary/5"
@@ -1043,7 +1066,7 @@ export default function BookingPage() {
                         mode="create"
                       />
                       {/* Continue Button */}
-                      {formData.arrivalTime && formData.estimatedFinishTime && (
+                      {formData.arrivalTime && (
                         <div className="card bg-white shadow">
                           <div className="card-body">
                             <button
@@ -1331,7 +1354,7 @@ export default function BookingPage() {
                       </div>
                       <h3 className="text-xl font-bold">Jadwal Kunjungan</h3>
                     </div>
-                    {formData.arrivalTime && formData.estimatedFinishTime ? (
+                    {formData.arrivalTime ? (
                       <div className="space-y-4">
                         <div className="bg-primary/5 p-4 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
@@ -1363,7 +1386,8 @@ export default function BookingPage() {
                           </div>
                           <p className="text-xl font-bold">
                             {new Date(
-                              formData.estimatedFinishTime
+                              formData.arrivalTime +
+                                formData.Vehicle.durasiBongkar
                             ).toLocaleString("id-ID", {
                               weekday: "long",
                               year: "numeric",
@@ -1447,17 +1471,13 @@ export default function BookingPage() {
                           !formData.warehouseId ||
                           !formData.vehicleId ||
                           !formData.dockId ||
-                          !formData.arrivalTime ||
-                          !formData.estimatedFinishTime
+                          !formData.arrivalTime
                         }
                         className={`btn px-4 btn-primary btn-lg ${
                           !formData.warehouseId ||
                           !formData.vehicleId ||
                           !formData.dockId ||
-                          !formData.arrivalTime ||
-                          !formData.estimatedFinishTime
-                            ? "btn-disabled"
-                            : ""
+                          !formData.arrivalTime
                         }`}
                       >
                         <CheckCircle className="w-5 h-5 mr-2" />

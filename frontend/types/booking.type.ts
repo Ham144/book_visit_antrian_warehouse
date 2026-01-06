@@ -11,6 +11,7 @@ export interface Booking {
   warehouseId: string;
   dockId: string;
   arrivalTime: string;
+  estimatedFinishTime: string;
   actualArrivalTime?: string; //ini konfirmasi sudah sampai
   //unloading times
   actualStartTime?: string;

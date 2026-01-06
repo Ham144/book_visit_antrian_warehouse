@@ -77,7 +77,7 @@ const PreviewSlotDisplay = ({
   const { data: allBookings } = useQuery({
     queryKey: ["bookings", formData?.warehouseId],
     queryFn: async () =>
-      await BookingApi.getAllBookingsForWarehouse({
+      await BookingApi.getAllBookingsList({
         warehouseId: formData.warehouseId,
         page: 1,
       }),
@@ -163,49 +163,6 @@ const PreviewSlotDisplay = ({
   const weekDays = useMemo(() => {
     return selectedWeek ? getWeekDays(selectedWeek) : [];
   }, [selectedWeek]);
-
-  // Auto-select current week when dock is selected
-  useEffect(() => {
-    if (formData?.dockId && !selectedWeek) {
-      if (formData?.arrivalTime && mode === "preview") {
-        // In preview mode, select the week of the booking's arrival time
-        const arrivalDate = new Date(formData.arrivalTime);
-        const bookingWeekStart = getStartOfWeek(arrivalDate);
-        handleWeekSelect(bookingWeekStart);
-        handleDateSelect(arrivalDate);
-        // Set visual times from booking
-        const arrivalTimeStr = `${String(arrivalDate.getHours()).padStart(
-          2,
-          "0"
-        )}:${String(arrivalDate.getMinutes()).padStart(2, "0")}:00`;
-        setVisualStartTime(arrivalTimeStr);
-        if (formData.estimatedFinishTime) {
-          const finishDate = new Date(formData.estimatedFinishTime);
-          const finishTimeStr = `${String(finishDate.getHours()).padStart(
-            2,
-            "0"
-          )}:${String(finishDate.getMinutes()).padStart(2, "0")}:00`;
-          setVisualEndTime(finishTimeStr);
-        }
-      } else {
-        const today = new Date();
-        const currentWeekStart = getStartOfWeek(today);
-        handleWeekSelect(currentWeekStart);
-      }
-    }
-  }, [formData?.dockId, formData?.arrivalTime, mode]);
-
-  // Auto-select first day of week when week is selected
-  useEffect(() => {
-    if (
-      selectedWeek &&
-      weekDays.length > 0 &&
-      !selectedDate &&
-      mode !== "preview"
-    ) {
-      handleDateSelect(weekDays[0]);
-    }
-  }, [selectedWeek, weekDays.length, mode]);
 
   // Calculate available schedules for all days in selected week
   const availableSchedulesByDay = useMemo(() => {
@@ -449,10 +406,53 @@ const PreviewSlotDisplay = ({
 
     // Update form data
     onUpdateFormData({
-      arrivalTime: arrivalDateTime,
-      estimatedFinishTime: finishDateTime,
+      arrivalTime: arrivalDateTime.toString(),
+      estimatedFinishTime: finishDateTime.toString(),
     });
   };
+
+  // Auto-select current week when dock is selected
+  useEffect(() => {
+    if (formData?.dockId && !selectedWeek) {
+      if (formData?.arrivalTime && mode === "preview") {
+        // In preview mode, select the week of the booking's arrival time
+        const arrivalDate = new Date(formData.arrivalTime);
+        const bookingWeekStart = getStartOfWeek(arrivalDate);
+        handleWeekSelect(bookingWeekStart);
+        handleDateSelect(arrivalDate);
+        // Set visual times from booking
+        const arrivalTimeStr = `${String(arrivalDate.getHours()).padStart(
+          2,
+          "0"
+        )}:${String(arrivalDate.getMinutes()).padStart(2, "0")}:00`;
+        setVisualStartTime(arrivalTimeStr);
+        if (formData.estimatedFinishTime) {
+          const finishDate = new Date(formData.estimatedFinishTime);
+          const finishTimeStr = `${String(finishDate.getHours()).padStart(
+            2,
+            "0"
+          )}:${String(finishDate.getMinutes()).padStart(2, "0")}:00`;
+          setVisualEndTime(finishTimeStr);
+        }
+      } else {
+        const today = new Date();
+        const currentWeekStart = getStartOfWeek(today);
+        handleWeekSelect(currentWeekStart);
+      }
+    }
+  }, [formData?.dockId, formData?.arrivalTime, mode]);
+
+  // Auto-select first day of week when week is selected
+  useEffect(() => {
+    if (
+      selectedWeek &&
+      weekDays.length > 0 &&
+      !selectedDate &&
+      mode !== "preview"
+    ) {
+      handleDateSelect(weekDays[0]);
+    }
+  }, [selectedWeek, weekDays.length, mode]);
 
   return (
     <div className="space-y-6 flex-1">
@@ -492,7 +492,6 @@ const PreviewSlotDisplay = ({
           </div>
         )}
 
-      {/* Week Selection */}
       <div className=" bg-white shadow">
         <div className="flex flex-col p-2">
           <h3 className="text-lg font-medium mb-4">

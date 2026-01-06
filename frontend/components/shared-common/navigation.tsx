@@ -40,7 +40,7 @@ export default function Navigation() {
   const { data: warehouseAccess } = useQuery({
     queryKey: ["my-access-warehouses"],
     queryFn: WarehouseApi.getMyAccessWarehouses,
-    enabled: am_i_vendor != true,
+    enabled: am_i_vendor === false && !!userInfo,
   });
 
   const { data: myOrganizations } = useQuery({

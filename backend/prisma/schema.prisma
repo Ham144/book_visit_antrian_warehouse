@@ -125,8 +125,10 @@ model Booking {
   warehouseId         String
   dockId              String?
   vehicleId           String
-  //visit times
+  //booking field
   arrivalTime         DateTime
+  estimatedFinishTime         DateTime
+
   actualArrivalTime   DateTime? //ini konfirmasi sudah sampai
   //unloading times
   actualStartTime DateTime?

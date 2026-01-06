@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateBookingDto } from './create-booking.dto';
-import { IsDate, IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateBookingDto extends PartialType(CreateBookingDto) {
@@ -10,9 +10,21 @@ export class UpdateBookingDto extends PartialType(CreateBookingDto) {
 
   @IsNotEmpty()
   @Type(() => Date)
-  arrivalTime: Date;
+  actualArrivalTime: Date;
 
   @IsNotEmpty()
   @Type(() => Date)
   estimatedFinishTime: Date;
+
+  @IsNotEmpty()
+  @Type(() => Date)
+  actualStartTime: Date;
+
+  @IsNotEmpty()
+  @Type(() => Date)
+  actualFinishTime: Date;
+
+  @IsOptional()
+  @IsString()
+  notes: string;
 }

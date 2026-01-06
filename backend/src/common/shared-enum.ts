@@ -96,3 +96,23 @@ export const mockVehicleBrands: string[] = [
   'FAW',
   'Foton',
 ];
+
+export type DragAndDropPayload =
+  | {
+      action: 'MOVE_WITHIN_DOCK';
+      toStatus: 'UNLOADING' | 'IN_PROGRESS';
+      dockId?: string;
+      relativePositionTarget: {
+        type: 'BEFORE' | 'AFTER';
+        bookingId: string;
+      };
+    }
+  | {
+      action: 'MOVE_OUTSIDE_DOCK';
+      toStatus: 'UNLOADING' | 'CANCELED' | 'IN_PROGRESS';
+      dockId?: string;
+      relativePositionTarget: {
+        type: 'BEFORE' | 'AFTER';
+        bookingId: string;
+      };
+    };

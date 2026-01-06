@@ -112,8 +112,9 @@ export class AuthService {
             name: String(userLDAP['physicalDeliveryOfficeName']).toUpperCase(),
           },
         });
-
-        warehouseId = newWarehouse.id;
+        if (!user.homeWarehouseId) {
+          warehouseId = newWarehouse.id;
+        }
       }
 
       user = await this.prismaService.user.update({

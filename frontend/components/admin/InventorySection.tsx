@@ -5,7 +5,7 @@ import { getStatusBadgeColor, getStatusLabel } from "./QueueDetailModal";
 
 interface InventorySectionProps {
   title: string;
-  type: "delayed" | "canceled";
+  status: "DELAYED" | "CANCELED";
   bookings: Booking[];
   onDragStart?: (booking: Booking) => void;
   onDragEnd?: () => void;
@@ -15,7 +15,7 @@ interface InventorySectionProps {
 
 const InventorySection = ({
   title,
-  type,
+  status,
   bookings,
   onDrop,
   onDragEnd,
@@ -23,8 +23,8 @@ const InventorySection = ({
   delayTolerance,
 }: InventorySectionProps) => {
   const { setNodeRef, isOver } = useDroppable({
-    id: `inventory-${type}`,
-    data: { type },
+    id: `inventory-${status}`,
+    data: { status },
   });
 
   return (
@@ -33,7 +33,7 @@ const InventorySection = ({
       className={`
         flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed
         ${
-          type === "delayed"
+          status === "DELAYED"
             ? "bg-amber-50 border-amber-200"
             : "bg-rose-50 border-rose-200"
         }
@@ -48,12 +48,12 @@ const InventorySection = ({
             <span className="ml-2 badge badge-outline">{bookings.length}</span>
           </h3>
           <p className="text-sm text-gray-500">
-            {type === "delayed"
+            {status === "DELAYED"
               ? `Booking terlambat ${delayTolerance} menit`
               : "Booking yang dibatalkan"}
           </p>
         </div>
-        {type === "delayed" && bookings.length > 0 && (
+        {status === "DELAYED" && bookings.length > 0 && (
           <span className="animate-pulse bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold">
             ⚠️ PERLU PERHATIAN
           </span>
@@ -64,7 +64,7 @@ const InventorySection = ({
         {bookings.length === 0 ? (
           <div className="w-full text-center py-8 text-gray-400">
             <div className="text-3xl mb-2">
-              {type === "delayed" ? "🕒" : "🗑️"}
+              {status === "DELAYED" ? "🕒" : "🗑️"}
             </div>
             <p>Tidak ada data</p>
           </div>
@@ -74,9 +74,6 @@ const InventorySection = ({
               booking={booking}
               getStatusBadgeColor={getStatusBadgeColor}
               getStatusLabel={getStatusLabel}
-              onDragEnd={onDragEnd}
-              onDragStart={onDragStart}
-              onDrop={onDrop}
               key={booking.id}
             />
           ))

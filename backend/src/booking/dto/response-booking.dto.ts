@@ -17,7 +17,11 @@ export class ResponseBookingDto {
   dockId?: string | null;
 
   @Expose()
+  @Type(() => Date)
   arrivalTime: Date;
+  @Expose()
+  @Type(() => Date)
+  estimatedFinishTime: Date;
   @Expose()
   @Type(() => Date)
   actualArrivalTime?: Date; //ini konfirmasi sudah sampai
@@ -27,6 +31,7 @@ export class ResponseBookingDto {
   @Expose()
   @Type(() => Date)
   actualFinishTime?: Date; //ini kenyataannya
+  @Expose()
   status: string;
   @Expose()
   driverUsername: string;

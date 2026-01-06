@@ -5,15 +5,18 @@ import { DockApi } from "@/api/dock.api";
 import { useUserInfo } from "@/components/UserContext";
 import { BookingFilter, Booking } from "@/types/booking.type";
 import { BookingStatus } from "@/types/shared.type";
-import { IDock } from "@/types/dock.type";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import QueueDetailModal, {
-  getStatusBadgeColor,
-  getStatusLabel,
-} from "@/components/admin/QueueDetailModal";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronUp,
+  Clock,
+  Pencil,
+  Search,
+} from "lucide-react";
+import QueueDetailModal from "@/components/admin/QueueDetailModal";
 import ConfirmationWithInput from "@/components/shared-common/ConfirmationWithInput";
 import DockOptionModal from "@/components/admin/DockOptionModal";
 import {
@@ -25,11 +28,21 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  DragOverEvent,
+  closestCorners,
 } from "@dnd-kit/core";
-import InventorySection from "@/components/admin/InventorySection";
-import DockColumn from "@/components/admin/DockColumn";
+import DraggableBookingCard from "@/components/admin/DraggableBookingCard";
+import isDelayed from "@/lib/IsDelayed";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableContainer } from "@/components/admin/SortableContainer";
+import { DropZoneLine } from "@/components/admin/DropConeLine";
 
-export default function QueuePage() {
+export default function LiveQueuePage() {
   const { userInfo } = useUserInfo();
   const queryClient = useQueryClient();
   const [selectedDockId, setSelectedDockId] = useState<string | null>(null);
@@ -37,10 +50,12 @@ export default function QueuePage() {
     null
   );
 
-  //Drag & drop states
-  const [delayedBookings, setDelayedBookings] = useState<Booking[]>([]);
-  const [canceledBookings, setCanceledBookings] = useState<Booking[]>([]);
+  // Kategori
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
+  const [activeDockId, setActiveDockId] = useState<string | null>(null);
+  const [isReordering, setIsReordering] = useState<boolean>(false);
+
+  const [onFloatingBooking, setOnFloatingBooking] = useState<Booking>();
 
   const [delayTolerance, setDelayTolerance] = useState(15);
 
@@ -67,51 +82,248 @@ export default function QueuePage() {
       return delayInMinutes > delayTolerance;
     });
 
-    setDelayedBookings(delayed);
-
     // Untuk canceled, filter berdasarkan status
     const canceled = bookings.filter(
       (b: Booking) => b.status === BookingStatus.CANCELED
     );
-    setCanceledBookings(canceled);
   };
 
   // Handle drag events
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const booking = active.data.current?.booking;
-    if (booking) {
-      setActiveBooking(booking);
+
+    setActiveBooking(booking);
+    setActiveDockId(booking?.dockId || null);
+
+    // Mode reorder hanya untuk IN_PROGRESS dalam dock yang sama
+    if (booking?.status === BookingStatus.IN_PROGRESS && booking.dockId) {
+      setIsReordering(true);
     }
   };
 
-  const handleUpdateDock = () => {
-    toast("test");
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+
     setActiveBooking(null);
+    setActiveDockId(null);
 
     if (!over) return;
 
-    const booking = active.data.current?.booking;
-    const sourceType = active.data.current?.type;
-    const targetType = over.data.current?.type;
-    const targetDockId = over.data.current?.dockId;
+    const sourceBooking = active.data.current?.booking;
+    const targetData = over.data.current;
 
-    if (booking && targetDockId) {
-      // Jika ditaruh ke dock
-      console.log(`Moving booking ${booking.id} to dock ${targetDockId}`);
-      // TODO: Panggil API untuk update booking dock
-      handleUpdateDock({
-        bookingId: booking.id!,
-        dockId: targetDockId,
-        prevDockId: booking.dockId,
+    if (!sourceBooking || !targetData) return;
+
+    const sameDock = sourceBooking.dockId === targetData.dockId;
+
+    /* =====================================================
+     * 1. REORDER IN_PROGRESS (dock sama)
+     * ===================================================== */
+    if (
+      targetData.type === "booking-card" &&
+      sourceBooking.status === BookingStatus.IN_PROGRESS &&
+      targetData.booking?.status === BookingStatus.IN_PROGRESS &&
+      sameDock &&
+      sourceBooking.id !== targetData.booking.id
+    ) {
+      toast("REORDER IN_PROGRESS (dock sama)");
+      // Tentukan BEFORE/AFTER berdasarkan posisi visual
+      const dockGroup = filteredBookings[sourceBooking.dockId!];
+      const currentIndex = dockGroup.inprogress.findIndex(
+        (b) => b.id === sourceBooking.id
+      );
+      const targetIndex = dockGroup.inprogress.findIndex(
+        (b) => b.id === targetData.booking.id
+      );
+
+      const relativeType = currentIndex < targetIndex ? "BEFORE" : "AFTER";
+
+      await BookingApi.dragAndDrop(sourceBooking.id!, {
+        action: "MOVE_WITHIN_DOCK",
+        toStatus: "IN_PROGRESS",
+        dockId: sourceBooking.dockId,
+        relativePositionTarget: {
+          bookingId: targetData.booking.id!,
+          type: relativeType,
+        },
       });
-    } else if (booking && targetType) {
-      // Jika ditaruh ke inventory lain
-      console.log(`Moving booking ${booking.id} to ${targetType} inventory`);
+
+      toast.success("Urutan antrian diperbarui");
+      return;
+    }
+
+    /* =====================================================
+     * 2. KE UNLOADING (dari IN_PROGRESS | DELAYED | CANCELED)
+     * ===================================================== */
+    if (targetData.bookingStatus === BookingStatus.UNLOADING) {
+      toast("KE UNLOADING (dari IN_PROGRESS | DELAYED | CANCELED)");
+      // Default relative position jika tidak ada
+      const relativePositionTarget = targetData.bookingId
+        ? {
+            bookingId: targetData.bookingId,
+            type: "AFTER" as const,
+          }
+        : {
+            bookingId: "LAST",
+            type: "AFTER" as const,
+          };
+
+      await BookingApi.dragAndDrop(sourceBooking.id!, {
+        action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
+        toStatus: "UNLOADING",
+        dockId: targetData.dockId || sourceBooking.dockId,
+        relativePositionTarget,
+      });
+
+      toast.success("Booking masuk unloading");
+      return;
+    }
+
+    /* =====================================================
+     * 3. KE CANCELED (inventory section)
+     * ===================================================== */
+    if (
+      targetData.type === "inventory" &&
+      targetData.bookingStatus === BookingStatus.CANCELED
+    ) {
+      toast("KE CANCELED (inventory section)");
+      // Buka modal konfirmasi, JANGAN langsung panggil API
+      setSelectedBookingId(sourceBooking.id!);
+      setCanceledReason(
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString()}`
+      );
+
+      setTimeout(() => {
+        (
+          document.getElementById("cancel-confirmation") as HTMLDialogElement
+        )?.showModal();
+      }, 100);
+
+      return;
+    }
+
+    /* =====================================================
+     * 4. KE IN_PROGRESS (dari DELAYED | CANCELED | UNLOADING)
+     * ===================================================== */
+    if (targetData.bookingStatus === BookingStatus.IN_PROGRESS) {
+      // Handle dari berbagai status
+      const allowedSources = [
+        BookingStatus.DELAYED,
+        BookingStatus.CANCELED,
+        BookingStatus.UNLOADING,
+      ];
+      toast("KE IN_PROGRESS (dari DELAYED | CANCELED | UNLOADING)");
+      if (allowedSources.includes(sourceBooking.status)) {
+        // Default relative position
+        const relativePositionTarget = targetData.bookingId
+          ? {
+              bookingId: targetData.bookingId,
+              type: "AFTER" as const,
+            }
+          : {
+              bookingId: "LAST",
+              type: "AFTER" as const,
+            };
+
+        await BookingApi.dragAndDrop(sourceBooking.id!, {
+          action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
+          toStatus: "IN_PROGRESS",
+          dockId: targetData.dockId || sourceBooking.dockId,
+          relativePositionTarget,
+        });
+
+        toast.success("Booking masuk ke antrian");
+        return;
+      }
+    }
+
+    /* =====================================================
+     * 5. PINDAH DOCK (IN_PROGRESS ke dock lain)
+     * ===================================================== */
+    if (
+      targetData.type === "dock-section" &&
+      targetData.dockId &&
+      sourceBooking.status === BookingStatus.IN_PROGRESS &&
+      sourceBooking.dockId !== targetData.dockId
+    ) {
+      toast("PINDAH DOCK (IN_PROGRESS ke dock lain)");
+      await BookingApi.dragAndDrop(sourceBooking.id!, {
+        action: "MOVE_OUTSIDE_DOCK",
+        toStatus: "IN_PROGRESS",
+        dockId: targetData.dockId,
+        relativePositionTarget: {
+          bookingId: "LAST",
+          type: "AFTER" as const,
+        },
+      });
+
+      toast.success(`Booking dipindahkan ke dock`);
+      return;
+    }
+
+    /* =====================================================
+     * 6. DARI UNLOADING KE IN_PROGRESS (revert)
+     * ===================================================== */
+    if (
+      targetData.bookingStatus === BookingStatus.IN_PROGRESS &&
+      sourceBooking.status === BookingStatus.UNLOADING
+    ) {
+      toast("DARI UNLOADING KE IN_PROGRESS (revert)");
+      const relativePositionTarget = targetData.bookingId
+        ? {
+            bookingId: targetData.bookingId,
+            type: "AFTER" as const,
+          }
+        : {
+            bookingId: "LAST",
+            type: "AFTER" as const,
+          };
+
+      await BookingApi.dragAndDrop(sourceBooking.id!, {
+        action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
+        toStatus: "IN_PROGRESS",
+        dockId: targetData.dockId || sourceBooking.dockId,
+        relativePositionTarget,
+      });
+
+      toast.success("Booking kembali ke antrian");
+      return;
+    }
+  };
+
+  const handleDragCancel = () => {
+    setOnFloatingBooking(null);
+  };
+
+  let lastInvalidToastAt = 0;
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const sourceStatus = active.data.current?.sourceStatus;
+    const targetData = over.data.current;
+
+    if (!sourceStatus || !targetData) return;
+
+    /* =====================================================
+     * RULE: IN_PROGRESS / UNLOADING → DELAYED (ILLEGAL)
+     * ===================================================== */
+    const isIllegal =
+      (sourceStatus === BookingStatus.IN_PROGRESS ||
+        sourceStatus === BookingStatus.UNLOADING) &&
+      targetData.bookingStatus === BookingStatus.DELAYED;
+
+    if (isIllegal) {
+      const now = Date.now();
+
+      // anti-spam toast (1x per 1.5 detik)
+      if (now - lastInvalidToastAt > 1500) {
+        toast("Tidak bisa ke DELAYED, mungkin maksud Anda ke CANCELED");
+        lastInvalidToastAt = now;
+      }
+
+      return;
     }
   };
 
@@ -129,7 +341,7 @@ export default function QueuePage() {
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["bookings", filter],
-    queryFn: async () => await BookingApi.getAllBookingsForWarehouse(filter),
+    queryFn: async () => await BookingApi.getAllBookingsList(filter),
     enabled: !!userInfo,
   });
 
@@ -144,44 +356,6 @@ export default function QueuePage() {
       await DockApi.getDocksByWarehouseId(userInfo?.homeWarehouse?.id!),
     enabled: !!userInfo?.homeWarehouse?.id,
   });
-
-  // Group bookings by dock and filter only UNLOADING and IN_PROGRESS
-  const bookingsByDock = useMemo(() => {
-    const result: Record<
-      string,
-      { unloading: Booking[]; inProgress: Booking[] }
-    > = {};
-
-    // Inisialisasi semua docks
-    docks.forEach((dock) => {
-      result[dock.id!] = { unloading: [], inProgress: [] };
-    });
-
-    // Group bookings
-    bookings?.forEach((booking) => {
-      if (!booking.dockId) return; // Pastikan ada dockId
-
-      // Cari dock yang sesuai
-      const dock = docks.find((d) => d.id === booking.dockId);
-      if (!dock) {
-        console.warn(
-          `Booking ${booking.id} has invalid dockId: ${booking.dockId}`
-        );
-        return;
-      }
-
-      // Tambahkan ke group yang sesuai
-      if (booking.status === BookingStatus.UNLOADING) {
-        result[dock.id!].unloading.push(booking);
-      } else if (booking.status === BookingStatus.IN_PROGRESS) {
-        result[dock.id!].inProgress.push(booking);
-      }
-      // Status lainnya diabaikan untuk queue display
-    });
-
-    console.log("Grouped bookings:", result);
-    return result;
-  }, [bookings, docks]);
 
   // Update status mutation
   const { mutateAsync: handleUpdateStatus } = useMutation({
@@ -227,6 +401,90 @@ export default function QueuePage() {
     },
   });
 
+  /* groups booking by dock dan kelompokkan booking menjadi  : 
+  IN_PROGRESS,
+  UNLOADING,
+  FINISHED,
+  CANCELED
+  "DELAYED",
+  - 
+  */
+  type DockBookingGroup = {
+    unloading: Booking[];
+    inprogress: Booking[];
+    finished: Booking[];
+    canceled: Booking[];
+    delayed: Booking[];
+  };
+
+  type GroupedBookingsByDock = Record<string, DockBookingGroup>;
+
+  const filteredBookings = useMemo<GroupedBookingsByDock>(() => {
+    const now = Date.now();
+
+    const result: GroupedBookingsByDock = {};
+
+    docks.forEach((dock) => {
+      result[dock.id] = {
+        unloading: [],
+        inprogress: [],
+        finished: [],
+        canceled: [],
+        delayed: [],
+      };
+    });
+
+    bookings?.forEach((booking) => {
+      if (!booking.dockId) return;
+
+      const dockGroup = result[booking.dockId];
+      if (!dockGroup) return;
+
+      if (isDelayed(booking, now, delayTolerance)) {
+        dockGroup.delayed.push({
+          ...booking,
+          status: BookingStatus.DELAYED,
+        });
+        return;
+      }
+
+      switch (booking.status) {
+        case BookingStatus.UNLOADING:
+          dockGroup.unloading.push(booking);
+          break;
+
+        case BookingStatus.IN_PROGRESS:
+          dockGroup.inprogress.push(booking);
+          break;
+
+        case BookingStatus.FINISHED:
+          dockGroup.finished.push(booking);
+          break;
+
+        case BookingStatus.CANCELED:
+          dockGroup.canceled.push(booking);
+          break;
+      }
+    });
+
+    return result as GroupedBookingsByDock;
+  }, [bookings, docks, delayTolerance]);
+
+  const { delayedBookings, canceledBookings } = useMemo(() => {
+    const delayed: Booking[] = [];
+    const canceled: Booking[] = [];
+
+    Object.values(filteredBookings).forEach((group) => {
+      delayed.push(...group.delayed);
+      canceled.push(...group.canceled);
+    });
+
+    return {
+      delayedBookings: delayed,
+      canceledBookings: canceled,
+    };
+  }, [filteredBookings]);
+
   // Calculate time remaining
   const calculateTimeRemaining = (booking: Booking): string => {
     const now = new Date();
@@ -245,14 +503,6 @@ export default function QueuePage() {
     return `${minutes} min`;
   };
 
-  // Open detail modal
-  const openDetailModal = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
-    (
-      document.getElementById("QueueDetailModalPreview") as HTMLDialogElement
-    )?.showModal();
-  };
-
   // Open justify modal
   const openJustifyModal = (bookingId: string) => {
     setSelectedBookingId(bookingId);
@@ -260,29 +510,6 @@ export default function QueuePage() {
       document.getElementById("QueueDetailModalJustify") as HTMLDialogElement
     )?.showModal();
   };
-
-  const sortedDocksWithBookings = useMemo(
-    () =>
-      docks
-        ?.sort((a: IDock, b: IDock) =>
-          (a.name ?? "").localeCompare(b.name ?? "")
-        )
-        .map((dock: IDock) => {
-          // Pastikan bookingsByDock[dock.id!] ada
-          const bookings = bookingsByDock?.[dock.id!] || {
-            unloading: [],
-            inProgress: [],
-          };
-
-          console.log(`Dock ${dock.id} (${dock.name}):`, bookings);
-
-          return {
-            dock,
-            dockBookings: bookings,
-          };
-        }) || [],
-    [docks, bookingsByDock]
-  );
 
   useEffect(() => {
     if (bookings) {
@@ -296,32 +523,54 @@ export default function QueuePage() {
         <main className="flex-1 p-6">
           <div className="space-y-6">
             {/* Header dan filter area */}
-            <div className="flex gap-2 justify-center items-center">
-              <label className="flex items-center gap-x-2">
-                <span>Toleransi Keterlambatan</span>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() =>
+                  toast(
+                    "Halaman ini masih dalam tahap pengerjaan, dan kemungkinan bertemu bug masih tinggi"
+                  )
+                }
+                className="btn bg-black  border-dashed border text-white "
+              >
+                Masih Dikembangkan
+              </button>
+              {/* Toleransi */}
+              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-300">
+                <Clock className="w-3 h-3 text-gray-500" />
                 <input
-                  type="text"
+                  type="number"
                   placeholder="15"
                   value={delayTolerance}
-                  onChange={(e) => setDelayTolerance(parseInt(e.target.value))}
-                  className="input input-bordered input-accent w-[100px] px-3"
+                  onChange={(e) =>
+                    setDelayTolerance(parseInt(e.target.value) || 0)
+                  }
+                  className="w-10 text-center px-1 py-0.5 text-sm focus:outline-none"
+                  min="0"
+                  max="60"
                 />
-                Menit
-              </label>
-              <input
-                type="text"
-                placeholder="Cari code, driver name.."
-                value={filter.searchKey || ""}
-                onChange={(e) =>
-                  setFilter({ ...filter, searchKey: e.target.value })
-                }
-                className="input input-bordered input-accent w-full max-w-xs"
-              />
+                <span className="text-xs text-gray-500">mnt</span>
+              </div>
+
+              {/* Search */}
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={filter.searchKey || ""}
+                  onChange={(e) =>
+                    setFilter({ ...filter, searchKey: e.target.value })
+                  }
+                  className="w-full pl-8 pr-6 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Date */}
               <input
                 value={filter.date || ""}
                 onChange={(e) => setFilter({ ...filter, date: e.target.value })}
                 type="date"
-                className="input input-bordered w-full max-w-xs"
+                className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 min-w-[120px]"
               />
             </div>
 
@@ -344,33 +593,24 @@ export default function QueuePage() {
 
                 <DndContext
                   sensors={sensors}
-                  collisionDetection={closestCenter}
+                  collisionDetection={closestCorners}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
+                  onDragOver={handleDragOver}
+                  onDragCancel={handleDragCancel}
                 >
-                  {/* MAIN CONTENT - SIMPLE DIRECT MAPPING */}
+                  {/* MAIN */}
                   <div className="grid gap-4 grid-cols-4 w-full">
-                    {docks
-                      ?.sort((a: IDock, b: IDock) =>
-                        (a.name ?? "").localeCompare(b.name ?? "")
-                      )
-                      .map((dock: IDock) => {
-                        // Ambil booking untuk dock ini langsung dari bookings
-                        const dockBookings =
-                          bookings?.filter((b) => b.dockId === dock.id) || [];
+                    {Object.entries(filteredBookings).map(
+                      ([dockId, bookingGroup]) => {
+                        const dock = docks.find((d) => d.id === dockId);
+                        if (!dock) return null;
 
-                        // Pisahkan berdasarkan status
-                        const unloadingBookings = dockBookings.filter(
-                          (b) => b.status === BookingStatus.UNLOADING
-                        );
-                        const inProgressBookings = dockBookings.filter(
-                          (b: Booking) =>
-                            b.status === BookingStatus.IN_PROGRESS &&
-                            b.arrivalTime >= new Date() // EXCLUDE DELAYED
-                        );
+                        const unloadingBookings = bookingGroup.unloading;
+                        const inProgressBookings = bookingGroup.inprogress;
 
                         return (
-                          <div key={dock.id} className="flex flex-col">
+                          <div key={dockId} className="flex flex-col">
                             {/* Dock Header */}
                             <div
                               className={`btn btn-outline border ${
@@ -394,122 +634,177 @@ export default function QueuePage() {
                               </div>
                             </div>
 
-                            {/* UNLOADING Section */}
-                            <div className="space-y-2 mb-4">
+                            {/* ============================= */}
+                            {/* UNLOADING SECTION - Bisa menerima drop */}
+                            {/* ============================= */}
+                            <SortableContainer
+                              id={`unloading-section-${dockId}`}
+                              type="dock-section"
+                              bookingStatus={BookingStatus.UNLOADING}
+                              dockId={dockId}
+                              className="space-y-2 mb-4 min-h-[100px]"
+                              acceptFrom={[
+                                BookingStatus.IN_PROGRESS,
+                                BookingStatus.DELAYED,
+                              ]}
+                            >
                               <div className="text-xs font-semibold text-warning uppercase mb-1">
                                 Unloading ({unloadingBookings.length})
                               </div>
-                              {unloadingBookings.length === 0 ? (
-                                <div className="card bg-base-200">
-                                  <div className="card-body p-3 text-center text-xs text-gray-400">
-                                    Kosong
-                                  </div>
-                                </div>
-                              ) : (
-                                unloadingBookings.map((booking: Booking) => (
-                                  <DraggableBookingCard
-                                    key={booking.id}
-                                    booking={booking}
-                                    timeRemaining={calculateTimeRemaining(
-                                      booking
-                                    )}
-                                    onDetail={() =>
-                                      openDetailModal(booking.id!)
-                                    }
-                                    onJustify={() =>
-                                      openJustifyModal(booking.id!)
-                                    }
-                                    onStartUnloading={() =>
-                                      handleUpdateStatus({
-                                        id: booking.id!,
-                                        status: BookingStatus.UNLOADING,
-                                      })
-                                    }
-                                    onMarkFinished={() =>
-                                      handleUpdateStatus({
-                                        id: booking.id!,
-                                        status: BookingStatus.FINISHED,
-                                        actualFinishTime: new Date(),
-                                      })
-                                    }
-                                    onCancel={() => {
-                                      setSelectedBookingId(booking.id!);
-                                      (
-                                        document.getElementById(
-                                          "cancel-confirmation"
-                                        ) as HTMLDialogElement
-                                      ).showModal();
-                                    }}
-                                    getStatusBadgeColor={getStatusBadgeColor}
-                                    getStatusLabel={getStatusLabel}
-                                    delayToleranceMinutes={
-                                      filter.delayTolerance || 15
-                                    }
-                                  />
-                                ))
-                              )}
-                            </div>
 
-                            {/* IN_PROGRESS Queue Section */}
+                              {/* Drop Zone di atas list (untuk area kosong) */}
+                              {unloadingBookings.length === 0 ? (
+                                <SortableContainer
+                                  id={`unloading-empty-${dockId}`}
+                                  type="dock-section"
+                                  bookingStatus={BookingStatus.UNLOADING}
+                                  dockId={dockId}
+                                  className="card bg-base-200 min-h-[60px]"
+                                  acceptFrom={[
+                                    BookingStatus.IN_PROGRESS,
+                                    BookingStatus.DELAYED,
+                                  ]}
+                                >
+                                  <div className="card-body p-3 text-center text-xs text-gray-400">
+                                    Kosong - Drop di sini
+                                  </div>
+                                </SortableContainer>
+                              ) : (
+                                <div className="space-y-2">
+                                  {unloadingBookings.map((booking: Booking) => (
+                                    <React.Fragment key={booking.id}>
+                                      {/* Drop zone sebelum booking */}
+                                      <SortableContainer
+                                        id={`before-unloading-${booking.id}`}
+                                        type="dock-section"
+                                        bookingStatus={BookingStatus.UNLOADING}
+                                        dockId={dockId}
+                                        className="h-1 my-1"
+                                        acceptFrom={[
+                                          BookingStatus.IN_PROGRESS,
+                                          BookingStatus.DELAYED,
+                                        ]}
+                                      >
+                                        {/* Booking card */}
+                                        <DraggableBookingCard
+                                          booking={booking}
+                                          onDetail={() => {
+                                            setSelectedBookingId(booking.id!);
+                                            (
+                                              document.getElementById(
+                                                "QueueDetailModalPreview"
+                                              ) as HTMLDialogElement
+                                            )?.showModal();
+                                          }}
+                                          onMarkFinished={() =>
+                                            handleUpdateStatus({
+                                              id: booking.id!,
+                                              status: BookingStatus.FINISHED,
+                                              actualFinishTime: new Date(),
+                                            })
+                                          }
+                                        />
+                                      </SortableContainer>
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              )}
+                            </SortableContainer>
+                            {/* ============================= */}
+                            {/* IN_PROGRESS SECTION - Bisa tukar posisi */}
+                            {/* ============================= */}
+                            {/* IN_PROGRESS SECTION - Clean dengan DropZoneLine */}
                             <div className="space-y-2 flex-1">
                               <div className="text-xs font-semibold text-info uppercase mb-1">
                                 Antrian ({inProgressBookings.length})
                               </div>
+
                               {inProgressBookings.length === 0 ? (
-                                <div className="card bg-base-200">
-                                  <div className="card-body p-3 text-center text-xs text-gray-400">
-                                    Kosong
+                                <SortableContainer
+                                  id={`inprogress-empty-${dockId}`}
+                                  type="dock-section"
+                                  bookingStatus={BookingStatus.IN_PROGRESS}
+                                  dockId={dockId}
+                                  className="card bg-base-200 min-h-[100px] flex items-center justify-center"
+                                  acceptFrom={[
+                                    BookingStatus.IN_PROGRESS,
+                                    BookingStatus.DELAYED,
+                                    BookingStatus.CANCELED,
+                                  ]}
+                                >
+                                  <div className="text-center text-xs text-gray-400">
+                                    Kosong - Drop di sini
                                   </div>
-                                </div>
+                                </SortableContainer>
                               ) : (
-                                inProgressBookings.map((booking: Booking) => (
-                                  <DraggableBookingCard
-                                    key={booking.id}
-                                    booking={booking}
-                                    timeRemaining={calculateTimeRemaining(
-                                      booking
-                                    )}
-                                    onDetail={() =>
-                                      openDetailModal(booking.id!)
-                                    }
-                                    onJustify={() =>
-                                      openJustifyModal(booking.id!)
-                                    }
-                                    onStartUnloading={() =>
-                                      handleUpdateStatus({
-                                        id: booking.id!,
-                                        status: BookingStatus.UNLOADING,
-                                      })
-                                    }
-                                    onMarkFinished={() =>
-                                      handleUpdateStatus({
-                                        id: booking.id!,
-                                        status: BookingStatus.FINISHED,
-                                        actualFinishTime: new Date(),
-                                      })
-                                    }
-                                    onCancel={() => {
-                                      setSelectedBookingId(booking.id!);
-                                      (
-                                        document.getElementById(
-                                          "cancel-confirmation"
-                                        ) as HTMLDialogElement
-                                      ).showModal();
-                                    }}
-                                    getStatusBadgeColor={getStatusBadgeColor}
-                                    getStatusLabel={getStatusLabel}
-                                    delayToleranceMinutes={
-                                      filter.delayTolerance || 15
-                                    }
-                                  />
-                                ))
+                                <div className="space-y-1">
+                                  {inProgressBookings.map(
+                                    (booking: Booking, index) => (
+                                      <React.Fragment key={booking.id}>
+                                        {/* DROP ZONE LINE sebelum booking (untuk reorder) */}
+                                        {index > 0 &&
+                                          booking.status ===
+                                            BookingStatus.IN_PROGRESS && (
+                                            <DropZoneLine
+                                              id={`drop-before-${booking.id}`}
+                                              bookingStatus={
+                                                BookingStatus.IN_PROGRESS
+                                              }
+                                              dockId={dockId}
+                                              acceptFrom={[
+                                                BookingStatus.IN_PROGRESS,
+                                              ]}
+                                              className="my-1"
+                                            />
+                                          )}
+
+                                        {/* BOOKING CARD */}
+                                        <DraggableBookingCard
+                                          booking={booking}
+                                          onDetail={() =>
+                                            openJustifyModal(booking.id!)
+                                          }
+                                          onStartUnloading={() =>
+                                            handleUpdateStatus({
+                                              id: booking.id!,
+                                              status: BookingStatus.UNLOADING,
+                                            })
+                                          }
+                                          onCancel={() => {
+                                            setSelectedBookingId(booking.id!);
+                                            (
+                                              document.getElementById(
+                                                "cancel-confirmation"
+                                              ) as HTMLDialogElement
+                                            ).showModal();
+                                          }}
+                                        />
+                                      </React.Fragment>
+                                    )
+                                  )}
+
+                                  {/* DROP ZONE LINE di akhir (untuk drop setelah yang terakhir) */}
+                                  {inProgressBookings.length > 0 && (
+                                    <DropZoneLine
+                                      id={`drop-end-${dockId}`}
+                                      bookingStatus={BookingStatus.IN_PROGRESS}
+                                      dockId={dockId}
+                                      acceptFrom={[
+                                        BookingStatus.IN_PROGRESS,
+                                        BookingStatus.DELAYED,
+                                        BookingStatus.CANCELED,
+                                      ]}
+                                      className="mt-2"
+                                    />
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
                         );
-                      })}
+                      }
+                    )}
                   </div>
-
                   {/* INVENTORY SECTION */}
                   <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
                     <div className="container mx-auto px-6 py-4">
@@ -520,112 +815,107 @@ export default function QueuePage() {
                             Booking yang memerlukan perhatian khusus
                           </p>
                         </div>
-                        <div className="flex gap-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                            <span className="text-sm">
-                              Delayed ({delayedBookings.length})
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                            <span className="text-sm">
-                              Canceled ({canceledBookings.length})
-                            </span>
-                          </div>
-                        </div>
+
+                        {/* Toggle untuk show/hide inventory */}
+                        <button className="btn btn-sm btn-ghost">
+                          <ChevronUp size={16} />
+                        </button>
                       </div>
 
                       <div className="flex gap-4">
-                        {/* Delayed Bookings */}
-                        <div className="flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed bg-amber-50 border-amber-200">
+                        {/* ============================= */}
+                        {/* DELAYED - Hanya bisa drag OUT, tidak bisa di-drop IN */}
+                        {/* ============================= */}
+                        <SortableContainer
+                          id="inventory-delayed-section"
+                          type="inventory"
+                          bookingStatus={BookingStatus.DELAYED}
+                          acceptFrom={[]} // TIDAK MENERIMA DROP DARI MANA PUN
+                          className="flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed bg-amber-50 border-amber-200"
+                        >
                           <h3 className="font-bold text-lg mb-2">
                             Delayed Bookings{" "}
                             <span className="badge badge-warning">
                               {delayedBookings.length}
                             </span>
                           </h3>
-                          <div className="flex flex-wrap gap-2">
-                            {delayedBookings.length === 0 ? (
-                              <div className="w-full text-center py-8 text-gray-400">
-                                <div className="text-3xl mb-2">🕒</div>
-                                <p>Tidak ada booking terlambat</p>
-                              </div>
-                            ) : (
-                              delayedBookings.map((booking: Booking) => (
-                                <DraggableBookingCard
-                                  key={booking.id}
-                                  booking={booking}
-                                  getStatusBadgeColor={getStatusBadgeColor}
-                                  getStatusLabel={getStatusLabel}
-                                  delayToleranceMinutes={
-                                    filter.delayTolerance || 15
-                                  }
-                                  draggable={true}
-                                  dragData={{
-                                    booking,
-                                    type: "delayed",
-                                    source: "inventory",
-                                  }}
-                                />
-                              ))
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Canceled Bookings */}
-                        <div className="flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed bg-rose-50 border-rose-200">
+                          {/* Tambahkan div wrapper untuk drop zone */}
+                          <div className="space-y-2">
+                            {delayedBookings.map((booking: Booking) => (
+                              <DraggableBookingCard
+                                key={booking.id}
+                                booking={booking}
+                                draggable={true}
+                              />
+                            ))}
+                          </div>
+                        </SortableContainer>
+
+                        {/* ============================= */}
+                        {/* CANCELED - Bisa menerima drop dari semua */}
+                        {/* ============================= */}
+                        <SortableContainer
+                          id="inventory-canceled-section"
+                          type="inventory"
+                          bookingStatus={BookingStatus.CANCELED}
+                          acceptFrom={[
+                            BookingStatus.IN_PROGRESS,
+                            BookingStatus.UNLOADING,
+                            BookingStatus.DELAYED,
+                            BookingStatus.FINISHED,
+                          ]}
+                          className="flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed bg-rose-50 border-rose-200"
+                        >
                           <h3 className="font-bold text-lg mb-2">
                             Canceled Bookings{" "}
                             <span className="badge badge-error">
                               {canceledBookings.length}
                             </span>
                           </h3>
-                          <div className="flex flex-wrap gap-2">
+
+                          {/* Drop zone di dalam canceled */}
+                          <div className="space-y-2">
                             {canceledBookings.length === 0 ? (
-                              <div className="w-full text-center py-8 text-gray-400">
-                                <div className="text-3xl mb-2">🗑️</div>
-                                <p>Tidak ada booking dibatalkan</p>
-                              </div>
+                              <SortableContainer
+                                id="canceled-empty"
+                                type="inventory"
+                                bookingStatus={BookingStatus.CANCELED}
+                                className="min-h-[80px] flex items-center justify-center"
+                                acceptFrom={[
+                                  BookingStatus.IN_PROGRESS,
+                                  BookingStatus.UNLOADING,
+                                  BookingStatus.DELAYED,
+                                  BookingStatus.FINISHED,
+                                ]}
+                              >
+                                <div className="text-center py-8 text-gray-400">
+                                  <div className="text-3xl mb-2">🗑️</div>
+                                  <p>Drop booking di sini untuk membatalkan</p>
+                                </div>
+                              </SortableContainer>
                             ) : (
                               canceledBookings.map((booking: Booking) => (
                                 <DraggableBookingCard
                                   key={booking.id}
                                   booking={booking}
-                                  getStatusBadgeColor={getStatusBadgeColor}
-                                  getStatusLabel={getStatusLabel}
-                                  delayToleranceMinutes={
-                                    filter.delayTolerance || 15
-                                  }
                                   draggable={true}
-                                  dragData={{
-                                    booking,
-                                    type: "canceled",
-                                    source: "inventory",
-                                  }}
                                 />
                               ))
                             )}
                           </div>
-                        </div>
+                        </SortableContainer>
                       </div>
                     </div>
                   </div>
 
                   <DragOverlay>
                     {activeBooking && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 border-2 border-primary opacity-80">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center">
-                            {activeBooking.code?.charAt(0) || "B"}
-                          </div>
-                          <div>
-                            <h4 className="font-bold">{activeBooking.code}</h4>
-                            <p className="text-sm text-gray-600">
-                              {activeBooking.driverUsername}
-                            </p>
-                          </div>
-                        </div>
+                      <div className="card shadow-xl scale-105 rotate-1 border-primary">
+                        <DraggableBookingCard
+                          booking={activeBooking}
+                          draggable={false}
+                        />
                       </div>
                     )}
                   </DragOverlay>
@@ -649,12 +939,6 @@ export default function QueuePage() {
         input={canceledReason}
         setInput={setCanceledReason}
         key={"cancel-confirmation"}
-      />
-      <QueueDetailModal
-        selectedBookingId={selectedBookingId}
-        setSelectedBookingId={setSelectedBookingId}
-        key={"QueueDetailModalPreview"}
-        id="QueueDetailModalPreview"
       />
       <QueueDetailModal
         selectedBookingId={selectedBookingId}

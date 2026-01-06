@@ -1,28 +1,19 @@
 import axiosInstance from "@/lib/axios";
 import { Booking, BookingFilter } from "@/types/booking.type";
-import { BookingStatus } from "@/types/shared.type";
+import { BookingStatus, DragAndDropPayload } from "@/types/shared.type";
 
 export const BookingApi = {
   createBooking: async (formData: Booking) => {
     const res = await axiosInstance.post("/api/booking", formData);
     return res.data;
   },
-  getAllBookingsForVendor: async (filter: BookingFilter) => {
+  getAllBookingsList: async (filter: BookingFilter) => {
     const params = new URLSearchParams();
     if (filter?.searchKey) params.set("searchKey", filter.searchKey);
     if (filter.warehouseId) params.set("warehouseId", filter.warehouseId);
     if (filter.page) params.set("page", filter.page.toString());
 
-    const res = await axiosInstance.get("/api/booking/v/list", { params });
-    return res.data;
-  },
-  getAllBookingsForWarehouse: async (filter: BookingFilter) => {
-    const params = new URLSearchParams();
-    if (filter?.searchKey) params.set("searchKey", filter.searchKey);
-    if (filter?.page) params.set("page", filter.page.toString());
-    if (filter.date) params.set("date", filter.date.toString());
-
-    const res = await axiosInstance.get("/api/booking/w/list", { params });
+    const res = await axiosInstance.get("/api/booking/list", { params });
     return res.data;
   },
   getDetailById: async (id: string): Promise<Booking> => {
@@ -49,6 +40,13 @@ export const BookingApi = {
   },
   justifyBooking: async (id: string, data: Partial<Booking>) => {
     const res = await axiosInstance.put(`/api/booking/justify/${id}`, data);
+    return res.data;
+  },
+  dragAndDrop: async (id: string, data: DragAndDropPayload) => {
+    const res = await axiosInstance.put(
+      `/api/booking/drag-and-drop/${id}`,
+      data
+    );
     return res.data;
   },
   updateBookingStatus: async (

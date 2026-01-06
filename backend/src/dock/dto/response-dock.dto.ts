@@ -1,4 +1,5 @@
 import { Expose, Type } from 'class-transformer';
+import { ResponseBookingDto } from 'src/booking/dto/response-booking.dto';
 import { Days } from 'src/common/shared-enum';
 import { responseWarehouseDto } from 'src/warehouse/dto/response-warehouse.dto';
 
@@ -37,7 +38,7 @@ export class ResponseDockDto {
   @Type(() => responseWarehouseDto)
   warehouse?: responseWarehouseDto;
   @Expose({ groups: ['detail'] })
-  bookings?: object[];
+  bookings?: ResponseBookingDto[];
   @Expose({ groups: ['detail'] })
   photos?: string[];
   @Expose({ groups: ['detail'] })

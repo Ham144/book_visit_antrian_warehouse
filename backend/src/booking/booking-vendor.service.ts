@@ -16,6 +16,7 @@ export class BookingforVendorService {
       warehouseId,
       dockId,
       arrivalTime,
+      estimatedFinishTime,
       driverUsername,
       ...rest
     } = createBookingDto;
@@ -29,10 +30,6 @@ export class BookingforVendorService {
         id: vehicleId,
       },
     });
-    const estimatedFinishTime = new Date(arrivalTime);
-    estimatedFinishTime.setMinutes(
-      estimatedFinishTime.getMinutes() + vehicle.durasiBongkar,
-    );
 
     const bookingFrom = arrivalTime.getHours() * 60 + arrivalTime.getMinutes();
     const bookingTo =
@@ -86,23 +83,36 @@ export class BookingforVendorService {
       );
     }
 
+    const arrival = new Date(arrivalTime);
+
+    const durationMinutes = vehicle.durasiBongkar;
+    const end = new Date(arrival);
+    end.setMinutes(end.getMinutes() + durationMinutes);
+
     //cek overlap to another booking
     const overlapDockedHour = await this.prismaService.booking.findFirst({
       where: {
         dockId: dockId,
+        // id: { not: createBookingDto.id },//untuk update
+        status: { not: 'CANCELED' },
         AND: [
           {
-            arrivalTime: { lt: estimatedFinishTime },
+            arrivalTime: {
+              lt: end, // booking lain mulai sebelum booking ini selesai
+            },
           },
           {
-            estimatedFinishTime: { gt: arrivalTime },
+            arrivalTime: {
+              gt: new Date(arrival.getTime() - durationMinutes * 60_000),
+            },
           },
         ],
       },
     });
+
     if (overlapDockedHour) {
       throw new Error(
-        `Waktu terkait overlap booking ${overlapDockedHour.id}, antara ${overlapDockedHour.arrivalTime} sampai ${overlapDockedHour.estimatedFinishTime}`,
+        `Waktu terkait overlap booking ${overlapDockedHour.id}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
       );
     }
 
@@ -127,6 +137,7 @@ export class BookingforVendorService {
       data: {
         status: 'IN_PROGRESS',
         arrivalTime: arrivalTime,
+        estimatedFinishTime: estimatedFinishTime,
         code: code,
         actualFinishTime: null,
         Vehicle: { connect: { id: vehicleId } },
@@ -152,22 +163,6 @@ export class BookingforVendorService {
     });
 
     return HttpStatus.ACCEPTED;
-  }
-
-  async findAllForVendor(userInfo: TokenPayload) {
-    const bookings = await this.prismaService.booking.findMany({
-      where: {
-        organization: {
-          name: userInfo.organizationName,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-    return plainToInstance(ResponseBookingDto, bookings, {
-      excludeExtraneousValues: true,
-    });
   }
 
   async findOne(id: string) {

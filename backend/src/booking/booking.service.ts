@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBookingDto } from './dto/response-booking.dto';
-import { Days } from 'src/common/shared-enum';
+import { Days, DragAndDropPayload } from 'src/common/shared-enum';
 import { DockBusyTime, Prisma } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { BookingFilter } from 'src/common/shared-interface';
@@ -45,9 +45,9 @@ export class BookingWarehouseService {
     return false;
   }
 
-  //user organization
+  //user|admin organization
   async justifyBooking(id: string, updateDto: UpdateBookingDto) {
-    const { arrivalTime, estimatedFinishTime, dockId } = updateDto;
+    const { arrivalTime, dockId } = updateDto;
 
     // Get existing booking
     const existingBooking = await this.prismaService.booking.findUnique({
@@ -62,32 +62,28 @@ export class BookingWarehouseService {
     }
 
     // Use provided values or fallback to existing values
-    const newDockId = dockId || existingBooking.dockId;
-    const newArrivalTime = arrivalTime || existingBooking.arrivalTime;
-    const newEstimatedFinishTime =
-      estimatedFinishTime ||
-      existingBooking.estimatedFinishTime ||
-      new Date(
-        newArrivalTime.getTime() +
-          existingBooking.Vehicle.durasiBongkar * 60 * 1000,
-      );
 
     // Helper function to convert HH:MM to minutes
     function HHMM_to_minutes(hhmm: string): number {
       const [h, m] = hhmm.split(':').map(Number);
       return h * 60 + m;
     }
+    const newDockId = dockId || existingBooking.dockId;
+    const newArrivalTime = new Date(arrivalTime);
+    const newEstimatedFinishTime = new Date(
+      newArrivalTime.getTime() + existingBooking.Vehicle.durasiBongkar * 60000,
+    );
+
+    const bookingFrom =
+      newArrivalTime.getHours() * 60 + newArrivalTime.getMinutes();
+    const bookingTo =
+      newEstimatedFinishTime.getHours() * 60 +
+      newEstimatedFinishTime.getMinutes();
 
     // Check busy times overlap
     const busyTimes = await this.prismaService.dockBusyTime.findMany({
       where: { dockId: newDockId },
     });
-
-    const arrival = new Date(newArrivalTime);
-    const finish = new Date(newEstimatedFinishTime);
-
-    const bookingFrom = arrival.getHours() * 60 + arrival.getMinutes();
-    const bookingTo = finish.getHours() * 60 + finish.getMinutes();
 
     const overLapIdx = busyTimes.findIndex((busy) => {
       const busyFrom = HHMM_to_minutes(busy.from);
@@ -130,10 +126,17 @@ export class BookingWarehouseService {
         status: { not: 'CANCELED' },
         AND: [
           {
-            arrivalTime: { lt: newEstimatedFinishTime },
+            arrivalTime: {
+              lt: newEstimatedFinishTime, // booking lain mulai sebelum booking ini selesai
+            },
           },
           {
-            estimatedFinishTime: { gt: newArrivalTime },
+            arrivalTime: {
+              gt: new Date(
+                newArrivalTime.getTime() -
+                  existingBooking.Vehicle.durasiBongkar * 60_000,
+              ),
+            },
           },
         ],
       },
@@ -167,8 +170,76 @@ export class BookingWarehouseService {
     });
   }
 
-  // organization admin
-  async findAllForWarehouse(filter: BookingFilter, userInfo: TokenPayload) {
+  //user|admin organization
+  async dragAndDrop(id: string, payload: DragAndDropPayload) {
+    const booking = await this.prismaService.booking.findUnique({
+      where: { id },
+      include: { Vehicle: true },
+    });
+
+    if (!booking) throw new NotFoundException('Booking tidak ditemukan');
+
+    const { action, toStatus, dockId, relativePositionTarget } = payload;
+
+    console.log(payload);
+
+    const targetDockId = dockId ?? booking.dockId;
+
+    /* ===============================
+     * 1. Ambil queue tujuan
+     * =============================== */
+    const queue = await this.prismaService.booking.findMany({
+      where: {
+        dockId: targetDockId,
+        status: toStatus === 'UNLOADING' ? 'UNLOADING' : 'IN_PROGRESS',
+        id: { not: booking.id },
+      },
+      orderBy: { arrivalTime: 'asc' },
+    });
+
+    /* ===============================
+     * 2. Tentukan index baru
+     * =============================== */
+    const targetIndex = queue.findIndex(
+      (b) => b.id === relativePositionTarget.bookingId,
+    );
+
+    if (targetIndex === -1) {
+      throw new BadRequestException('Target booking tidak valid');
+    }
+
+    const insertIndex =
+      relativePositionTarget.type === 'BEFORE' ? targetIndex : targetIndex + 1;
+
+    queue.splice(insertIndex, 0, booking);
+
+    /* ===============================
+     * 3. Hitung ulang arrivalTime
+     * =============================== */
+    let currentTime = new Date();
+
+    for (const item of queue) {
+      const itemObj = await this.prismaService.booking.update({
+        where: { id: item.id },
+        data: {
+          arrivalTime: currentTime,
+          dockId: targetDockId,
+          status: toStatus,
+        },
+        include: {
+          Vehicle: true,
+        },
+      });
+
+      currentTime = new Date(
+        currentTime.getTime() + itemObj.Vehicle.durasiBongkar * 60_000,
+      );
+    }
+
+    return { success: true };
+  }
+
+  async findAll(filter: BookingFilter, userInfo: TokenPayload) {
     const { page, searchKey, date } = filter;
 
     const where: Prisma.BookingWhereInput = {

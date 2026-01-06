@@ -29,16 +29,10 @@ export class BookingController {
     return this.bookingForVendorService.create(createBookingDto, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR', 'USER_ORGANIZATION')
-  @Get('/w/list')
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
+  @Get('/list')
   findAllForWarehouse(@Query() filter, @Auth() userInfo: any) {
-    return this.bookingWarehouseService.findAllForWarehouse(filter, userInfo);
-  }
-
-  @Authorization(ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION)
-  @Get('/v/list')
-  findAllForVendor(@Auth() userInfo: any) {
-    return this.bookingForVendorService.findAllForVendor(userInfo);
+    return this.bookingWarehouseService.findAll(filter, userInfo);
   }
 
   @Authorization()
@@ -50,6 +44,12 @@ export class BookingController {
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Put('/justify/:id')
   justify(@Param('id') id: string, @Body() body) {
+    return this.bookingWarehouseService.justifyBooking(id, body);
+  }
+
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Put('/drag-and-drop/:id')
+  dragAndDrop(@Param('id') id: string, @Body() body) {
     return this.bookingWarehouseService.justifyBooking(id, body);
   }
 

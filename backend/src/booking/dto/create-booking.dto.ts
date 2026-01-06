@@ -11,16 +11,20 @@ export class CreateBookingDto {
   @IsString()
   @IsNotEmpty()
   dockId?: string;
-  //visit times
+  //field booking
   @Type(() => Date)
   @IsDate()
   @IsNotEmpty()
   arrivalTime: Date;
   @Type(() => Date)
   @IsDate()
+  @IsNotEmpty()
+  estimatedFinishTime: Date;
+  //unloading times
+  @Type(() => Date)
+  @IsDate()
   @IsOptional()
   actualArrivalTime?: Date;
-  //unloading times
   @Type(() => Date)
   @IsDate()
   @IsOptional()
