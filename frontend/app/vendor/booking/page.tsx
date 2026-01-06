@@ -65,6 +65,7 @@ export default function BookingPage() {
     arrivalTime: null,
     driverUsername: null,
     notes: "",
+    estimatedFinishTime: null,
   };
 
   const qq = useQueryClient();
@@ -185,7 +186,6 @@ export default function BookingPage() {
         ? arrivalTime.getTime() + formData.Vehicle.durasiBongkar * 60 * 1000
         : null,
     });
-    setBookingStep("confirmation");
     let full = window.location.href + `&dockId=${Dock.id}`;
     router.push(full);
   };
@@ -300,6 +300,7 @@ export default function BookingPage() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
+  //untuk mempertahankan data ketika refresh
   useEffect(() => {
     if (
       vehicleIdParam ||
@@ -310,6 +311,7 @@ export default function BookingPage() {
     ) {
       if (warehouseIdParam) {
         const warehouseObj = warehouses.find((w) => w.id === warehouseIdParam);
+        if (!warehouseObj) return toast("gagal");
         handleWarehouseSelect(warehouseObj as Warehouse);
       }
 
