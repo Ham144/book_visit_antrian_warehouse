@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { useDroppable } from "@dnd-kit/core";
 import { BookingStatus } from "@/types/shared.type";
+import { useDroppable } from "@dnd-kit/core";
 
+// SortableContainer.tsx - Tambahkan prop isEmptyZone
 interface SortableContainerProps {
   id: string;
   children: React.ReactNode;
-  type: "inventory" | "dock-section" | "booking-card";
+  type: "inventory" | "dock-section" | "booking-card" | "empty-zone";
   bookingStatus?: BookingStatus;
   dockId?: string;
   bookingId?: string;
   className?: string;
   acceptFrom?: BookingStatus[];
+  isEmptyZone?: boolean; // 🔥 Flag khusus untuk zona kosong
 }
 
 export const SortableContainer = ({
@@ -22,10 +23,9 @@ export const SortableContainer = ({
   bookingId,
   className = "",
   acceptFrom = [],
+  isEmptyZone = false,
 }: SortableContainerProps) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  const { setNodeRef, isOver, active } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id,
     data: {
       type,
@@ -33,32 +33,32 @@ export const SortableContainer = ({
       dockId,
       bookingId,
       acceptFrom,
+      isEmptyZone, // 🔥 Kirim flag ke data
     },
   });
 
-  useEffect(() => {
-    setIsDragOver(isOver);
-  }, [isOver]);
-
-  // Jika ini adalah drop zone kosong (untuk area kosong di section)
-  const isEmptyDropZone =
-    type === "dock-section" &&
-    (bookingStatus === BookingStatus.IN_PROGRESS ||
-      bookingStatus === BookingStatus.UNLOADING);
+  // Styling khusus untuk empty zone
+  const isInventoryEmptyZone = type === "inventory" && isEmptyZone;
+  const isDockEmptyZone = type === "dock-section" && isEmptyZone;
 
   return (
     <div
       ref={setNodeRef}
       className={`
         ${className}
-        ${isEmptyDropZone ? "min-h-[80px]" : ""}
+        ${isEmptyZone ? "min-h-[80px]" : ""}
         ${
-          isDragOver && isEmptyDropZone
+          isOver && isInventoryEmptyZone
+            ? "bg-rose-100 border-2 border-dashed border-rose-400"
+            : ""
+        }
+        ${
+          isOver && isDockEmptyZone
             ? "bg-primary/20 border-2 border-dashed border-primary"
             : ""
         }
         ${
-          isDragOver && !isEmptyDropZone
+          isOver && !isEmptyZone && type !== "booking-card"
             ? "ring-2 ring-primary ring-inset bg-primary/10"
             : ""
         }
@@ -67,10 +67,12 @@ export const SortableContainer = ({
     >
       {children}
 
-      {/* Visual feedback untuk drop zone kosong */}
-      {isDragOver && isEmptyDropZone && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-primary font-medium text-sm">Drop di sini</div>
+      {/* Visual feedback khusus untuk empty zone */}
+      {isOver && isEmptyZone && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="text-primary font-medium text-sm bg-white/90 px-4 py-2 rounded-lg shadow-sm">
+            Drop di sini
+          </div>
         </div>
       )}
     </div>

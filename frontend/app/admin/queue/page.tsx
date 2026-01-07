@@ -11,10 +11,13 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowRight,
+  Calendar,
+  CalendarIcon,
   ChevronUp,
   Clock,
   Pencil,
   Search,
+  Trash2,
 } from "lucide-react";
 import QueueDetailModal from "@/components/admin/QueueDetailModal";
 import ConfirmationWithInput from "@/components/shared-common/ConfirmationWithInput";
@@ -27,20 +30,14 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
   DragOverEvent,
   closestCorners,
 } from "@dnd-kit/core";
 import DraggableBookingCard from "@/components/admin/DraggableBookingCard";
 import isDelayed from "@/lib/IsDelayed";
-import {
-  arrayMove,
-  SortableContext,
-  verticalListSortingStrategy,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
 import { SortableContainer } from "@/components/admin/SortableContainer";
 import { DropZoneLine } from "@/components/admin/DropConeLine";
+import FullDroppableInventory from "@/components/admin/FullDroppableInventory";
 
 export default function LiveQueuePage() {
   const { userInfo } = useUserInfo();
@@ -52,8 +49,10 @@ export default function LiveQueuePage() {
 
   // Kategori
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
-  const [activeDockId, setActiveDockId] = useState<string | null>(null);
-  const [isReordering, setIsReordering] = useState<boolean>(false);
+
+  // Di component utama
+  const [isDragOverCanceled, setIsDragOverCanceled] = useState(false);
+  const [isDragOverDelayed, setIsDragOverDelayed] = useState(false);
 
   const [onFloatingBooking, setOnFloatingBooking] = useState<Booking>();
 
@@ -94,19 +93,20 @@ export default function LiveQueuePage() {
     const booking = active.data.current?.booking;
 
     setActiveBooking(booking);
-    setActiveDockId(booking?.dockId || null);
-
-    // Mode reorder hanya untuk IN_PROGRESS dalam dock yang sama
-    if (booking?.status === BookingStatus.IN_PROGRESS && booking.dockId) {
-      setIsReordering(true);
-    }
   };
+
+  function getRelativePosition(
+    sourceIndex: number,
+    targetIndex: number
+  ): "BEFORE" | "AFTER" {
+    if (sourceIndex === targetIndex) return "AFTER";
+    return sourceIndex < targetIndex ? "AFTER" : "BEFORE";
+  }
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveBooking(null);
-    setActiveDockId(null);
 
     if (!over) return;
 
@@ -127,168 +127,131 @@ export default function LiveQueuePage() {
       sameDock &&
       sourceBooking.id !== targetData.booking.id
     ) {
-      toast("REORDER IN_PROGRESS (dock sama)");
-      // Tentukan BEFORE/AFTER berdasarkan posisi visual
       const dockGroup = filteredBookings[sourceBooking.dockId!];
-      const currentIndex = dockGroup.inprogress.findIndex(
+
+      const sourceIndex = dockGroup.inprogress.findIndex(
         (b) => b.id === sourceBooking.id
       );
       const targetIndex = dockGroup.inprogress.findIndex(
         (b) => b.id === targetData.booking.id
       );
 
-      const relativeType = currentIndex < targetIndex ? "BEFORE" : "AFTER";
+      const relativeType = getRelativePosition(sourceIndex, targetIndex);
 
-      await BookingApi.dragAndDrop(sourceBooking.id!, {
-        action: "MOVE_WITHIN_DOCK",
-        toStatus: "IN_PROGRESS",
-        dockId: sourceBooking.dockId,
-        relativePositionTarget: {
-          bookingId: targetData.booking.id!,
-          type: relativeType,
-        },
-      });
-
-      toast.success("Urutan antrian diperbarui");
-      return;
+      try {
+        await BookingApi.dragAndDrop(sourceBooking.id!, {
+          action: "MOVE_WITHIN_DOCK",
+          toStatus: "IN_PROGRESS",
+          dockId: sourceBooking.dockId,
+          relativePositionTarget: {
+            bookingId: targetData.booking.id!,
+            type: relativeType,
+          },
+        });
+        queryClient.invalidateQueries({ queryKey: ["bookings"] });
+        return;
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Gagal memperbarui booking"
+        );
+      }
     }
 
     /* =====================================================
-     * 2. KE UNLOADING (dari IN_PROGRESS | DELAYED | CANCELED)
+     * 2. KE UNLOADING (IN_PROGRESS | DELAYED | CANCELED)
      * ===================================================== */
     if (targetData.bookingStatus === BookingStatus.UNLOADING) {
-      toast("KE UNLOADING (dari IN_PROGRESS | DELAYED | CANCELED)");
-      // Default relative position jika tidak ada
-      const relativePositionTarget = targetData.bookingId
-        ? {
-            bookingId: targetData.bookingId,
-            type: "AFTER" as const,
-          }
-        : {
-            bookingId: "LAST",
-            type: "AFTER" as const,
-          };
-
       await BookingApi.dragAndDrop(sourceBooking.id!, {
         action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
         toStatus: "UNLOADING",
         dockId: targetData.dockId || sourceBooking.dockId,
-        relativePositionTarget,
+        relativePositionTarget: targetData.bookingId
+          ? {
+              bookingId: targetData.bookingId,
+              type: "AFTER",
+            }
+          : { bookingId: "LAST", type: "AFTER" },
       });
 
-      toast.success("Booking masuk unloading");
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       return;
     }
 
     /* =====================================================
-     * 3. KE CANCELED (inventory section)
+     * 3. KE CANCELED (inventory)
      * ===================================================== */
     if (
       targetData.type === "inventory" &&
-      targetData.bookingStatus === BookingStatus.CANCELED
+      sourceBooking.status !== BookingStatus.CANCELED
     ) {
-      toast("KE CANCELED (inventory section)");
-      // Buka modal konfirmasi, JANGAN langsung panggil API
       setSelectedBookingId(sourceBooking.id!);
       setCanceledReason(
         `Dipindahkan via drag & drop - ${new Date().toLocaleString()}`
       );
 
-      setTimeout(() => {
-        (
-          document.getElementById("cancel-confirmation") as HTMLDialogElement
-        )?.showModal();
-      }, 100);
-
+      (
+        document.getElementById("cancel-confirmation") as HTMLDialogElement
+      )?.showModal();
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       return;
     }
 
     /* =====================================================
-     * 4. KE IN_PROGRESS (dari DELAYED | CANCELED | UNLOADING)
+     * 4. KE IN_PROGRESS (DELAYED | CANCELED | UNLOADING)
      * ===================================================== */
     if (targetData.bookingStatus === BookingStatus.IN_PROGRESS) {
-      // Handle dari berbagai status
-      const allowedSources = [
-        BookingStatus.DELAYED,
-        BookingStatus.CANCELED,
-        BookingStatus.UNLOADING,
-      ];
-      toast("KE IN_PROGRESS (dari DELAYED | CANCELED | UNLOADING)");
-      if (allowedSources.includes(sourceBooking.status)) {
-        // Default relative position
-        const relativePositionTarget = targetData.bookingId
+      await BookingApi.dragAndDrop(sourceBooking.id!, {
+        action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
+        toStatus: "IN_PROGRESS",
+        dockId: targetData.dockId || sourceBooking.dockId,
+        relativePositionTarget: targetData.bookingId
           ? {
               bookingId: targetData.bookingId,
-              type: "AFTER" as const,
+              type: "AFTER",
             }
-          : {
-              bookingId: "LAST",
-              type: "AFTER" as const,
-            };
+          : { bookingId: "LAST", type: "AFTER" },
+      });
 
-        await BookingApi.dragAndDrop(sourceBooking.id!, {
-          action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
-          toStatus: "IN_PROGRESS",
-          dockId: targetData.dockId || sourceBooking.dockId,
-          relativePositionTarget,
-        });
-
-        toast.success("Booking masuk ke antrian");
-        return;
-      }
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      return;
     }
 
     /* =====================================================
-     * 5. PINDAH DOCK (IN_PROGRESS ke dock lain)
+     * 5. PINDAH DOCK (IN_PROGRESS → dock lain)
      * ===================================================== */
     if (
       targetData.type === "dock-section" &&
-      targetData.dockId &&
       sourceBooking.status === BookingStatus.IN_PROGRESS &&
       sourceBooking.dockId !== targetData.dockId
     ) {
-      toast("PINDAH DOCK (IN_PROGRESS ke dock lain)");
       await BookingApi.dragAndDrop(sourceBooking.id!, {
         action: "MOVE_OUTSIDE_DOCK",
         toStatus: "IN_PROGRESS",
         dockId: targetData.dockId,
         relativePositionTarget: {
           bookingId: "LAST",
-          type: "AFTER" as const,
+          type: "AFTER",
         },
       });
 
-      toast.success(`Booking dipindahkan ke dock`);
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
       return;
     }
+  };
 
-    /* =====================================================
-     * 6. DARI UNLOADING KE IN_PROGRESS (revert)
-     * ===================================================== */
-    if (
-      targetData.bookingStatus === BookingStatus.IN_PROGRESS &&
-      sourceBooking.status === BookingStatus.UNLOADING
-    ) {
-      toast("DARI UNLOADING KE IN_PROGRESS (revert)");
-      const relativePositionTarget = targetData.bookingId
-        ? {
-            bookingId: targetData.bookingId,
-            type: "AFTER" as const,
-          }
-        : {
-            bookingId: "LAST",
-            type: "AFTER" as const,
-          };
+  // Di handleDragOver atau custom hook
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over } = event;
 
-      await BookingApi.dragAndDrop(sourceBooking.id!, {
-        action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
-        toStatus: "IN_PROGRESS",
-        dockId: targetData.dockId || sourceBooking.dockId,
-        relativePositionTarget,
-      });
-
-      toast.success("Booking kembali ke antrian");
-      return;
+    if (over?.data.current?.bookingStatus === BookingStatus.CANCELED) {
+      setIsDragOverCanceled(true);
+      setIsDragOverDelayed(false);
+    } else if (over?.data.current?.bookingStatus === BookingStatus.DELAYED) {
+      setIsDragOverDelayed(true);
+      setIsDragOverCanceled(false);
+    } else {
+      setIsDragOverCanceled(false);
+      setIsDragOverDelayed(false);
     }
   };
 
@@ -296,45 +259,14 @@ export default function LiveQueuePage() {
     setOnFloatingBooking(null);
   };
 
-  let lastInvalidToastAt = 0;
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const sourceStatus = active.data.current?.sourceStatus;
-    const targetData = over.data.current;
-
-    if (!sourceStatus || !targetData) return;
-
-    /* =====================================================
-     * RULE: IN_PROGRESS / UNLOADING → DELAYED (ILLEGAL)
-     * ===================================================== */
-    const isIllegal =
-      (sourceStatus === BookingStatus.IN_PROGRESS ||
-        sourceStatus === BookingStatus.UNLOADING) &&
-      targetData.bookingStatus === BookingStatus.DELAYED;
-
-    if (isIllegal) {
-      const now = Date.now();
-
-      // anti-spam toast (1x per 1.5 detik)
-      if (now - lastInvalidToastAt > 1500) {
-        toast("Tidak bisa ke DELAYED, mungkin maksud Anda ke CANCELED");
-        lastInvalidToastAt = now;
-      }
-
-      return;
-    }
-  };
-
   const [canceledReason, setCanceledReason] = useState<string>("");
   const qq = useQueryClient();
 
   const bookingFilterQueueInit: BookingFilter = {
-    date: null,
     page: 1,
     searchKey: "",
     warehouseId: userInfo?.homeWarehouse?.id,
+    date: new Date().toISOString().split("T")[0],
   };
 
   const [filter, setFilter] = useState<BookingFilter>(bookingFilterQueueInit);
@@ -468,7 +400,7 @@ export default function LiveQueuePage() {
     });
 
     return result as GroupedBookingsByDock;
-  }, [bookings, docks, delayTolerance]);
+  }, [bookings, docks, delayTolerance, filter]);
 
   const { delayedBookings, canceledBookings } = useMemo(() => {
     const delayed: Booking[] = [];
@@ -484,24 +416,6 @@ export default function LiveQueuePage() {
       canceledBookings: canceled,
     };
   }, [filteredBookings]);
-
-  // Calculate time remaining
-  const calculateTimeRemaining = (booking: Booking): string => {
-    const now = new Date();
-    const finish = new Date(
-      booking.actualStartTime + booking.Vehicle.durasiBongkar
-    );
-    const diff = finish.getTime() - now.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(minutes / 60);
-    if (diff < 0) {
-      return `+${Math.abs(minutes)} min`;
-    }
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m`;
-    }
-    return `${minutes} min`;
-  };
 
   // Open justify modal
   const openJustifyModal = (bookingId: string) => {
@@ -523,20 +437,24 @@ export default function LiveQueuePage() {
         <main className="flex-1 p-6">
           <div className="space-y-6">
             {/* Header dan filter area */}
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center">
               <button
                 onClick={() =>
                   toast(
                     "Halaman ini masih dalam tahap pengerjaan, dan kemungkinan bertemu bug masih tinggi"
                   )
                 }
-                className="btn bg-black  border-dashed border text-white "
+                className="btn bg-black border-dashed border text-white hover:bg-gray-800 transition-colors"
               >
                 Masih Dikembangkan
               </button>
+
               {/* Toleransi */}
-              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-300">
+              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-300 hover:border-gray-400 transition-colors">
                 <Clock className="w-3 h-3 text-gray-500" />
+                <span className="text-xs sm:text-sm">
+                  Toleransi Keterlambatan
+                </span>
                 <input
                   type="number"
                   placeholder="15"
@@ -544,34 +462,124 @@ export default function LiveQueuePage() {
                   onChange={(e) =>
                     setDelayTolerance(parseInt(e.target.value) || 0)
                   }
-                  className="w-10 text-center px-1 py-0.5 text-sm focus:outline-none"
+                  className="w-10 text-center px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded"
                   min="0"
                   max="60"
                 />
                 <span className="text-xs text-gray-500">mnt</span>
               </div>
 
-              {/* Search */}
-              <div className="relative flex-1 min-w-[180px]">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={filter.searchKey || ""}
-                  onChange={(e) =>
-                    setFilter({ ...filter, searchKey: e.target.value })
-                  }
-                  className="w-full pl-8 pr-6 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+              {/* Date Picker Minimalis */}
+              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-300 hover:border-gray-400 transition-colors">
+                <CalendarIcon className="w-4 h-4 text-gray-500" />
+                <div className="flex gap-1 items-center">
+                  <select
+                    value={
+                      filter.date
+                        ? new Date(filter.date).getDate()
+                        : new Date().getDate()
+                    }
+                    onChange={(e) => {
+                      const day = parseInt(e.target.value);
+                      const currentDate = filter.date
+                        ? new Date(filter.date)
+                        : new Date();
+                      currentDate.setDate(day);
+                      setFilter({
+                        ...filter,
+                        date: currentDate.toISOString().split("T")[0],
+                      });
+                    }}
+                    className="px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded w-12"
+                  >
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                      <option key={day} value={day}>
+                        {day.toString().padStart(2, "0")}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-gray-400">/</span>
+                  <select
+                    value={
+                      filter.date
+                        ? new Date(filter.date).getMonth() + 1
+                        : new Date().getMonth() + 1
+                    }
+                    onChange={(e) => {
+                      const month = parseInt(e.target.value) - 1;
+                      const currentDate = filter.date
+                        ? new Date(filter.date)
+                        : new Date();
+                      currentDate.setMonth(month);
+                      setFilter({
+                        ...filter,
+                        date: currentDate.toISOString().split("T")[0],
+                      });
+                    }}
+                    className="px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded w-14"
+                  >
+                    {[
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "Mei",
+                      "Jun",
+                      "Jul",
+                      "Agu",
+                      "Sep",
+                      "Okt",
+                      "Nov",
+                      "Des",
+                    ].map((month, index) => (
+                      <option key={month} value={index + 1}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-gray-400">/</span>
+                  <select
+                    value={
+                      filter.date
+                        ? new Date(filter.date).getFullYear()
+                        : new Date().getFullYear()
+                    }
+                    onChange={(e) => {
+                      const year = parseInt(e.target.value);
+                      const currentDate = filter.date
+                        ? new Date(filter.date)
+                        : new Date();
+                      currentDate.setFullYear(year);
+                      setFilter({
+                        ...filter,
+                        date: currentDate.toISOString().split("T")[0],
+                      });
+                    }}
+                    className="px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded w-16"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return year;
+                    }).map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    setFilter({
+                      ...filter,
+                      date: today.toISOString().split("T")[0],
+                    });
+                  }}
+                  className="ml-1 px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100 transition-colors"
+                >
+                  Hari Ini
+                </button>
               </div>
-
-              {/* Date */}
-              <input
-                value={filter.date || ""}
-                onChange={(e) => setFilter({ ...filter, date: e.target.value })}
-                type="date"
-                className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 min-w-[120px]"
-              />
             </div>
 
             {/* Queue Grid by Dock */}
@@ -600,7 +608,7 @@ export default function LiveQueuePage() {
                   onDragCancel={handleDragCancel}
                 >
                   {/* MAIN */}
-                  <div className="grid gap-4 grid-cols-4 w-full">
+                  <div className="grid gap-3 grid-cols-4 w-full ">
                     {Object.entries(filteredBookings).map(
                       ([dockId, bookingGroup]) => {
                         const dock = docks.find((d) => d.id === dockId);
@@ -610,7 +618,7 @@ export default function LiveQueuePage() {
                         const inProgressBookings = bookingGroup.inprogress;
 
                         return (
-                          <div key={dockId} className="flex flex-col">
+                          <div key={dockId} className="flex flex-col gap-y-6 ">
                             {/* Dock Header */}
                             <div
                               className={`btn btn-outline border ${
@@ -710,12 +718,10 @@ export default function LiveQueuePage() {
                                 </div>
                               )}
                             </SortableContainer>
-                            {/* ============================= */}
-                            {/* IN_PROGRESS SECTION - Bisa tukar posisi */}
-                            {/* ============================= */}
+
                             {/* IN_PROGRESS SECTION - Clean dengan DropZoneLine */}
                             <div className="space-y-2 flex-1">
-                              <div className="text-xs font-semibold text-info uppercase mb-1">
+                              <div className="text-xs font-semibold text-info uppercase mb-1  mt-7">
                                 Antrian ({inProgressBookings.length})
                               </div>
 
@@ -738,26 +744,22 @@ export default function LiveQueuePage() {
                                 </SortableContainer>
                               ) : (
                                 <div className="space-y-1">
+                                  {/* 🔥 DROP ZONE di ATAS booking PERTAMA */}
+                                  <DropZoneLine
+                                    id={`drop-before-first-${dockId}`}
+                                    bookingStatus={BookingStatus.IN_PROGRESS}
+                                    dockId={dockId}
+                                    acceptFrom={[
+                                      BookingStatus.IN_PROGRESS,
+                                      BookingStatus.DELAYED,
+                                      BookingStatus.CANCELED,
+                                    ]}
+                                    className="mb-2"
+                                  />
+
                                   {inProgressBookings.map(
                                     (booking: Booking, index) => (
                                       <React.Fragment key={booking.id}>
-                                        {/* DROP ZONE LINE sebelum booking (untuk reorder) */}
-                                        {index > 0 &&
-                                          booking.status ===
-                                            BookingStatus.IN_PROGRESS && (
-                                            <DropZoneLine
-                                              id={`drop-before-${booking.id}`}
-                                              bookingStatus={
-                                                BookingStatus.IN_PROGRESS
-                                              }
-                                              dockId={dockId}
-                                              acceptFrom={[
-                                                BookingStatus.IN_PROGRESS,
-                                              ]}
-                                              className="my-1"
-                                            />
-                                          )}
-
                                         {/* BOOKING CARD */}
                                         <DraggableBookingCard
                                           booking={booking}
@@ -779,24 +781,38 @@ export default function LiveQueuePage() {
                                             ).showModal();
                                           }}
                                         />
+
+                                        {/* 🔥 DROP ZONE di ANTARA booking */}
+                                        {index <
+                                          inProgressBookings.length - 1 && (
+                                          <DropZoneLine
+                                            id={`drop-between-${booking.id}-${index}`}
+                                            bookingStatus={
+                                              BookingStatus.IN_PROGRESS
+                                            }
+                                            dockId={dockId}
+                                            acceptFrom={[
+                                              BookingStatus.IN_PROGRESS,
+                                            ]}
+                                            className="my-2"
+                                          />
+                                        )}
                                       </React.Fragment>
                                     )
                                   )}
 
-                                  {/* DROP ZONE LINE di akhir (untuk drop setelah yang terakhir) */}
-                                  {inProgressBookings.length > 0 && (
-                                    <DropZoneLine
-                                      id={`drop-end-${dockId}`}
-                                      bookingStatus={BookingStatus.IN_PROGRESS}
-                                      dockId={dockId}
-                                      acceptFrom={[
-                                        BookingStatus.IN_PROGRESS,
-                                        BookingStatus.DELAYED,
-                                        BookingStatus.CANCELED,
-                                      ]}
-                                      className="mt-2"
-                                    />
-                                  )}
+                                  {/* 🔥 DROP ZONE di BAWAH booking TERAKHIR */}
+                                  <DropZoneLine
+                                    id={`drop-after-last-${dockId}`}
+                                    bookingStatus={BookingStatus.IN_PROGRESS}
+                                    dockId={dockId}
+                                    acceptFrom={[
+                                      BookingStatus.IN_PROGRESS,
+                                      BookingStatus.DELAYED,
+                                      BookingStatus.CANCELED,
+                                    ]}
+                                    className="mt-2"
+                                  />
                                 </div>
                               )}
                             </div>
@@ -823,88 +839,32 @@ export default function LiveQueuePage() {
                       </div>
 
                       <div className="flex gap-4">
-                        {/* ============================= */}
-                        {/* DELAYED - Hanya bisa drag OUT, tidak bisa di-drop IN */}
-                        {/* ============================= */}
-                        <SortableContainer
-                          id="inventory-delayed-section"
-                          type="inventory"
-                          bookingStatus={BookingStatus.DELAYED}
-                          acceptFrom={[]} // TIDAK MENERIMA DROP DARI MANA PUN
-                          className="flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed bg-amber-50 border-amber-200"
-                        >
-                          <h3 className="font-bold text-lg mb-2">
-                            Delayed Bookings{" "}
-                            <span className="badge badge-warning">
-                              {delayedBookings.length}
-                            </span>
-                          </h3>
+                        {/* DELAYED */}
+                        <div className="p-2 -m-2 flex-1">
+                          <FullDroppableInventory
+                            bookings={delayedBookings}
+                            status={BookingStatus.DELAYED}
+                            title="Delayed Bookings"
+                            badgeColor="badge-warning"
+                            bgColor="bg-amber-50"
+                            borderColor="border-amber-200"
+                            icon={<Clock className="w-5 h-5 mr-2" />}
+                          />
+                        </div>
 
-                          {/* Tambahkan div wrapper untuk drop zone */}
-                          <div className="space-y-2">
-                            {delayedBookings.map((booking: Booking) => (
-                              <DraggableBookingCard
-                                key={booking.id}
-                                booking={booking}
-                                draggable={true}
-                              />
-                            ))}
-                          </div>
-                        </SortableContainer>
-
-                        {/* ============================= */}
-                        {/* CANCELED - Bisa menerima drop dari semua */}
-                        {/* ============================= */}
-                        <SortableContainer
-                          id="inventory-canceled-section"
-                          type="inventory"
-                          bookingStatus={BookingStatus.CANCELED}
-                          acceptFrom={[
-                            BookingStatus.IN_PROGRESS,
-                            BookingStatus.UNLOADING,
-                            BookingStatus.DELAYED,
-                            BookingStatus.FINISHED,
-                          ]}
-                          className="flex-1 min-h-[150px] p-4 rounded-lg border-2 border-dashed bg-rose-50 border-rose-200"
-                        >
-                          <h3 className="font-bold text-lg mb-2">
-                            Canceled Bookings{" "}
-                            <span className="badge badge-error">
-                              {canceledBookings.length}
-                            </span>
-                          </h3>
-
-                          {/* Drop zone di dalam canceled */}
-                          <div className="space-y-2">
-                            {canceledBookings.length === 0 ? (
-                              <SortableContainer
-                                id="canceled-empty"
-                                type="inventory"
-                                bookingStatus={BookingStatus.CANCELED}
-                                className="min-h-[80px] flex items-center justify-center"
-                                acceptFrom={[
-                                  BookingStatus.IN_PROGRESS,
-                                  BookingStatus.UNLOADING,
-                                  BookingStatus.DELAYED,
-                                  BookingStatus.FINISHED,
-                                ]}
-                              >
-                                <div className="text-center py-8 text-gray-400">
-                                  <div className="text-3xl mb-2">🗑️</div>
-                                  <p>Drop booking di sini untuk membatalkan</p>
-                                </div>
-                              </SortableContainer>
-                            ) : (
-                              canceledBookings.map((booking: Booking) => (
-                                <DraggableBookingCard
-                                  key={booking.id}
-                                  booking={booking}
-                                  draggable={true}
-                                />
-                              ))
-                            )}
-                          </div>
-                        </SortableContainer>
+                        {/* CANCELED */}
+                        <div className="p-2 -m-2 flex-1">
+                          {/* 🔥 jangan dihapus pembungkus nya sangat berguna*/}
+                          <FullDroppableInventory
+                            bookings={canceledBookings}
+                            status={BookingStatus.CANCELED}
+                            title="Canceled Bookings"
+                            badgeColor="badge-error"
+                            bgColor="bg-red-50"
+                            borderColor="border-rose-200"
+                            icon={<Trash2 className="w-5 h-5 mr-2" />}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

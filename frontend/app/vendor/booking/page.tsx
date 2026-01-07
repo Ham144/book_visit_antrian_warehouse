@@ -300,8 +300,7 @@ export default function BookingPage() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  //untuk mempertahankan data ketika refresh
-  useEffect(() => {
+  const initilizeParams = () => {
     if (
       vehicleIdParam ||
       warehouseIdParam ||
@@ -330,6 +329,11 @@ export default function BookingPage() {
         handleDockSelection(dockObj, null);
       }
     }
+  };
+
+  //untuk mempertahankan data ketika refresh
+  useEffect(() => {
+    initilizeParams();
   }, []);
 
   return (
@@ -1447,6 +1451,7 @@ export default function BookingPage() {
                       setFormData(initialBookingState);
                       setBookingStep("warehouse");
                       router.push("/vendor/booking");
+                      setIsBookComplted(false);
                     }}
                     className="btn w-full
                    btn-primary px-4"

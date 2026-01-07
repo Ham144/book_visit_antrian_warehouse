@@ -265,12 +265,12 @@ const PreviewSlotDisplay = ({
   const getCurrentBooking = (date: Date): any | null => {
     if (!currentBookingId || !formData?.arrivalTime) return null;
     const dateString = formatDateToString(date);
-    const bookingDate = new Date(formData.arrivalTime);
+    const bookingDate = new Date(formData?.arrivalTime);
     if (formatDateToString(bookingDate) === dateString) {
       return {
         id: currentBookingId,
-        arrivalTime: formData.arrivalTime,
-        estimatedFinishTime: formData.estimatedFinishTime,
+        arrivalTime: formData?.arrivalTime,
+        estimatedFinishTime: formData?.estimatedFinishTime,
       };
     }
     return null;
@@ -929,10 +929,10 @@ const PreviewSlotDisplay = ({
         <div className="card bg-primary text-primary-content shadow">
           <div className="card-body">
             <h3 className="text-lg font-medium mb-2">Ringkasan Booking</h3>
-            {formData.arrivalTime && (
+            {formData?.arrivalTime && (
               <div className="mb-2">
                 <p className="font-medium">Waktu Kunjungan:</p>
-                <p>{new Date(formData.arrivalTime).toLocaleString("id-ID")}</p>
+                <p>{new Date(formData?.arrivalTime).toLocaleString("id-ID")}</p>
                 {formData.estimatedFinishTime && (
                   <p className="text-sm opacity-90">
                     Estimasi Selesai:{" "}

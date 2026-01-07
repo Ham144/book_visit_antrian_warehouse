@@ -6,7 +6,6 @@ import {
   Truck,
   BanIcon,
   MessageCircleWarning,
-  Eye,
   Edit,
   CheckCircle,
   X,
@@ -15,10 +14,13 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
+import { timeRemainingAutoUnloading } from "@/lib/constant";
 
 interface DraggableBookingCardProps {
   booking: Booking;
   draggable?: boolean;
+  droppable?: boolean; // 🔥 NEW PROP: apakah bisa di-drop di atasnya
+  className?: string;
 
   onDetail?: () => void;
   onJustify?: () => void;
@@ -30,6 +32,8 @@ interface DraggableBookingCardProps {
 const DraggableBookingCard = ({
   booking,
   draggable = true,
+  droppable = true, // 🔥 Default true, false untuk inventory
+  className = "",
   onDetail,
   onJustify,
   onStartUnloading,
@@ -105,8 +109,10 @@ const DraggableBookingCard = ({
       style={style}
       className={`
         bg-white rounded-lg border p-3 min-w-[220px]
-        transition-all duration-200
-        ${isDragging ? "opacity-50 shadow-xl" : "hover:shadow-md"}
+        transition-all duration-200 w-full relative
+        ${isDragging ? "opacity-30 shadow-xl scale-95" : ""}
+        ${isOver ? "ring-4 ring-blue-400 ring-inset bg-blue-50 z-10" : ""}
+        hover:shadow-md
       `}
     >
       {/* HEADER */}
@@ -116,6 +122,10 @@ const DraggableBookingCard = ({
             <StatusIcon />
             <span className="text-xs font-medium text-gray-600">
               {booking.status}
+            </span>
+            <Timer />
+            <span className="text-xs font-medium text-gray-600">
+              {timeRemainingAutoUnloading(booking)}
             </span>
           </div>
 
@@ -138,6 +148,8 @@ const DraggableBookingCard = ({
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
           >
             <GripVertical size={16} />
           </div>
@@ -160,40 +172,16 @@ const DraggableBookingCard = ({
         <div className="grid grid-cols-2 gap-3 p-1">
           {onDetail && (
             <button className="btn btn-xs btn-ghost" onClick={onDetail}>
-              <Eye size={12} /> Detail
-            </button>
-          )}
-
-          {booking.status === BookingStatus.IN_PROGRESS && onJustify && (
-            <button
-              className="btn btn-xs btn-outline btn-primary"
-              onClick={onJustify}
-            >
-              <Edit size={12} /> Justify
-            </button>
-          )}
-
-          {booking.status === BookingStatus.IN_PROGRESS && onStartUnloading && (
-            <button
-              className="btn btn-xs btn-warning"
-              onClick={onStartUnloading}
-            >
-              Start Unloading
+              <Edit size={19} /> Justify
             </button>
           )}
 
           {booking.status === BookingStatus.UNLOADING && onMarkFinished && (
-            <button className="btn btn-xs btn-success" onClick={onMarkFinished}>
-              <CheckCircle size={12} /> Finish
-            </button>
-          )}
-
-          {booking.status !== BookingStatus.CANCELED && onCancel && (
             <button
-              className="btn btn-xs btn-outline btn-error"
-              onClick={onCancel}
+              className="btn btn-xs btn-success border"
+              onClick={onMarkFinished}
             >
-              <X size={12} /> Cancel
+              <CheckCircle size={12} /> Finish
             </button>
           )}
         </div>

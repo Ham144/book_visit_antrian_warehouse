@@ -98,7 +98,7 @@ export type DragAndDropPayload =
       toStatus: "UNLOADING" | "IN_PROGRESS";
       dockId?: string;
       relativePositionTarget: {
-        type: "BEFORE" | "AFTER";
+        type: "BEFORE" | "AFTER" | "SWAP"; //SWAP hanya berlaku antar dock yang sama dan harus sama2 IN_PROGRESS
         bookingId: string;
       };
     }
@@ -107,7 +107,7 @@ export type DragAndDropPayload =
       toStatus: "UNLOADING" | "CANCELED" | "IN_PROGRESS";
       dockId?: string;
       relativePositionTarget: {
-        type: "BEFORE" | "AFTER";
+        type: "BEFORE" | "AFTER" | "SWAP";
         bookingId: string;
       };
     };

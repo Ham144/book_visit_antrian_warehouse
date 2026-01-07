@@ -177,12 +177,11 @@ export class BookingWarehouseService {
       include: { Vehicle: true },
     });
 
-    if (!booking) throw new NotFoundException('Booking tidak ditemukan');
+    if (!booking) {
+      throw new NotFoundException('Booking tidak ditemukan');
+    }
 
-    const { action, toStatus, dockId, relativePositionTarget } = payload;
-
-    console.log(payload);
-
+    const { toStatus, dockId, relativePositionTarget } = payload;
     const targetDockId = dockId ?? booking.dockId;
 
     /* ===============================
@@ -194,46 +193,53 @@ export class BookingWarehouseService {
         status: toStatus === 'UNLOADING' ? 'UNLOADING' : 'IN_PROGRESS',
         id: { not: booking.id },
       },
+      include: {
+        Vehicle: true,
+      },
       orderBy: { arrivalTime: 'asc' },
     });
 
     /* ===============================
-     * 2. Tentukan index baru
+     * 2. Tentukan insert index
      * =============================== */
-    const targetIndex = queue.findIndex(
-      (b) => b.id === relativePositionTarget.bookingId,
-    );
+    let insertIndex = queue.length;
 
-    if (targetIndex === -1) {
-      throw new BadRequestException('Target booking tidak valid');
+    if (relativePositionTarget && relativePositionTarget.bookingId !== 'LAST') {
+      const targetIndex = queue.findIndex(
+        (b) => b.id === relativePositionTarget.bookingId,
+      );
+
+      if (targetIndex === -1) {
+        throw new BadRequestException('Target booking tidak valid');
+      }
+
+      insertIndex =
+        relativePositionTarget.type === 'BEFORE'
+          ? targetIndex
+          : targetIndex + 1;
     }
-
-    const insertIndex =
-      relativePositionTarget.type === 'BEFORE' ? targetIndex : targetIndex + 1;
 
     queue.splice(insertIndex, 0, booking);
 
     /* ===============================
-     * 3. Hitung ulang arrivalTime
+     * 3. Recalculate arrivalTime
      * =============================== */
-    let currentTime = new Date();
+    let cursorTime = new Date();
 
     for (const item of queue) {
-      const itemObj = await this.prismaService.booking.update({
+      const updated = await this.prismaService.booking.update({
         where: { id: item.id },
         data: {
-          arrivalTime: currentTime,
           dockId: targetDockId,
           status: toStatus,
-        },
-        include: {
-          Vehicle: true,
+          arrivalTime: cursorTime,
+          estimatedFinishTime: new Date(
+            cursorTime.getTime() + item.Vehicle.durasiBongkar * 60_000,
+          ),
         },
       });
 
-      currentTime = new Date(
-        currentTime.getTime() + itemObj.Vehicle.durasiBongkar * 60_000,
-      );
+      cursorTime = updated.estimatedFinishTime!;
     }
 
     return { success: true };
@@ -276,8 +282,24 @@ export class BookingWarehouseService {
       orderBy: {
         createdAt: 'desc',
       },
-      skip: (page - 1) * 10,
       take: 10,
+      skip: (page - 1) * 10,
+      include: {
+        Vehicle: {
+          select: {
+            durasiBongkar: true,
+            brand: true,
+            vehicleType: true,
+            description: true,
+          },
+        },
+        driver: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+      },
     });
     return plainToInstance(ResponseBookingDto, bookings, {
       excludeExtraneousValues: true,

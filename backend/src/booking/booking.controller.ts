@@ -13,7 +13,6 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { Auth } from 'src/common/auth.decorator';
 import { BookingforVendorService } from './booking-vendor.service';
 import { Authorization } from 'src/common/authorization.decorator';
-import { ROLE } from 'src/common/shared-enum';
 import { BookingWarehouseService } from './booking.service';
 
 @Controller('booking')
@@ -50,7 +49,7 @@ export class BookingController {
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Put('/drag-and-drop/:id')
   dragAndDrop(@Param('id') id: string, @Body() body) {
-    return this.bookingWarehouseService.justifyBooking(id, body);
+    return this.bookingWarehouseService.dragAndDrop(id, body);
   }
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')

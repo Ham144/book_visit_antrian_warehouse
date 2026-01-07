@@ -40,13 +40,17 @@ start 12/11/2025
 [x] add: live queue untuk melihat booking vendor, preview detail booking vendor, mengatur ulang waktu booking vendor
 
 //live queue complex UI drag drop
-[] add: bisa drag dari antrian IN_PROGRESS menjadi UNLOADING
-[] add: bisa drag dari DELAYED menjadi UNLOADING
+[x] add: bisa drag dari antrian IN_PROGRESS menjadi UNLOADING
+[x] add: bisa drag dari DELAYED menjadi UNLOADING
 [x] add: bisa drag dari DELAYED menjadi CANCELED
-[] add: bisa tukar posisi arrivalTime dengan drag drop antar IN_PROGRESS (antrian)
-[] add: bisa drag dari antrian ke CANCELED (inventory section)
-[] add: bisa drag dari canceled ke antrian
-[] add: bisa drag dari canceled ke unloading
+[] add: bisa tukar urutan dock yang sama :
+() smart check after relativePositionTarget
+() smart check before relativePositionTarget
+[x] add: bisa drag dari antrian ke CANCELED (inventory section)
+[x] add: bisa drag dari canceled ke antrian :
+() smart check after relativePositionTarget
+() smart check before relativePositionTarget
+[x] add: bisa drag dari canceled ke unloading
 
 [] add: warehouse setting untuk ruling berbeda tiap warehouse
 [] add: My Warehouse belum tau buat apa

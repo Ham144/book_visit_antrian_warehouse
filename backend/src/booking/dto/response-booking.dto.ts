@@ -45,7 +45,7 @@ export class ResponseBookingDto {
   @Expose({ groups: ['detail'] })
   notes?: string | null;
 
-  @Expose({ groups: ['detail'] })
+  @Expose()
   @Type(() => ResponseVehicleDto)
   Vehicle?: ResponseVehicleDto;
 
@@ -57,7 +57,7 @@ export class ResponseBookingDto {
   @Type(() => ResponseDockDto)
   Dock?: ResponseDockDto;
 
-  @Expose({ groups: ['detail'] })
+  @Expose()
   @Type(() => LoginResponseDto)
   driver?: LoginResponseDto;
 

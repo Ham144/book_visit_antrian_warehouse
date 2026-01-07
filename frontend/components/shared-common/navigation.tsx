@@ -186,7 +186,7 @@ export default function Navigation() {
                 type="text"
                 ref={searchBar}
                 placeholder="Cari Menu..."
-                className="xl:w-[500px] lg:w-[300px] pl-8 py-2 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
+                className=" md:w-[300px] pl-8 py-2 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
               />
 
               {/* Search Icon */}
