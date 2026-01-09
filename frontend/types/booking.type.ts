@@ -10,12 +10,12 @@ export interface Booking {
   vehicleId: string | null;
   warehouseId: string;
   dockId: string;
-  arrivalTime: string;
-  estimatedFinishTime: string;
-  actualArrivalTime?: string; //ini konfirmasi sudah sampai
+  arrivalTime: Date;
+  estimatedFinishTime: Date;
+  actualArrivalTime?: Date; //ini konfirmasi sudah sampai
   //unloading times
-  actualStartTime?: string;
-  actualFinishTime?: string;
+  actualStartTime?: Date;
+  actualFinishTime?: Date;
   status?: BookingStatus;
   notes?: string | null;
   driverUsername?: string;

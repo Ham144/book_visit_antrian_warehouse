@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" data-theme="light">
-      <body className="overflow-hidden ">
+      <body>
         <QueryClientProviderWrapper>
           <UserProvider>
             <Navigation />

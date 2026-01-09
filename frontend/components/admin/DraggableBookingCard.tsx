@@ -6,15 +6,17 @@ import {
   Truck,
   BanIcon,
   MessageCircleWarning,
-  Edit,
   CheckCircle,
-  X,
   GripVertical,
+  Clock,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import { timeRemainingAutoUnloading } from "@/lib/constant";
+import {
+  calculateTimeProgress,
+  timeRemainingAutoUnloading,
+} from "@/lib/constant";
 
 interface DraggableBookingCardProps {
   booking: Booking;
@@ -35,10 +37,8 @@ const DraggableBookingCard = ({
   droppable = true, // 🔥 Default true, false untuk inventory
   className = "",
   onDetail,
-  onJustify,
   onStartUnloading,
   onMarkFinished,
-  onCancel,
 }: DraggableBookingCardProps) => {
   // Tambahkan useSortable dengan data yang lengkap
   const {
@@ -108,82 +108,155 @@ const DraggableBookingCard = ({
       ref={combinedRef}
       style={style}
       className={`
-        bg-white rounded-lg border p-3 min-w-[220px]
-        transition-all duration-200 w-full relative
-        ${isDragging ? "opacity-30 shadow-xl scale-95" : ""}
-        ${isOver ? "ring-4 ring-blue-400 ring-inset bg-blue-50 z-10" : ""}
-        hover:shadow-md
+        bg-white rounded-md border border-gray-200 p-2 min-w-[180px]
+        transition-all duration-150 w-full relative text-xs
+        ${isDragging ? "opacity-30 shadow-lg scale-95" : ""}
+        ${isOver ? "ring-2 ring-blue-300 ring-inset bg-blue-50" : ""}
+        hover:shadow-sm hover:border-gray-300
       `}
     >
-      {/* HEADER */}
-      <div className="flex justify-between items-start gap-2">
+      {/* HEADER - SUPER COMPACT */}
+      <div
+        onClick={onDetail}
+        className="flex justify-between items-start gap-1 cursor-pointer"
+      >
+        {/* Left Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <StatusIcon />
-            <span className="text-xs font-medium text-gray-600">
-              {booking.status}
+          {/* Status & Code in one line */}
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <div className="flex items-center gap-1 truncate">
+              {StatusIcon()}
+              <span className="font-medium text-gray-700 truncate">
+                {booking.code || booking.id.slice(0, 6)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Timer size={10} className="text-gray-400" />
+              <span className="font-medium text-gray-600 whitespace-nowrap">
+                {timeRemainingAutoUnloading(booking)}
+              </span>
+            </div>
+          </div>
+
+          {/* Driver & Vehicle in one line */}
+          <div className="flex items-center gap-2 text-gray-500 mb-1">
+            <span className="truncate">
+              👤 {booking.driverUsername?.slice(0, 10) || "N/A"}
             </span>
-            <Timer />
-            <span className="text-xs font-medium text-gray-600">
-              {timeRemainingAutoUnloading(booking)}
+            <span>•</span>
+            <span className="truncate">
+              🚚 {booking.Vehicle?.vehicleType?.split("_").pop() || "-"}
             </span>
           </div>
 
-          <p className="font-bold text-sm truncate">
-            {booking.code || booking.id.slice(0, 8)}
-          </p>
+          {/* Time Info - Minimal */}
+          {booking.status === BookingStatus.IN_PROGRESS && (
+            <div className="space-y-0.5 mt-1.5 border-t pt-1.5">
+              {/* Arrival Time */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Clock size={10} className="text-gray-400" />
+                  <span className="text-gray-600">Arrival Book:</span>
+                </div>
+                <span className="font-medium text-gray-800">
+                  {booking.arrivalTime
+                    ? new Date(booking.arrivalTime).toLocaleTimeString(
+                        "id-ID",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        }
+                      )
+                    : "-"}
+                </span>
+              </div>
 
-          <p className="text-xs text-gray-500 truncate">
-            👤 {booking.driverUsername || "N/A"}
-          </p>
+              {/* Est. Finish */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Timer size={10} className="text-gray-400" />
+                  <span className="text-gray-600">Est. Finish:</span>
+                </div>
+                <span className="font-medium text-gray-800">
+                  {booking.estimatedFinishTime
+                    ? new Date(booking.estimatedFinishTime).toLocaleTimeString(
+                        "id-ID",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        }
+                      )
+                    : "-"}
+                </span>
+              </div>
 
-          <p className="text-xs text-gray-500 truncate">
-            🚚 {booking.Vehicle?.brand || "-"}{" "}
-            {booking.Vehicle?.vehicleType || ""}
-          </p>
+              {/* Duration - kecil di pojok */}
+              {booking.Vehicle?.durasiBongkar && (
+                <div className="text-right">
+                  <span className="inline-block px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
+                    Duration {booking.Vehicle.durasiBongkar}m
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Drag Handle - Smaller */}
         {draggable && (
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 ml-1"
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-            <GripVertical size={16} />
+            <GripVertical size={14} />
           </div>
         )}
       </div>
 
-      {/* NOTES */}
-      {booking.notes && (
-        <p className="text-xs text-gray-500 italic mt-2 border-t pt-1">
-          📝 {booking.notes}
-        </p>
+      {/* Progress Bar - Super Slim */}
+      {booking.status === BookingStatus.UNLOADING && (
+        <div className="mt-1.5">
+          <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+            <span>Arrival</span>
+            <span>Est. Finish</span>
+          </div>
+          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-400 rounded-full"
+              style={{
+                width: `${calculateTimeProgress(booking)}%`,
+              }}
+            />
+          </div>
+        </div>
       )}
 
-      {/* ACTIONS */}
-      {(onDetail ||
-        onJustify ||
-        onStartUnloading ||
-        onMarkFinished ||
-        onCancel) && (
-        <div className="grid grid-cols-2 gap-3 p-1">
-          {onDetail && (
-            <button className="btn btn-xs btn-ghost" onClick={onDetail}>
-              <Edit size={19} /> Justify
-            </button>
-          )}
+      {/* Notes - Compact */}
+      {booking.notes && (
+        <div className="mt-1.5 pt-1.5 border-t border-gray-100">
+          <p className="text-gray-500 truncate text-[11px]">
+            <span className="text-gray-400">📝</span>{" "}
+            {booking.notes.slice(0, 50)}
+            {booking.notes.length > 50 ? "..." : ""}
+          </p>
+        </div>
+      )}
 
-          {booking.status === BookingStatus.UNLOADING && onMarkFinished && (
-            <button
-              className="btn btn-xs btn-success border"
-              onClick={onMarkFinished}
-            >
-              <CheckCircle size={12} /> Finish
-            </button>
-          )}
+      {/* Actions - Minimal */}
+      {onMarkFinished && booking.status === BookingStatus.UNLOADING && (
+        <div className="mt-2 pt-1.5 border-t border-gray-100">
+          <button
+            className="w-full py-1 px-2 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-medium rounded flex items-center justify-center gap-1 transition-colors"
+            onClick={onMarkFinished}
+          >
+            <CheckCircle size={10} />
+            <span>Mark Selesai</span>
+          </button>
         </div>
       )}
     </div>

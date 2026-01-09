@@ -30,8 +30,14 @@ export class BookingController {
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
   @Get('/list')
-  findAllForWarehouse(@Query() filter, @Auth() userInfo: any) {
+  findAll(@Query() filter, @Auth() userInfo: any) {
     return this.bookingWarehouseService.findAll(filter, userInfo);
+  }
+
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Get('/semi-detail-list')
+  semiDetailList(@Query() filter, @Auth() userInfo: any) {
+    return this.bookingWarehouseService.semiDetailList(filter, userInfo);
   }
 
   @Authorization()

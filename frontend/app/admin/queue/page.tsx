@@ -11,17 +11,15 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowRight,
-  Calendar,
   CalendarIcon,
-  ChevronUp,
   Clock,
   Pencil,
-  Search,
   Trash2,
 } from "lucide-react";
 import QueueDetailModal from "@/components/admin/QueueDetailModal";
 import ConfirmationWithInput from "@/components/shared-common/ConfirmationWithInput";
 import DockOptionModal from "@/components/admin/DockOptionModal";
+
 import {
   DndContext,
   DragEndEvent,
@@ -50,12 +48,13 @@ export default function LiveQueuePage() {
   // Kategori
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
 
-  // Di component utama
+  // UI/UX interaction
   const [isDragOverCanceled, setIsDragOverCanceled] = useState(false);
   const [isDragOverDelayed, setIsDragOverDelayed] = useState(false);
-
   const [onFloatingBooking, setOnFloatingBooking] = useState<Booking>();
+  const [height, setHeight] = useState(200); // height inventory
 
+  //fundamental properties
   const [delayTolerance, setDelayTolerance] = useState(15);
 
   // Sensor untuk drag and drop
@@ -263,8 +262,6 @@ export default function LiveQueuePage() {
   const qq = useQueryClient();
 
   const bookingFilterQueueInit: BookingFilter = {
-    page: 1,
-    searchKey: "",
     warehouseId: userInfo?.homeWarehouse?.id,
     date: new Date().toISOString().split("T")[0],
   };
@@ -273,7 +270,7 @@ export default function LiveQueuePage() {
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["bookings", filter],
-    queryFn: async () => await BookingApi.getAllBookingsList(filter),
+    queryFn: async () => await BookingApi.semiDetailList(filter),
     enabled: !!userInfo,
   });
 
@@ -418,8 +415,8 @@ export default function LiveQueuePage() {
   }, [filteredBookings]);
 
   // Open justify modal
-  const openJustifyModal = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
+  const onDetail = (booking: Booking) => {
+    setSelectedBookingId(booking.id!);
     (
       document.getElementById("QueueDetailModalJustify") as HTMLDialogElement
     )?.showModal();
@@ -608,7 +605,7 @@ export default function LiveQueuePage() {
                   onDragCancel={handleDragCancel}
                 >
                   {/* MAIN */}
-                  <div className="grid gap-3 grid-cols-4 w-full ">
+                  <div className="grid gap-3 grid-cols-4 w-full">
                     {Object.entries(filteredBookings).map(
                       ([dockId, bookingGroup]) => {
                         const dock = docks.find((d) => d.id === dockId);
@@ -645,21 +642,21 @@ export default function LiveQueuePage() {
                             {/* ============================= */}
                             {/* UNLOADING SECTION - Bisa menerima drop */}
                             {/* ============================= */}
+
+                            <div className="text-xs font-semibold text-warning uppercase ">
+                              Unloading ({unloadingBookings.length})
+                            </div>
                             <SortableContainer
                               id={`unloading-section-${dockId}`}
                               type="dock-section"
                               bookingStatus={BookingStatus.UNLOADING}
                               dockId={dockId}
-                              className="space-y-2 mb-4 min-h-[100px]"
+                              className="space-y-2  min-h-[100px]"
                               acceptFrom={[
                                 BookingStatus.IN_PROGRESS,
                                 BookingStatus.DELAYED,
                               ]}
                             >
-                              <div className="text-xs font-semibold text-warning uppercase mb-1">
-                                Unloading ({unloadingBookings.length})
-                              </div>
-
                               {/* Drop Zone di atas list (untuk area kosong) */}
                               {unloadingBookings.length === 0 ? (
                                 <SortableContainer
@@ -667,16 +664,12 @@ export default function LiveQueuePage() {
                                   type="dock-section"
                                   bookingStatus={BookingStatus.UNLOADING}
                                   dockId={dockId}
-                                  className="card bg-base-200 min-h-[60px]"
                                   acceptFrom={[
                                     BookingStatus.IN_PROGRESS,
                                     BookingStatus.DELAYED,
                                   ]}
-                                >
-                                  <div className="card-body p-3 text-center text-xs text-gray-400">
-                                    Kosong - Drop di sini
-                                  </div>
-                                </SortableContainer>
+                                  isEmptyZone={true}
+                                />
                               ) : (
                                 <div className="space-y-2">
                                   {unloadingBookings.map((booking: Booking) => (
@@ -696,14 +689,7 @@ export default function LiveQueuePage() {
                                         {/* Booking card */}
                                         <DraggableBookingCard
                                           booking={booking}
-                                          onDetail={() => {
-                                            setSelectedBookingId(booking.id!);
-                                            (
-                                              document.getElementById(
-                                                "QueueDetailModalPreview"
-                                              ) as HTMLDialogElement
-                                            )?.showModal();
-                                          }}
+                                          onDetail={() => onDetail(booking)}
                                           onMarkFinished={() =>
                                             handleUpdateStatus({
                                               id: booking.id!,
@@ -720,8 +706,8 @@ export default function LiveQueuePage() {
                             </SortableContainer>
 
                             {/* IN_PROGRESS SECTION - Clean dengan DropZoneLine */}
-                            <div className="space-y-2 flex-1">
-                              <div className="text-xs font-semibold text-info uppercase mb-1  mt-7">
+                            <div className="space-y-2 flex-1  flex flex-col max-h-96">
+                              <div className="text-xs font-semibold text-info uppercase mb-1 mt-7">
                                 Antrian ({inProgressBookings.length})
                               </div>
 
@@ -732,18 +718,15 @@ export default function LiveQueuePage() {
                                   bookingStatus={BookingStatus.IN_PROGRESS}
                                   dockId={dockId}
                                   className="card bg-base-200 min-h-[100px] flex items-center justify-center"
+                                  isEmptyZone={true}
                                   acceptFrom={[
                                     BookingStatus.IN_PROGRESS,
                                     BookingStatus.DELAYED,
                                     BookingStatus.CANCELED,
                                   ]}
-                                >
-                                  <div className="text-center text-xs text-gray-400">
-                                    Kosong - Drop di sini
-                                  </div>
-                                </SortableContainer>
+                                />
                               ) : (
-                                <div className="space-y-1">
+                                <div className="space-y-1 max-h-96 flex  flex-col overflow-auto">
                                   {/* 🔥 DROP ZONE di ATAS booking PERTAMA */}
                                   <DropZoneLine
                                     id={`drop-before-first-${dockId}`}
@@ -758,45 +741,35 @@ export default function LiveQueuePage() {
                                   />
 
                                   {inProgressBookings.map(
-                                    (booking: Booking, index) => (
+                                    (booking: Booking) => (
                                       <React.Fragment key={booking.id}>
-                                        {/* BOOKING CARD */}
+                                        {/* Drop zone sebelum booking */}
+                                        <SortableContainer
+                                          id={`before-inprogress-${booking.id}`}
+                                          type="dock-section"
+                                          bookingStatus={
+                                            BookingStatus.IN_PROGRESS
+                                          }
+                                          dockId={dockId}
+                                          className="h-1 my-1"
+                                          acceptFrom={[
+                                            BookingStatus.IN_PROGRESS,
+                                            BookingStatus.DELAYED,
+                                            BookingStatus.CANCELED,
+                                          ]}
+                                          children
+                                        ></SortableContainer>
                                         <DraggableBookingCard
                                           booking={booking}
-                                          onDetail={() =>
-                                            openJustifyModal(booking.id!)
-                                          }
-                                          onStartUnloading={() =>
+                                          onDetail={() => onDetail(booking)}
+                                          onMarkFinished={() =>
                                             handleUpdateStatus({
                                               id: booking.id!,
-                                              status: BookingStatus.UNLOADING,
+                                              status: BookingStatus.FINISHED,
+                                              actualFinishTime: new Date(),
                                             })
                                           }
-                                          onCancel={() => {
-                                            setSelectedBookingId(booking.id!);
-                                            (
-                                              document.getElementById(
-                                                "cancel-confirmation"
-                                              ) as HTMLDialogElement
-                                            ).showModal();
-                                          }}
                                         />
-
-                                        {/* 🔥 DROP ZONE di ANTARA booking */}
-                                        {index <
-                                          inProgressBookings.length - 1 && (
-                                          <DropZoneLine
-                                            id={`drop-between-${booking.id}-${index}`}
-                                            bookingStatus={
-                                              BookingStatus.IN_PROGRESS
-                                            }
-                                            dockId={dockId}
-                                            acceptFrom={[
-                                              BookingStatus.IN_PROGRESS,
-                                            ]}
-                                            className="my-2"
-                                          />
-                                        )}
                                       </React.Fragment>
                                     )
                                   )}
@@ -822,23 +795,49 @@ export default function LiveQueuePage() {
                     )}
                   </div>
                   {/* INVENTORY SECTION */}
-                  <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-                    <div className="container mx-auto px-6 py-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h2 className="font-bold text-xl">Inventory</h2>
-                          <p className="text-sm text-gray-500">
-                            Booking yang memerlukan perhatian khusus
-                          </p>
-                        </div>
+                  <div className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-400 shadow-lg">
+                    {/* Handle untuk tarik */}
+                    <div
+                      className="h-6 bg-gray-200 border-t border-gray-300 cursor-ns-resize flex justify-center items-center"
+                      onMouseDown={(e) => {
+                        const startY = e.clientY;
+                        const startHeight = height;
 
-                        {/* Toggle untuk show/hide inventory */}
-                        <button className="btn btn-sm btn-ghost">
-                          <ChevronUp size={16} />
-                        </button>
-                      </div>
+                        // PREVENT TEXT SELECTION & GHOST IMAGE
+                        e.preventDefault();
+                        e.stopPropagation();
 
-                      <div className="flex gap-4">
+                        const handleMouseMove = (moveEvent) => {
+                          const delta = startY - moveEvent.clientY;
+                          setHeight(
+                            Math.max(100, Math.min(600, startHeight + delta))
+                          );
+                        };
+
+                        const handleMouseUp = () => {
+                          document.removeEventListener(
+                            "mousemove",
+                            handleMouseMove
+                          );
+                          document.removeEventListener(
+                            "mouseup",
+                            handleMouseUp
+                          );
+                        };
+
+                        document.addEventListener("mousemove", handleMouseMove);
+                        document.addEventListener("mouseup", handleMouseUp);
+                      }}
+                    >
+                      <div className="w-16 h-1 bg-gray-400 rounded"></div>
+                    </div>
+
+                    {/* Content */}
+                    <div
+                      style={{ height: `${height}px` }}
+                      className="overflow-auto "
+                    >
+                      <div className="grid grid-cols-2 gap-x-3 md:px-52">
                         {/* DELAYED */}
                         <div className="p-2 -m-2 flex-1">
                           <FullDroppableInventory
@@ -847,8 +846,10 @@ export default function LiveQueuePage() {
                             title="Delayed Bookings"
                             badgeColor="badge-warning"
                             bgColor="bg-amber-50"
+                            onDetail={onDetail}
                             borderColor="border-amber-200"
                             icon={<Clock className="w-5 h-5 mr-2" />}
+                            isDragOverDelayed={isDragOverDelayed}
                           />
                         </div>
 

@@ -167,15 +167,15 @@ export default function Navigation() {
               <div className="flex flex-col max-xl:hidden">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
                   Antrian Gudang
-                  <div className="badge badge-accent -translate-y-3 px-2 font-light text-white">
-                    beta
-                  </div>
                 </h1>
-                <p className="max-md:hidden text-xs text-gray-500 font-medium">
+                <div className="max-md:hidden text-xs text-gray-500 font-medium">
                   {userInfo?.role.includes("ORGANIZATION")
                     ? "Portal Perusahaan"
                     : "Portal Vendor"}
-                </p>
+                  <div className="badge badge-accent mx-2 px-2 font-light text-white">
+                    beta
+                  </div>
+                </div>
               </div>
             </div>
           </div>

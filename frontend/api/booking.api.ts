@@ -12,8 +12,19 @@ export const BookingApi = {
     if (filter?.searchKey) params.set("searchKey", filter.searchKey);
     if (filter.warehouseId) params.set("warehouseId", filter.warehouseId);
     if (filter.page) params.set("page", filter.page.toString());
+    if (filter.date) params.set("date", filter.date);
 
     const res = await axiosInstance.get("/api/booking/list", { params });
+    return res.data;
+  },
+  semiDetailList: async (filter: BookingFilter) => {
+    const params = new URLSearchParams();
+    if (filter.warehouseId) params.set("warehouseId", filter.warehouseId);
+    if (filter.date) params.set("date", filter.date);
+
+    const res = await axiosInstance.get("/api/booking/semi-detail-list", {
+      params,
+    });
     return res.data;
   },
   getDetailById: async (id: string): Promise<Booking> => {

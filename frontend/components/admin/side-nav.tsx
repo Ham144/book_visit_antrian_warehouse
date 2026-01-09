@@ -21,7 +21,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
 import { ROLE } from "@/types/shared.type";
 
@@ -162,35 +162,37 @@ export const vendorMenutItems = [
   },
 ];
 
-export default function SideNav({ children }: { children: React.ReactNode }) {
+const SideNav = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true); // full
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { userInfo } = useUserInfo();
 
-  // Collapse when clicking outside
-  // useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     if (
-  //       sidebarRef.current &&
-  //       !sidebarRef.current.contains(event.target as Node)
-  //     ) {
-  //       setIsOpen(false);
-  //     }
-  //   };
-  //   document.addEventListener("click", handleClickOutside);
-  //   return () => document.removeEventListener("click", handleClickOutside);
-  // }, []);
+  // open when hover
+  useEffect(() => {
+    const handleMouseEnter = () => {
+      setIsOpen(true);
+    };
+    const handleMouseLeave = () => {
+      setIsOpen(false);
+    };
+    sidebarRef.current?.addEventListener("mouseenter", handleMouseEnter);
+    sidebarRef.current?.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      sidebarRef.current?.removeEventListener("mouseenter", handleMouseEnter);
+      sidebarRef.current?.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, []);
 
   return (
     <div className="max-h-screen  flex flex-col w-full">
-      <div className="flex flex-1 ">
+      <div className="flex flex-1">
         {/* SIDEBAR - Fixed dengan efek glassy */}
         <aside
           ref={sidebarRef}
           className={`
-            fixed left-0 top-13 h-[calc(100vh-52px)] z-20
+            fixed left-0 top-13 h-screen z-20
             bg-gradient-to-b from-emerald-50/90 to-white/90
             backdrop-blur-lg border-r border-emerald-100/50
             shadow-lg shadow-emerald-100/30
@@ -203,7 +205,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
            `}
         >
           {/* tombol tutup buka  */}
-          <div className="p-3 relative">
+          {/* <div className="p-3 relative">
             <button
               onClick={() => setIsOpen((v) => !v)}
               type="button"
@@ -240,7 +242,7 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
                 </div>
               )}
             </button>
-          </div>
+          </div> */}
 
           {/* Navigation */}
           <nav className="flex-1 overflow-auto px-2 max-h-screen pb-32 ">
@@ -417,10 +419,10 @@ export default function SideNav({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex  flex-col  flex-1 max-h-screen w-full overflow-y-auto">
-          {children}
-        </main>
+        <div className="flex-1 overflow-hidden max-h-screen">{children}</div>
       </div>
     </div>
   );
-}
+};
+
+export default SideNav;

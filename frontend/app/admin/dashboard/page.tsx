@@ -1,8 +1,7 @@
 "use client";
 
-import KPICards from "@/components/admin/kpi-cards";
-import SlotGrid from "@/components/admin/slot-grid";
 import { useUserInfo } from "@/components/UserContext";
+import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
 
 export default function AdminDashboard() {
   const { userInfo } = useUserInfo();
@@ -24,8 +23,9 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold">Admin Dashboard</h1>
               <p className="text-gray-600">{userInfo?.vendorName} Dashboard</p>
             </div>
-            <KPICards />
-            <SlotGrid />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="badge badge-accent">Sedang Dikembangkan</div>
+            </div>
           </div>
         </main>
       </div>

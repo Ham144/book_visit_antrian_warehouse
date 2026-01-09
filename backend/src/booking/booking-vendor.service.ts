@@ -50,7 +50,7 @@ export class BookingforVendorService {
         busyTimes[overLapIdx].recurring === 'MONTHLY' &&
         busyTimes[overLapIdx].recurringStep === arrivalTime.getDate()
       ) {
-        throw new Error(
+        throw new BadRequestException(
           `Waktu terkait overlap busy time ${busyTimes[overLapIdx].reason}, antara ${busyTimes[overLapIdx].from} sampai ${busyTimes[overLapIdx].to}`,
         );
       } else if (
@@ -59,11 +59,11 @@ export class BookingforVendorService {
           Days[arrivalTime.getDay()],
         )
       ) {
-        throw new Error(
+        throw new BadRequestException(
           `Waktu terkait overlap busy time ${busyTimes[overLapIdx].reason}, antara ${busyTimes[overLapIdx].from} sampai ${busyTimes[overLapIdx].to}`,
         );
       } else
-        throw new Error(
+        throw new BadRequestException(
           `Waktu terkait overlap busy time ${busyTimes[overLapIdx].reason}, antara ${busyTimes[overLapIdx].from} sampai ${busyTimes[overLapIdx].to}`,
         );
     }
@@ -111,7 +111,7 @@ export class BookingforVendorService {
     });
 
     if (overlapDockedHour) {
-      throw new Error(
+      throw new BadRequestException(
         `Waktu terkait overlap booking ${overlapDockedHour.id}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
       );
     }

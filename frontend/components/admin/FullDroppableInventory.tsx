@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import DraggableBookingCard from "./DraggableBookingCard";
-import { cn } from "@/lib/utils";
 import { Booking } from "@/types/booking.type";
 import { BookingStatus } from "@/types/shared.type";
 
@@ -15,6 +14,8 @@ interface FullDroppableInventoryProps {
   icon: React.ReactNode;
   className?: string;
   acceptFrom?: BookingStatus[];
+  onDetail?: (booking: Booking) => void;
+  isDragOverDelayed?: boolean;
 }
 
 const FullDroppableInventory = ({
@@ -22,12 +23,10 @@ const FullDroppableInventory = ({
   status,
   title,
   badgeColor,
-  bgColor,
-  borderColor,
   icon,
+  onDetail,
+  isDragOverDelayed,
 }: FullDroppableInventoryProps) => {
-  const [isDraggingFromHere, setIsDraggingFromHere] = useState(false);
-
   const { setNodeRef, isOver, active } = useDroppable({
     id: `inventory-${status}`,
     data: {
@@ -44,24 +43,12 @@ const FullDroppableInventory = ({
     },
   });
 
-  // Deteksi jika drag berasal dari inventory ini
-  useEffect(() => {
-    if (active) {
-      const isFromThisInventory = bookings.some(
-        (booking) => booking.id === active.id
-      );
-      setIsDraggingFromHere(isFromThisInventory);
-    } else {
-      setIsDraggingFromHere(false);
-    }
-  }, [active, bookings]);
-
   return (
-    <div className="relative flex-1 min-h-[160px]">
+    <div className="relative flex-1 min-h-[160px] py-2">
       {/* ===================== */}
       {/* MAIN GRID LAYOUT */}
       {/* ===================== */}
-      <div className="grid grid-rows-[auto_1fr] h-full gap-0">
+      <div className="grid grid-rows-[auto_1fr] h-full  ">
         {/* ROW 1: HEADER AREA (NON-DROPPABLE) */}
         <div className="relative z-40 bg-white p-4 rounded-t-xl border-2 border-b-0">
           <div className="flex items-center justify-between">
@@ -86,11 +73,7 @@ const FullDroppableInventory = ({
             className={`
               absolute inset-0 rounded-b-xl
               transition-all duration-300
-              ${
-                (isOver && !isDraggingFromHere) || bookings.length === 0
-                  ? "z-20 border-4 border-dashed"
-                  : "z-0 opacity-0"
-              }
+              ${isOver ? "z-20 border-4 border-dashed" : "z-0 opacity-0"}
               ${
                 status === BookingStatus.CANCELED
                   ? "bg-rose-100/40 border-rose-400"
@@ -133,6 +116,7 @@ const FullDroppableInventory = ({
                       booking={booking}
                       draggable={true}
                       droppable={false}
+                      onDetail={() => onDetail(booking)}
                     />
                   </div>
                 ))
@@ -141,39 +125,6 @@ const FullDroppableInventory = ({
           </div>
         </div>
       </div>
-
-      {/* ===================== */}
-      {/* DROP FEEDBACK OVERLAY */}
-      {/* ===================== */}
-      {isOver && !isDraggingFromHere && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-          <div
-            className={`
-              bg-white/95 backdrop-blur-sm px-6 py-4 rounded-xl shadow-2xl border-2
-              ${
-                status === BookingStatus.CANCELED
-                  ? "border-rose-400 text-rose-600"
-                  : "border-amber-400 text-amber-600"
-              }
-              animate-in fade-in duration-200
-            `}
-          >
-            <div className="text-center">
-              <div className="text-2xl mb-2">
-                {status === BookingStatus.CANCELED ? "🗑️" : "🕒"}
-              </div>
-              <p className="font-semibold">
-                {status === BookingStatus.CANCELED
-                  ? "Batalkan Booking"
-                  : "Tandai sebagai Terlambat"}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Lepaskan untuk melanjutkan
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ===================== */}
       {/* HOVER HINT */}

@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBookingDto } from './dto/response-booking.dto';
-import { Days, DragAndDropPayload } from 'src/common/shared-enum';
+import { Days, DragAndDropPayload, ROLE } from 'src/common/shared-enum';
 import { DockBusyTime, Prisma } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { BookingFilter } from 'src/common/shared-interface';
@@ -238,28 +238,22 @@ export class BookingWarehouseService {
           ),
         },
       });
-
       cursorTime = updated.estimatedFinishTime!;
     }
-
     return { success: true };
   }
 
   async findAll(filter: BookingFilter, userInfo: TokenPayload) {
-    const { page, searchKey, date } = filter;
+    const { page, searchKey, weekStart, weekEnd } = filter;
 
     const where: Prisma.BookingWhereInput = {
       organizationName: userInfo.organizationName,
     };
 
-    if (date) {
-      const day = new Date(date);
-      const nextDay = new Date(day);
-      nextDay.setDate(day.getDate() + 1);
-      where.arrivalTime = {
-        gte: day,
-        lte: nextDay,
-      };
+    if (weekStart && weekEnd) {
+      console.log(
+        'implementasi funsi untuk oreview flow untuk menunjukkan semua book hari dalam 1 minggu ',
+      );
     }
 
     if (searchKey) {
@@ -284,6 +278,73 @@ export class BookingWarehouseService {
       },
       take: 10,
       skip: (page - 1) * 10,
+      include: {
+        Vehicle: {
+          select: {
+            durasiBongkar: true,
+            brand: true,
+            vehicleType: true,
+            description: true,
+          },
+        },
+        driver: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+    return plainToInstance(ResponseBookingDto, bookings, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  async semiDetailList(filter: BookingFilter, userInfo: TokenPayload) {
+    const { searchKey, date } = filter;
+
+    const where: Prisma.BookingWhereInput = {
+      organizationName: userInfo.organizationName,
+    };
+
+    const parsed = new Date(date);
+    const base = isNaN(parsed.getTime()) ? new Date() : parsed;
+
+    const from = new Date(base);
+    const to = new Date(base);
+
+    from.setHours(0, 0, 0, 0);
+    to.setHours(23, 59, 59, 999);
+
+    where.AND = [
+      {
+        arrivalTime: {
+          gte: from,
+          lte: to,
+        },
+      },
+    ];
+
+    if (searchKey) {
+      where.OR = [
+        {
+          code: {
+            contains: searchKey,
+          },
+        },
+        {
+          driverUsername: {
+            contains: searchKey,
+          },
+        },
+      ];
+    }
+
+    const bookings = await this.prismaService.booking.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc',
+      },
       include: {
         Vehicle: {
           select: {

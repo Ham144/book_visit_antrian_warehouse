@@ -4,7 +4,7 @@ import { useDroppable } from "@dnd-kit/core";
 // SortableContainer.tsx - Tambahkan prop isEmptyZone
 interface SortableContainerProps {
   id: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   type: "inventory" | "dock-section" | "booking-card" | "empty-zone";
   bookingStatus?: BookingStatus;
   dockId?: string;
@@ -48,9 +48,9 @@ export const SortableContainer = ({
         ${className}
         ${isEmptyZone ? "min-h-[80px]" : ""}
         ${
-          isOver && isInventoryEmptyZone
-            ? "bg-rose-100 border-2 border-dashed border-rose-400"
-            : ""
+          isOver || isInventoryEmptyZone
+            ? "bg-rose-100 border-2 border-primary border-dashed"
+            : "border-dashed"
         }
         ${
           isOver && isDockEmptyZone
@@ -62,17 +62,15 @@ export const SortableContainer = ({
             ? "ring-2 ring-primary ring-inset bg-primary/10"
             : ""
         }
-        transition-all duration-150 relative
+        transition-all duration-150 relative flex flex-col card justify-center
       `}
     >
       {children}
 
       {/* Visual feedback khusus untuk empty zone */}
-      {isOver && isEmptyZone && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div className="text-primary font-medium text-sm bg-white/90 px-4 py-2 rounded-lg shadow-sm">
-            Drop di sini
-          </div>
+      {isEmptyZone && (
+        <div className="badge badge-ghost text-primary border border-dashed mx-auto text-center justify-center items-center mt-2">
+          Kosong - Drop di sini
         </div>
       )}
     </div>

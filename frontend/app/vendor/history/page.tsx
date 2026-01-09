@@ -27,7 +27,7 @@ export default function HistoryPage() {
 
   const { data: bookings } = useQuery({
     queryKey: ["bookings", filter],
-    queryFn: async () => await BookingApi.getAllBookingsForVendor(filter),
+    queryFn: async () => await BookingApi.getAllBookingsList(filter),
     enabled: !!userInfo,
   });
 

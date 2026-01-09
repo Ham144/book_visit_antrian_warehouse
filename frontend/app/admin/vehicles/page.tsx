@@ -109,7 +109,7 @@ export default function VehiclesPage() {
 
   return (
     <div className=" bg-gray-50">
-      <main className="flex-1 pb-20 py-6">
+      <main className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">

@@ -38,3 +38,40 @@ export const timeRemainingAutoUnloading = (booking: Booking): string => {
     return "Error";
   }
 };
+
+// Fungsi untuk menghitung progress unloading (0-100%)
+export const calculateTimeProgress = (booking: Booking): number => {
+  try {
+    const now = new Date();
+    const arrival = new Date(booking.actualArrivalTime);
+    const estimatedFinish = new Date(
+      new Date(booking.actualStartTime).getTime() +
+        booking.Vehicle.durasiBongkar * 60000
+    );
+
+    if (isNaN(arrival.getTime()) || isNaN(estimatedFinish.getTime())) {
+      return 0;
+    }
+
+    const totalDuration = estimatedFinish.getTime() - arrival.getTime();
+    const elapsedTime = now.getTime() - arrival.getTime();
+
+    if (totalDuration <= 0) return 100;
+    if (elapsedTime <= 0) return 0;
+    if (elapsedTime >= totalDuration) return 100;
+
+    return Math.min(100, Math.max(0, (elapsedTime / totalDuration) * 100));
+  } catch (error) {
+    return 0;
+  }
+};
+
+export const DAYS = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+];
