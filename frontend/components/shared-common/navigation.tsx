@@ -152,7 +152,7 @@ export default function Navigation() {
   }, []);
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50 ">
+    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className={"flex justify-between items-center py-2"}>
           {/* Logo & Brand */}

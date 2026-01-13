@@ -254,6 +254,7 @@ export class AuthService {
       homeWarehouse: user.homeWarehouse,
       role: user.role as ROLE,
     };
+
     return plainToInstance(LoginResponseDto, userInfo, {
       excludeExtraneousValues: true,
       groups: ['login'],

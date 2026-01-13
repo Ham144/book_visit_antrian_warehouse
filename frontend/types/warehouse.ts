@@ -10,6 +10,8 @@ export interface Warehouse {
   userWarehouseAccesses?: string[];
   docks?: object[];
   bookings?: object[];
+  delayTolerance?: number;
+  intervalMinimalQueueu?: number;
   createdAt?: Date;
   updatedAt?: Date;
   organizationName?: string;

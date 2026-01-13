@@ -9,6 +9,7 @@ export class AuthMiddleware implements NestMiddleware {
       '/api/user/login/ldap',
       '/api/user/login/app',
       '/api/user/refresh-token',
+      '/api/organization/landing-page',
     ];
 
     //refresh_token tidak akan melewati middleware ini

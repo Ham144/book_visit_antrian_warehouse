@@ -84,4 +84,10 @@ export class MyOrganizationController {
   remove(@Param('name') name: string, @Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.remove(name, userInfo);
   }
+
+  //global tidak perlu login
+  @Get('/landing-page')
+  getLandingPage() {
+    return this.myOrganizationService.getLandingPage();
+  }
 }

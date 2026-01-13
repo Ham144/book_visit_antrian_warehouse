@@ -1,6 +1,6 @@
 import axiosInstance from "@/lib/axios";
 import { Organization } from "@/types/organization";
-import { BaseProps } from "@/types/shared.type";
+import { BaseProps, GetLandingPageStats } from "@/types/shared.type";
 
 export const OrganizationApi = {
   registerOrganization: async (body: Organization) => {
@@ -39,6 +39,10 @@ export const OrganizationApi = {
   },
   deleteOrganization: async (name: string) => {
     const res = await axiosInstance.delete(`/api/organization/${name}`);
+    return res?.data;
+  },
+  getLandingPage: async (): Promise<GetLandingPageStats> => {
+    const res = await axiosInstance.get("/api/organization/landing-page");
     return res?.data;
   },
 };

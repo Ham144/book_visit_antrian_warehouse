@@ -76,7 +76,7 @@ export default function HistoryPage() {
           </label>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-auto">
           {bookings?.length === 0 ? (
             <div className="card bg-white shadow">
               <div className="card-body text-center py-12">
@@ -85,7 +85,7 @@ export default function HistoryPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 flex flex-col ">
               {bookings?.map((booking: Booking) => (
                 <BookingListCard
                   booking={booking}

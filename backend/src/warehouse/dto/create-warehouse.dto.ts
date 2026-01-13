@@ -1,4 +1,10 @@
-import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateWarehouseDto {
   @IsString()
@@ -24,4 +30,12 @@ export class CreateWarehouseDto {
   @IsArray()
   @IsString({ each: true })
   userWarehouseAccesses?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  delayTolerance?: number;
+
+  @IsOptional()
+  @IsNumber()
+  intervalMinimalQueueu?: number;
 }

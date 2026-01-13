@@ -88,6 +88,13 @@ export enum VehicleType {
   FLATBED = "FLATBED",
 }
 
+export interface GetLandingPageStats {
+  totalWarehouse: number;
+  activeSlot: number;
+  bookedToday: number;
+  succeedBooking: number;
+}
+
 export interface InventoryBooking extends Booking {
   type: "delayed" | "canceled";
 }
@@ -98,7 +105,7 @@ export type DragAndDropPayload =
       toStatus: "UNLOADING" | "IN_PROGRESS";
       dockId?: string;
       relativePositionTarget: {
-        type: "BEFORE" | "AFTER" | "SWAP"; //SWAP hanya berlaku antar dock yang sama dan harus sama2 IN_PROGRESS
+        type: "AFTER" | "SWAP" | "BEFORE"; //SWAP hanya berlaku antar dock yang sama dan harus sama2 IN_PROGRESS
         bookingId: string;
       };
     }
@@ -107,7 +114,7 @@ export type DragAndDropPayload =
       toStatus: "UNLOADING" | "CANCELED" | "IN_PROGRESS";
       dockId?: string;
       relativePositionTarget: {
-        type: "BEFORE" | "AFTER" | "SWAP";
+        type: "AFTER" | "SWAP" | "BEFORE";
         bookingId: string;
       };
     };

@@ -67,11 +67,17 @@ export const calculateTimeProgress = (booking: Booking): number => {
 };
 
 export const DAYS = [
-  "Minggu",
   "Senin",
   "Selasa",
   "Rabu",
   "Kamis",
   "Jumat",
   "Sabtu",
+  "Minggu",
 ];
+
+export const normalizeDate = (d: Date) => {
+  const n = new Date(d);
+  n.setHours(0, 0, 0, 0);
+  return n;
+};

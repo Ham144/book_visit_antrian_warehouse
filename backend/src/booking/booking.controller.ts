@@ -34,7 +34,7 @@ export class BookingController {
     return this.bookingWarehouseService.findAll(filter, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
   @Get('/semi-detail-list')
   semiDetailList(@Query() filter, @Auth() userInfo: any) {
     return this.bookingWarehouseService.semiDetailList(filter, userInfo);
@@ -75,5 +75,23 @@ export class BookingController {
   @Delete('/cancel/:id')
   cancelBook(@Param('id') id: string, @Body() body) {
     return this.bookingForVendorService.cancelBook(id, body);
+  }
+
+  @Authorization('DRIVER_VENDOR', 'ADMIN_ORGANIZATION')
+  @Get('/stats/stats-for-driver')
+  getStatsForDriver() {
+    return this.bookingForVendorService.getStatsForDriver();
+  }
+
+  @Authorization('ADMIN_VENDOR', 'ADMIN_ORGANIZATION')
+  @Get('/stats/stats-for-admin-vendor')
+  getStatsForAdminVendor() {
+    return this.bookingForVendorService.getStatsForAdminVendor();
+  }
+
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Get('/stats/stats-for-organization')
+  getStatsForUserOrganizations() {
+    return this.bookingWarehouseService.getStatsForUserOrganizations();
   }
 }

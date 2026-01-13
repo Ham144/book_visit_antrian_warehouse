@@ -54,7 +54,6 @@ const adminMenuItems = [
     href: "/admin/busy-times",
     roles: [ROLE.ADMIN_ORGANIZATION, ROLE.USER_ORGANIZATION],
   },
-
   {
     id: "reports",
     label: "Reports",
@@ -159,6 +158,13 @@ export const vendorMenutItems = [
     icon: BarChart3,
     href: "/vendor/reports",
     roles: [ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
+  },
+  {
+    id: "driver menu",
+    label: "Driver Menu",
+    icon: Truck,
+    href: "/vendor/driver-menu",
+    roles: [ROLE.DRIVER_VENDOR, ROLE.ADMIN_ORGANIZATION],
   },
 ];
 

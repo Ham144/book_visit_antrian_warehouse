@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import PreviewSlotDisplay from "../vendor/PreviewSlotDisplay";
+import { Calendar, Clock, MessageSquare } from "lucide-react";
 
 export const getStatusBadgeColor = (status?: BookingStatus) => {
   switch (status) {
@@ -181,81 +182,146 @@ const QueueDetailModal = ({
   return (
     <dialog id={id} className="modal" onClose={handleClose}>
       <div className="modal-box max-w-6xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex-none flex justify-between items-center mb-4">
-          <h3 className="font-bold text-lg">Detail Booking</h3>
-          {isFormModified && id == "QueueDetailModalJustify" && (
-            <span className="badge badge-warning badge-sm">
-              Ada perubahan yang belum disimpan
-            </span>
-          )}
-        </div>
-
-        {/* Content Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Code</p>
-              <p className="font-semibold">
-                {selectedBooking?.code || selectedBooking?.id || "N/A"}
-              </p>
+        {/* Ultra Compact Header */}
+        <div className="flex-none border-b pb-2 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary" />
+              <h3 className="font-bold text-sm">
+                Booking Code {selectedBooking?.code || "N/A"}
+              </h3>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Status</p>
+            <div className="flex items-center gap-1">
+              {isFormModified && id === "QueueDetailModalJustify" && (
+                <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded animate-pulse">
+                  ⚠️ Unsaved
+                </span>
+              )}
               <span
-                className={`badge ${getStatusBadgeColor(
+                className={`text-xs px-2 py-0.5 rounded ${getStatusBadgeColor(
                   selectedBooking?.status
                 )}`}
               >
                 {getStatusLabel(selectedBooking?.status)}
               </span>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Driver</p>
-              <p className="font-semibold">
-                {selectedBooking?.driverUsername || "N/A"}
-              </p>
+          </div>
+        </div>
+
+        {/* Compact Info Cards */}
+        <div className="flex-1 overflow-y-auto space-y-2">
+          {/* Key Info Row */}
+          <div className="grid grid-cols-4 gap-1 text-xs">
+            <div className="bg-gray-50 p-1.5 rounded border">
+              <div className="text-gray-500 truncate">Driver</div>
+              <div
+                className="font-semibold truncate"
+                title={selectedBooking?.driverUsername}
+              >
+                {selectedBooking?.driverUsername?.split("@")[0] || "—"}
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Vehicle</p>
-              <p className="font-semibold">
-                {selectedBooking?.Vehicle?.brand || "N/A"}
-                {selectedBooking?.Vehicle?.vehicleType
-                  ? ` (${selectedBooking.Vehicle.vehicleType})`
-                  : ""}
-              </p>
+            <div className="bg-gray-50 p-1.5 rounded border">
+              <div className="text-gray-500 truncate">Vehicle</div>
+              <div
+                className="font-semibold truncate"
+                title={`${selectedBooking?.Vehicle?.brand} ${
+                  selectedBooking?.Vehicle?.vehicleType || ""
+                }`}
+              >
+                {selectedBooking?.Vehicle?.brand ? (
+                  <>
+                    {selectedBooking.Vehicle.brand.slice(0, 8)}
+                    {selectedBooking.Vehicle.vehicleType && (
+                      <span className="text-gray-500 text-[10px]">
+                        {" "}
+                        ({selectedBooking.Vehicle.vehicleType.slice(0, 3)})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  "—"
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Dock</p>
-              <p className="font-semibold">
-                {selectedBooking?.Dock?.name || "N/A"}
-              </p>
+            <div className="bg-gray-50 p-1.5 rounded border">
+              <div className="text-gray-500 truncate">Dock</div>
+              <div
+                className="font-semibold truncate"
+                title={selectedBooking?.Dock?.name}
+              >
+                {selectedBooking?.Dock?.name?.slice(0, 8) || "—"}
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Arrival Time</p>
-              <p className="font-semibold">
-                {selectedBooking?.arrivalTime
-                  ? new Date(selectedBooking.arrivalTime).toLocaleString(
-                      "id-ID"
-                    )
-                  : "N/A"}
-              </p>
+            <div className="bg-gray-50 p-1.5 rounded border">
+              <div className="text-gray-500 truncate">Time</div>
+              <div className="font-semibold">
+                {selectedBooking?.arrivalTime ? (
+                  <>
+                    <div className="text-[10px] text-gray-600">
+                      {new Date(selectedBooking.arrivalTime).toLocaleDateString(
+                        "id-ID",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                        }
+                      )}
+                    </div>
+                    <div className="text-[10px]">
+                      {new Date(selectedBooking.arrivalTime).toLocaleTimeString(
+                        "id-ID",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Notes Section */}
-          <div>
-            <p className="text-sm text-gray-600 mb-1">Notes</p>
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-800">
-                {selectedBooking?.notes || "Tidak ada catatan"}
-              </p>
+          {/* Notes Chip */}
+          {selectedBooking?.notes && (
+            <div className="flex items-start gap-1 bg-blue-50 border border-blue-200 rounded p-1.5">
+              <MessageSquare className="w-3 h-3 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-blue-700 mb-0.5">
+                  Catatan:
+                </p>
+                <p className="text-xs text-blue-900 line-clamp-2 leading-tight">
+                  {selectedBooking.notes}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Time Slot Section */}
+          {/* Duration Badge */}
+          {selectedBooking?.Vehicle?.durasiBongkar && (
+            <div className="flex items-center justify-between text-xs bg-gray-100 rounded px-2 py-1">
+              <span className="text-gray-600">⏱️ Durasi Bongkar:</span>
+              <span className="font-semibold">
+                {selectedBooking.Vehicle.durasiBongkar} menit
+              </span>
+            </div>
+          )}
+
+          {/* Time Slot - Minimal Header */}
           <div>
-            <p className="text-sm text-gray-600 mb-2">Time Slot</p>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-gray-500" />
+                <span className="text-xs font-medium text-gray-700">
+                  Jadwal Slot
+                </span>
+              </div>
+              {id === "QueueDetailModalJustify" && (
+                <span className="text-[10px] text-gray-500">✏️ Edit mode</span>
+              )}
+            </div>
             <PreviewSlotDisplay
               formData={selectedBooking}
               onUpdateFormData={handleUpdateFormData}

@@ -117,7 +117,7 @@ const MemberManagementPage = () => {
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between ">
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">
                     Manajemen Semua Member
@@ -166,7 +166,7 @@ const MemberManagementPage = () => {
               </div>
             </div>
             {/* Table */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg border border-gray-200">
               {isLoading ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="flex flex-col items-center space-y-3">
@@ -176,7 +176,7 @@ const MemberManagementPage = () => {
                     </p>
                   </div>
                 </div>
-              ) : accounts?.length === 0 ? (
+              ) : accounts?.lengfoth === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                   <User className="w-16 h-16 text-gray-300 mb-4" />
                   <p className="text-gray-500 text-sm max-w-md">
@@ -186,9 +186,9 @@ const MemberManagementPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="table w-full">
-                    <thead>
+                <div className="overflow-x-auto max-h-[50vh] overflow-auto">
+                  <table className="table w-full relative">
+                    <thead className="bg-leaf-green-50 border-b border-leaf-green-100 fixed w-full">
                       <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Nama Warehouse
@@ -210,7 +210,8 @@ const MemberManagementPage = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
+
+                    <tbody className="">
                       {accounts?.length > 0 ? (
                         accounts?.map((account: UserInfo, index: number) => (
                           <tr

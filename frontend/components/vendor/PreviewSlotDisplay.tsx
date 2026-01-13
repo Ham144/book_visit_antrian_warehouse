@@ -8,7 +8,7 @@ import { Vacant } from "@/types/vacant.type";
 import { IDockBusyTime } from "@/types/busyTime.type";
 import { Days } from "@/types/shared.type";
 import { IDock } from "@/types/dock.type";
-import { DAYS } from "@/lib/constant";
+import { normalizeDate } from "@/lib/constant";
 import { Calendar, Clock } from "lucide-react";
 
 interface PreviewSlotDisplayProps {
@@ -50,7 +50,7 @@ const PreviewSlotDisplay = ({
   const { data: allBookings } = useQuery({
     queryKey: ["bookings", formData?.warehouseId],
     queryFn: () =>
-      BookingApi.getAllBookingsList({
+      BookingApi.semiDetailList({
         warehouseId: formData.warehouseId,
         page: 1,
       }),
@@ -81,27 +81,6 @@ const PreviewSlotDisplay = ({
     return ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"][
       date.getDay()
     ];
-  };
-  const getDateFromDayNameInSelectedWeek = (
-    dayName: string,
-    selectedDate: Date
-  ): Date => {
-    const targetDayIndex = DAYS.indexOf(dayName);
-    if (targetDayIndex === -1) {
-      throw new Error("Invalid day name");
-    }
-
-    const base = new Date(selectedDate);
-
-    // mundur ke Minggu di minggu tersebut
-    const startOfWeek = new Date(base);
-    startOfWeek.setDate(base.getDate() - base.getDay());
-
-    // maju ke hari target
-    const result = new Date(startOfWeek);
-    result.setDate(startOfWeek.getDate() + targetDayIndex);
-
-    return result;
   };
 
   const mapDayIndexToEnum = (dayIndex: number): Days => {
@@ -192,9 +171,13 @@ const PreviewSlotDisplay = ({
           date: dateString,
         }));
     });
+    onUpdateFormData({
+      arrivalTime: null,
+      estimatedFinishTime: null,
+    });
 
     return schedulesByDay;
-  }, [dockDetail?.vacants, selectedWeek, weekDays]);
+  }, [dockDetail?.vacants, selectedWeek, weekDays, dockDetail]);
 
   // Event handlers
   const handleWeekSelect = (weekStart: Date) => {
@@ -234,53 +217,59 @@ const PreviewSlotDisplay = ({
     return false;
   };
 
-  const handleClickOnTrack = (day: string, clickedTimeDecimal: number) => {
-    if (isReadOnly || !selectedDate || !formData.Vehicle?.durasiBongkar) return;
+  const handleClickOnTrack = (date: Date, clickedTimeDecimal: number) => {
+    if (isReadOnly || !formData.Vehicle?.durasiBongkar) return;
 
-    const date = getDateFromDayNameInSelectedWeek(day, selectedDate);
-    const isPastDate =
-      date < new Date(new Date().setDate(new Date().getDate() - 1));
-    if (isPastDate) {
-      return toast.error("Tanggal sudah lewat");
+    // ===============================
+    // 1. VALIDASI TANGGAL
+    // ===============================
+    const today = normalizeDate(new Date());
+    const selected = normalizeDate(date);
+
+    if (selected < today) {
+      toast.error("Tanggal sudah lewat");
+      return;
     }
+
     handleDateSelect(date);
 
+    // ===============================
+    // 2. AMBIL SCHEDULE AKTIF
+    // ===============================
     const dateString = formatDateToString(date);
     const schedules = availableSchedulesByDay[dateString] || [];
 
-    // Cari schedule aktif berdasarkan waktu yang diklik
     const activeSchedule =
       schedules.find((schedule) => {
-        const scheduleStart =
+        const start =
           parseTimeToHours(schedule.startTime) ?? parseTimeToHours("06:00:00")!;
-        const scheduleEnd =
+        const end =
           parseTimeToHours(schedule.endTime) ?? parseTimeToHours("18:00:00")!;
-        return (
-          clickedTimeDecimal >= scheduleStart &&
-          clickedTimeDecimal < scheduleEnd
-        );
+        return clickedTimeDecimal >= start && clickedTimeDecimal < end;
       }) || schedules[0];
 
+    if (!activeSchedule) return;
+
     const scheduleStartHour =
-      (activeSchedule &&
-        (parseTimeToHours(activeSchedule.startTime) ??
-          parseTimeToHours("06:00:00")!)) ||
-      6;
+      parseTimeToHours(activeSchedule.startTime) ??
+      parseTimeToHours("06:00:00")!;
     const scheduleEndHour =
-      (activeSchedule &&
-        (parseTimeToHours(activeSchedule.endTime) ??
-          parseTimeToHours("18:00:00")!)) ||
-      18;
+      parseTimeToHours(activeSchedule.endTime) ?? parseTimeToHours("18:00:00")!;
 
     const scheduleEndMinutes = Math.round(scheduleEndHour * 60);
 
+    // ===============================
+    // 3. DURASI
+    // ===============================
     const durationMinutes = formData.Vehicle.durasiBongkar;
     const durationHours = durationMinutes / 60;
 
-    // Default: gunakan waktu klik
+    // Anchor awal
     let selectedStartHour = clickedTimeDecimal;
 
-    // Jika auto efficient aktif, coba geser ke belakang ke waktu terkait terdekat
+    // ===============================
+    // 4. AUTO EFFICIENT (ANCHOR SEARCH)
+    // ===============================
     if (isAutoEfficientActive) {
       const applicableBusyTimes = getApplicableBusyTimesForDate(date);
       const dateBookings = getDateBookingsForDate(date);
@@ -288,29 +277,23 @@ const PreviewSlotDisplay = ({
       type EventBoundary = { start: number; end: number };
 
       const eventBoundaries: EventBoundary[] = [
-        // Busy times
         ...applicableBusyTimes.map((bt) => ({
           start: parseTimeToHours(bt.from) || 0,
           end: parseTimeToHours(bt.to) || 0,
         })),
-        // Bookings
-        ...dateBookings.map((b: any) => {
-          const bDate = new Date(b.arrivalTime);
-          const fDate = new Date(b.estimatedFinishTime);
+        ...dateBookings.map((b) => {
+          const s = new Date(b.arrivalTime);
+          const e = new Date(b.estimatedFinishTime);
           return {
-            start: bDate.getHours() + bDate.getMinutes() / 60,
-            end: fDate.getHours() + fDate.getMinutes() / 60,
+            start: s.getHours() + s.getMinutes() / 60,
+            end: e.getHours() + e.getMinutes() / 60,
           };
         }),
       ].filter(
         (ev) => ev.end > scheduleStartHour && ev.start < scheduleEndHour
       );
 
-      // PERBAIKAN: Hitung waktu sekarang dalam format yang sama
       const now = new Date();
-      const currentHour = now.getHours() + now.getMinutes() / 60;
-
-      // FIX: pakai `date`, bukan `selectedDate`
       const isToday =
         date.getDate() === now.getDate() &&
         date.getMonth() === now.getMonth() &&
@@ -319,136 +302,118 @@ const PreviewSlotDisplay = ({
       let minimumAllowedHour = scheduleStartHour;
 
       if (isToday) {
-        const bufferMinutes = 30;
         minimumAllowedHour = Math.max(
-          currentHour + bufferMinutes / 60,
-          scheduleStartHour
+          scheduleStartHour,
+          now.getHours() + now.getMinutes() / 60 + 0.5
         );
       }
 
-      // Batas awal yang mungkin: minimumAllowedHour atau awal schedule
       const candidateStarts: number[] = [minimumAllowedHour];
 
-      // Tambahkan akhir event sebelum waktu klik (jika setelah minimumAllowedHour)
-      eventBoundaries.forEach((ev) => {
-        if (ev.end <= clickedTimeDecimal && ev.end > minimumAllowedHour) {
-          candidateStarts.push(ev.end);
-        }
-      });
-
-      // PERBAIKAN: Filter candidateStarts yang valid (tidak bertabrakan)
-      const validCandidateStarts = candidateStarts.filter((start) => {
-        const candidateEnd = start + durationHours;
-
-        // Cek tidak bertabrakan dengan event lain
-        const hasCollision = eventBoundaries.some(
-          (ev) => start < ev.end && candidateEnd > ev.start
-        );
-
-        // Cek tidak melebihi schedule end
-        const withinSchedule = candidateEnd <= scheduleEndHour;
-
-        return !hasCollision && withinSchedule;
-      });
-
-      // Ambil start terbaik (paling dekat dengan clickedTimeDecimal, tapi >= minimumAllowedHour)
-      if (validCandidateStarts.length > 0) {
-        // Cari yang paling dekat dengan waktu klik, tapi tidak kurang dari minimumAllowedHour
-        const bestAnchor = validCandidateStarts.reduce((prev, curr) => {
-          const prevDiff = Math.abs(prev - clickedTimeDecimal);
-          const currDiff = Math.abs(curr - clickedTimeDecimal);
-
-          // Prioritaskan yang >= minimumAllowedHour dan paling dekat dengan klik
-          if (curr >= minimumAllowedHour && currDiff < prevDiff) {
-            return curr;
+      eventBoundaries
+        .sort((a, b) => a.start - b.start)
+        .forEach((ev) => {
+          if (ev.end <= clickedTimeDecimal && ev.end > minimumAllowedHour) {
+            candidateStarts.push(ev.end);
           }
-          return prev;
         });
 
-        // Validasi final
-        const candidateEnd = bestAnchor + durationHours;
-        const finalHasCollision = eventBoundaries.some(
-          (ev) => bestAnchor < ev.end && candidateEnd > ev.start
+      const validStarts = candidateStarts.filter((start) => {
+        const end = start + durationHours;
+        const collide = eventBoundaries.some(
+          (ev) => start < ev.end && end > ev.start
         );
+        return !collide && end <= scheduleEndHour;
+      });
 
-        if (!finalHasCollision && candidateEnd <= scheduleEndHour) {
-          selectedStartHour = bestAnchor;
-
-          // PERBAIKAN: Jika waktu terpilih < minimumAllowedHour, beri peringatan
-          if (bestAnchor < minimumAllowedHour) {
-            toast.warning(
-              "Waktu booking disesuaikan ke waktu terdekat yang tersedia",
-              {
-                position: "top-center",
-              }
-            );
-          } else {
-            toast.success("Jam booking dioptimalkan", {
-              position: "top-center",
-            });
-          }
-        } else {
-          // Fallback ke waktu klik asli (jika valid)
-          if (
-            clickedTimeDecimal >= minimumAllowedHour &&
-            !checkTimeCollisions(
-              clickedTimeDecimal,
-              durationHours,
-              eventBoundaries
-            ) &&
-            clickedTimeDecimal + durationHours <= scheduleEndHour
-          ) {
-            selectedStartHour = clickedTimeDecimal;
-            toast.info("Menggunakan waktu yang Anda pilih", {
-              position: "top-center",
-            });
-          } else {
-            toast.error("Tidak ada slot waktu yang tersedia", {
-              position: "top-center",
-            });
-            return; // Batalkan pemilihan waktu
-          }
-        }
-      } else {
-        // Tidak ada candidate yang valid, coba gunakan waktu klik asli
-        if (
-          clickedTimeDecimal >= minimumAllowedHour &&
-          !checkTimeCollisions(
-            clickedTimeDecimal,
-            durationHours,
-            eventBoundaries
-          ) &&
-          clickedTimeDecimal + durationHours <= scheduleEndHour
-        ) {
-          selectedStartHour = clickedTimeDecimal;
-          toast.info("Menggunakan waktu yang Anda pilih", {
-            position: "top-center",
-          });
-        } else {
-          toast.error("Tidak ada slot waktu yang cocok", {
-            position: "top-center",
-          });
-          return; // Batalkan pemilihan waktu
-        }
+      if (validStarts.length === 0) {
+        toast.error("Tidak ada slot waktu yang tersedia");
+        return;
       }
+
+      selectedStartHour = validStarts.reduce((best, curr) => {
+        return Math.abs(curr - clickedTimeDecimal) <
+          Math.abs(best - clickedTimeDecimal)
+          ? curr
+          : best;
+      });
     }
 
-    const endMinutes = Math.round(selectedStartHour * 60) + durationMinutes;
+    // ===============================
+    // 5. INTERVAL DECISION (FIX POSISI)
+    // ===============================
+    const applicableBusyTimes = getApplicableBusyTimesForDate(date);
+    const dateBookings = getDateBookingsForDate(date);
+    const EPSILON = 0.01;
+
+    const isStartOfDay =
+      Math.abs(selectedStartHour - scheduleStartHour) < EPSILON;
+
+    const isAfterBusyTime = applicableBusyTimes.some((bt) => {
+      const end = parseTimeToHours(bt.to);
+      return end != null && Math.abs(selectedStartHour - end) < EPSILON;
+    });
+
+    const isAfterBooking = dateBookings.some((b) => {
+      const end =
+        new Date(b.estimatedFinishTime).getHours() +
+        new Date(b.estimatedFinishTime).getMinutes() / 60;
+      return Math.abs(selectedStartHour - end) < EPSILON;
+    });
+
+    const intervalMinimalQueueu = formData.Warehouse.intervalMinimalQueueu || 0;
+
+    const isIntervalRequired =
+      !isStartOfDay && !isAfterBusyTime && isAfterBooking;
+
+    const effectiveStartHour =
+      selectedStartHour + (isIntervalRequired ? intervalMinimalQueueu / 60 : 0);
+
+    // ===============================
+    // 6. VALIDASI FINAL (PAKAI EFFECTIVE)
+    // ===============================
+    const endMinutes = Math.round(effectiveStartHour * 60) + durationMinutes;
 
     if (endMinutes > scheduleEndMinutes) {
       toast.error("Waktu selesai melebihi jam operasional");
       return;
     }
 
-    const startTimeString = formatHoursToTimeString(selectedStartHour);
+    const hasCollision = checkTimeCollisions(
+      effectiveStartHour,
+      durationHours,
+      [
+        ...applicableBusyTimes.map((bt) => ({
+          start: parseTimeToHours(bt.from) || 0,
+          end: parseTimeToHours(bt.to) || 0,
+        })),
+        ...dateBookings.map((b) => ({
+          start:
+            new Date(b.arrivalTime).getHours() +
+            new Date(b.arrivalTime).getMinutes() / 60,
+          end:
+            new Date(b.estimatedFinishTime).getHours() +
+            new Date(b.estimatedFinishTime).getMinutes() / 60,
+        })),
+      ]
+    );
+
+    if (hasCollision) {
+      toast.error("Slot waktu bertabrakan");
+      return;
+    }
+
+    // ===============================
+    // 7. SET FINAL TIME
+    // ===============================
+    const startTimeString = formatHoursToTimeString(effectiveStartHour);
+
     const arrivalDateTime = new Date(date);
-    const [hours, minutes] = startTimeString.split(":").map(Number);
-    arrivalDateTime.setHours(hours, minutes, 0, 0);
+    const [h, m] = startTimeString.split(":").map(Number);
+    arrivalDateTime.setHours(h, m, 0, 0);
 
     const finishDateTime = new Date(arrivalDateTime);
-    finishDateTime.setMinutes(
-      finishDateTime.getMinutes() + formData.Vehicle.durasiBongkar
-    );
+    finishDateTime.setMinutes(finishDateTime.getMinutes() + durationMinutes);
 
     setVisualStartTime(startTimeString);
     setVisualEndTime(
@@ -459,55 +424,14 @@ const PreviewSlotDisplay = ({
     );
 
     onUpdateFormData({
-      arrivalTime: new Date(arrivalDateTime),
-      estimatedFinishTime: new Date(finishDateTime),
+      arrivalTime: arrivalDateTime,
+      estimatedFinishTime: finishDateTime,
     });
+
+    if (isAutoEfficientActive) {
+      toast.success("auto efficient active");
+    }
   };
-
-  // Effects
-  useEffect(() => {
-    if (formData?.dockId && !selectedWeek) {
-      if (formData?.arrivalTime && mode === "preview") {
-        const arrivalDate = new Date(formData.arrivalTime);
-        handleWeekSelect(getStartOfWeek(arrivalDate));
-        handleDateSelect(arrivalDate);
-        setVisualStartTime(
-          `${arrivalDate.getHours().toString().padStart(2, "0")}:${arrivalDate
-            .getMinutes()
-            .toString()
-            .padStart(2, "0")}:00`
-        );
-        if (formData.estimatedFinishTime) {
-          const finishDate = new Date(formData.estimatedFinishTime);
-          setVisualEndTime(
-            `${finishDate.getHours().toString().padStart(2, "0")}:${finishDate
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")}:00`
-          );
-        }
-      } else {
-        handleWeekSelect(getStartOfWeek(new Date()));
-      }
-    }
-  }, [formData?.dockId, formData?.arrivalTime, mode]);
-
-  useEffect(() => {
-    if (
-      selectedWeek &&
-      weekDays.length > 0 &&
-      !selectedDate &&
-      mode !== "preview"
-    ) {
-      handleDateSelect(weekDays[0]);
-    }
-  }, [selectedWeek, weekDays.length, mode]);
-
-  useEffect(() => {
-    if (mode == "create") {
-      handleDateSelect(new Date());
-    }
-  }, []);
 
   // Calendar setup
   const today = new Date();
@@ -599,6 +523,51 @@ const PreviewSlotDisplay = ({
       );
     };
 
+    // TAMBAHKAN: Fungsi dan state untuk current time
+    const getCurrentTimePosition = (): number | null => {
+      const now = new Date();
+      const currentHour = now.getHours() + now.getMinutes() / 60;
+
+      // Hanya tampilkan jika dalam rentang waktu yang ditampilkan
+      if (currentHour >= startHour && currentHour <= endHour) {
+        return getBarPosition(currentHour);
+      }
+      return null;
+    };
+
+    const [currentTime, setCurrentTime] = useState<number | null>(
+      getCurrentTimePosition
+    );
+
+    // TAMBAHKAN: useEffect untuk update real-time
+    useEffect(() => {
+      // Update waktu setiap menit
+      const interval = setInterval(() => {
+        setCurrentTime(getCurrentTimePosition());
+      }, 60000); // Update setiap 1 menit
+
+      return () => clearInterval(interval);
+    }, []);
+
+    // TAMBAHKAN: Fungsi untuk cek apakah hari ini
+    const isToday = (date: Date): boolean => {
+      const today = new Date();
+      return (
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
+      );
+    };
+
+    // TAMBAHKAN: Format waktu sekarang untuk label
+    const getCurrentTimeLabel = (): string => {
+      return new Date().toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    };
+
     if (loadingDock) return <LoadingSpinner />;
     if (!formData?.dockId)
       return (
@@ -619,7 +588,7 @@ const PreviewSlotDisplay = ({
 
     return (
       <div className="space-y-2">
-        {/* Time header */}
+        {/* Time header - TANPA garis waktu di sini */}
         <div className="flex border-b pb-1">
           <div className="w-16 flex-shrink-0"></div>
           <div className="flex-1 relative min-w-0">
@@ -647,14 +616,17 @@ const PreviewSlotDisplay = ({
               selectedDate && formatDateToString(selectedDate) === dateString;
             const applicableBusyTimes = getApplicableBusyTimes(date);
             const dateBookings = getDateBookings(date);
+            const today = isToday(date);
 
             return (
-              <div key={dateString} className="group">
+              <div key={dateString} className="group relative">
                 {/* Day header with schedule info */}
                 <div className="flex items-center mb-1">
                   <div
                     className={`text-xs font-medium px-2 py-1 rounded transition-colors flex items-center gap-1 flex-shrink-0 ${
-                      isDateSelected
+                      today
+                        ? "bg-red-100 text-red-700 border border-red-300"
+                        : isDateSelected
                         ? "bg-primary text-white"
                         : isReadOnly
                         ? "bg-gray-100 text-gray-400"
@@ -666,6 +638,11 @@ const PreviewSlotDisplay = ({
                     <span className="text-[10px] opacity-75">
                       {date.toLocaleDateString("id-ID", { month: "short" })}
                     </span>
+                    {today && (
+                      <span className="text-[10px] font-bold text-red-600 ml-1">
+                        • HARI INI
+                      </span>
+                    )}
                   </div>
 
                   {/* Schedule times inline */}
@@ -702,6 +679,46 @@ const PreviewSlotDisplay = ({
                         ></div>
                       ))}
                     </div>
+
+                    {/* GARIS WAKTU SAAT INI - hanya untuk hari ini */}
+                    {today && currentTime !== null && (
+                      <>
+                        {/* Garis vertikal merah */}
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none"
+                          style={{
+                            left: `${currentTime}%`,
+                          }}
+                        >
+                          {/* Titik atas */}
+                          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
+                            <div className="w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></div>
+                          </div>
+                          {/* Titik bawah */}
+                          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                            <div className="w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></div>
+                          </div>
+                        </div>
+
+                        {/* Label waktu di atas track */}
+                        <div
+                          className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap z-30 pointer-events-none"
+                          style={{
+                            left: `${currentTime}%`,
+                          }}
+                        >
+                          <div className="flex items-center gap-1 bg-red-500 text-white text-xs px-2 py-1 rounded shadow-lg">
+                            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                            <span>Sekarang</span>
+                            <span className="font-bold">
+                              {getCurrentTimeLabel()}
+                            </span>
+                          </div>
+                          {/* Arrow pointing down */}
+                          <div className="w-0 h-0 border-l-3 border-r-3 border-t-3 border-transparent border-t-red-500 mx-auto"></div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Render each schedule as a track */}
                     {schedules.length === 0 ? (
@@ -777,7 +794,7 @@ const PreviewSlotDisplay = ({
                                   startHourNum +
                                   (endHourNum - startHourNum) * clickPercent;
 
-                                handleClickOnTrack(schedule.day, clickedTime);
+                                handleClickOnTrack(date, clickedTime);
                               }}
                               className={`absolute h-full rounded transition-all cursor-pointer ${
                                 isReadOnly
@@ -895,17 +912,8 @@ const PreviewSlotDisplay = ({
                                     {/* Hover overlay with full info */}
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <div className="text-center p-2">
-                                        <div className="text-xs font-bold text-white mb-1">
-                                          {event.type === "busy"
-                                            ? "⏰ Waktu Sibuk"
-                                            : "📅 Booking"}
-                                        </div>
                                         <div className="text-[10px] text-white/90 font-medium">
                                           {event.desc}
-                                        </div>
-                                        <div className="text-[9px] text-white/80 mt-1">
-                                          {formatHour(eventStart)} -{" "}
-                                          {formatHour(eventEnd)}
                                         </div>
                                       </div>
                                     </div>
@@ -985,8 +993,8 @@ const PreviewSlotDisplay = ({
                           title={bt.reason}
                         >
                           <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                          <span className="truncate max-w-[80px]">
-                            {bt.reason}
+                          <span className="max-w-[120px]">
+                            {bt.reason} {bt.from} - {bt.to}
                           </span>
                         </div>
                       ))}
@@ -997,21 +1005,28 @@ const PreviewSlotDisplay = ({
                           title={`Booking ${b.id}`}
                         >
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                          <span className="truncate max-w-[80px]">
+                          <span className="max-w-[120px]">
                             {b.code}{" "}
+                            {new Date(b.arrivalTime).toLocaleTimeString(
+                              "en-GB",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: false,
+                              }
+                            )}
+                            -
+                            {new Date(b.estimatedFinishTime).toLocaleTimeString(
+                              "en-GB",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: false,
+                              }
+                            )}
                           </span>
                         </div>
                       ))}
-                      {(applicableBusyTimes.length > 2 ||
-                        dateBookings.length > 2) && (
-                        <span className="text-[10px] text-gray-500 px-1">
-                          +
-                          {applicableBusyTimes.length -
-                            2 +
-                            (dateBookings.length - 2)}{" "}
-                          lainnya
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}
@@ -1065,6 +1080,11 @@ const PreviewSlotDisplay = ({
             <div className="w-3 h-3 bg-blue-400/30 border-2 border-blue-500 rounded-lg"></div>
             <span className="text-xs text-gray-600">Pilihan Anda</span>
           </div>
+          {/* Tambahkan legend untuk garis waktu sekarang */}
+          <div className="flex items-center gap-1.5">
+            <div className="w-0.5 h-4 bg-red-500"></div>
+            <span className="text-xs text-gray-600">Waktu Sekarang</span>
+          </div>
         </div>
 
         {/* Selected time summary */}
@@ -1102,6 +1122,99 @@ const PreviewSlotDisplay = ({
     );
   };
 
+  // Effects
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (formData?.dockId && !selectedWeek) {
+      if (mode === "justify") {
+        const arrivalDate = new Date(formData.arrivalTime);
+        handleWeekSelect(getStartOfWeek(arrivalDate));
+        handleDateSelect(arrivalDate);
+        if (formData.estimatedFinishTime) {
+          setVisualStartTime(
+            `${arrivalDate.getHours().toString().padStart(2, "0")}:${arrivalDate
+              .getMinutes()
+              .toString()
+              .padStart(2, "0")}:00`
+          );
+          const finishDate = new Date(formData.estimatedFinishTime);
+          setVisualEndTime(
+            `${finishDate.getHours().toString().padStart(2, "0")}:${finishDate
+              .getMinutes()
+              .toString()
+              .padStart(2, "0")}:00`
+          );
+        }
+        setCount((prev) => prev++);
+      } else {
+        handleWeekSelect(getStartOfWeek(new Date()));
+      }
+    }
+  }, [formData?.dockId, mode]);
+
+  // Effect khusus untuk mode justify: update visual time ketika arrivalTime berubah
+  useEffect(() => {
+    if (mode === "justify" && formData?.arrivalTime && selectedWeek) {
+      const arrivalDate = new Date(formData.arrivalTime);
+      const dateString = formatDateToString(arrivalDate);
+
+      // Update selected date jika berbeda dan week sudah ter-set
+      const currentDateString = selectedDate
+        ? formatDateToString(selectedDate)
+        : null;
+      if (currentDateString !== dateString) {
+        handleDateSelect(arrivalDate);
+      }
+
+      // Update visual start time
+      const newStartTime = `${arrivalDate
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${arrivalDate
+        .getMinutes()
+        .toString()
+        .padStart(2, "0")}:00`;
+      setVisualStartTime(newStartTime);
+
+      // Update visual end time jika ada
+      if (formData.estimatedFinishTime) {
+        const finishDate = new Date(formData.estimatedFinishTime);
+        const newEndTime = `${finishDate
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${finishDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}:00`;
+        setVisualEndTime(newEndTime);
+      } else {
+        setVisualEndTime(null);
+      }
+    }
+  }, [
+    formData?.arrivalTime,
+    formData?.estimatedFinishTime,
+    mode,
+    selectedWeek,
+  ]);
+
+  useEffect(() => {
+    if (
+      selectedWeek &&
+      weekDays.length > 0 &&
+      !selectedDate &&
+      mode !== "preview"
+    ) {
+      handleDateSelect(weekDays[0]);
+    }
+  }, [selectedWeek, weekDays.length, mode]);
+
+  useEffect(() => {
+    if (mode == "create") {
+      handleDateSelect(new Date());
+    }
+  }, []);
+
   return (
     <div className="flex flex-col  h-[600px]">
       {/* Dock Selector */}
@@ -1135,20 +1248,25 @@ const PreviewSlotDisplay = ({
 
       {/* Time Slot Section */}
       <div className="bg-white rounded-lg shadow-sm pb-12">
-        <h3 className="text-base font-medium mb-3 flex">
-          <div className="flex flex-col">
+        <h3 className="text-base font-medium mb-3 flex items-center">
+          <div className="mr-3">
             {isReadOnly ? "Waktu Kunjungan" : "Pilih Waktu Kunjungan"}
-            {!isReadOnly && (
-              <span className="block text-xs text-gray-600 mt-1">
-                Klik area hijau untuk memilih waktu.
-              </span>
-            )}
           </div>
-          <div className="flex flex-col ml-auto border border-dashed p-2">
+          {!isReadOnly && (
+            <div className="text-xs text-gray-600">
+              Klik area hijau untuk memilih waktu.
+            </div>
+          )}
+        </h3>
+        <ol className="list-disc list-inside mb-3 text-xs">
+          <li>
             Admin Gudang Mungkin Akan Menyesuaikan Ulang Sampai Anda Dilokasi
             (Telah Tiba).
-          </div>
-        </h3>
+          </li>
+          <li>
+            Terdapat interval Minimal Queue yang menjaga jarak antar kunjungan.
+          </li>
+        </ol>
 
         <div className="mb-3">
           <p className="text-sm">
@@ -1163,23 +1281,24 @@ const PreviewSlotDisplay = ({
       </div>
 
       {/* Notes */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <h3 className="text-base font-medium mb-2">Catatan Tambahan</h3>
-        <textarea
-          value={notes}
-          disabled={isReadOnly || mode === "justify"}
-          onChange={(e) => {
-            const newNotes = e.target.value;
-            setNotes(newNotes);
-            onUpdateFormData({ notes: newNotes });
-          }}
-          placeholder="Catatan untuk operator gudang..."
-          className="w-full border rounded-lg px-3 py-2 text-sm h-24 resize-none"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          * Akan dilihat oleh operator gudang
-        </p>
-      </div>
+      {mode == "create" && (
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="text-base font-medium mb-2">Catatan Tambahan</h3>
+          <textarea
+            value={notes}
+            onChange={(e) => {
+              const newNotes = e.target.value;
+              setNotes(newNotes);
+              onUpdateFormData({ notes: newNotes });
+            }}
+            placeholder="Catatan untuk operator gudang..."
+            className="w-full border rounded-lg px-3 py-2 text-sm h-24 resize-none"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            * Akan dilihat oleh operator gudang
+          </p>
+        </div>
+      )}
     </div>
   );
 };

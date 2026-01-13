@@ -71,4 +71,20 @@ export const BookingApi = {
     });
     return res.data;
   },
+  getStatsForDriver: async () => {
+    const res = await axiosInstance.get("/api/booking/stats/stats-for-driver");
+    return res.data;
+  },
+  getStatsForAdminVendor: async () => {
+    const res = await axiosInstance.get(
+      "/api/booking/stats/stats-for-admin-vendor"
+    );
+    return res.data;
+  },
+  getStatsForUserOrganizations: async () => {
+    const res = await axiosInstance.get(
+      "/api/booking/stats/stats-for-user-organizations"
+    );
+    return res.data;
+  },
 };

@@ -53,6 +53,9 @@ model Warehouse {
   userWarehouseAccesses User[]
   organizationName      String?
   organization          Organization? @relation(fields: [organizationName], references: [name])
+  //settings & Preferences
+  delayTolerance Int @default(15)
+  intervalMinimalQueueu Int @default(15)
 }
 
 model Vacant {
@@ -191,7 +194,6 @@ model Vendor {
   organizationName String
   organization Organization @relation(fields: [organizationName], references: [name])
 }
-
 
 model Counter {
   id               String      @id @default(uuid())

@@ -53,8 +53,8 @@ export class ResponseBookingDto {
   @Type(() => responseWarehouseDto)
   Warehouse?: responseWarehouseDto;
 
-  @Expose({ groups: ['detail'] })
   @Type(() => ResponseDockDto)
+  @Expose({ groups: ['detail'] })
   Dock?: ResponseDockDto;
 
   @Expose()

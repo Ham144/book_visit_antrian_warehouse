@@ -9,12 +9,16 @@ import {
   CheckCircle,
   GripVertical,
   Clock,
+  Car,
+  User,
+  X,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import {
   calculateTimeProgress,
+  DAYS,
   timeRemainingAutoUnloading,
 } from "@/lib/constant";
 
@@ -39,6 +43,7 @@ const DraggableBookingCard = ({
   onDetail,
   onStartUnloading,
   onMarkFinished,
+  onCancel,
 }: DraggableBookingCardProps) => {
   // Tambahkan useSortable dengan data yang lengkap
   const {
@@ -141,11 +146,13 @@ const DraggableBookingCard = ({
           {/* Driver & Vehicle in one line */}
           <div className="flex items-center gap-2 text-gray-500 mb-1">
             <span className="truncate">
-              👤 {booking.driverUsername?.slice(0, 10) || "N/A"}
+              <User className="w-4 h-4" />{" "}
+              {booking.driverUsername?.slice(0, 10) || "N/A"}
             </span>
-            <span>•</span>
+            <span className="mx-1">•</span>
             <span className="truncate">
-              🚚 {booking.Vehicle?.vehicleType?.split("_").pop() || "-"}
+              <Truck className="w-4 h-4" />{" "}
+              {booking.Vehicle?.vehicleType || "-"}
             </span>
           </div>
 
@@ -159,6 +166,7 @@ const DraggableBookingCard = ({
                   <span className="text-gray-600">Arrival Book:</span>
                 </div>
                 <span className="font-medium text-gray-800">
+                  {DAYS[new Date(booking.arrivalTime).getDay() - 1]}{" "}
                   {booking.arrivalTime
                     ? new Date(booking.arrivalTime).toLocaleTimeString(
                         "id-ID",
@@ -191,13 +199,35 @@ const DraggableBookingCard = ({
                     : "-"}
                 </span>
               </div>
-
-              {/* Duration - kecil di pojok */}
+              {/* Duration dengan native title attribute */}
               {booking.Vehicle?.durasiBongkar && (
-                <div className="text-right">
-                  <span className="inline-block px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
-                    Duration {booking.Vehicle.durasiBongkar}m
-                  </span>
+                <div className="flex flex-1 ">
+                  {/* Cancel dengan native tooltip */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCancel();
+                    }}
+                    title="Batalkan booking ini"
+                    className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600 transition-colors group"
+                    type="button"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      Batalkan
+                    </span>
+                  </button>
+
+                  {/* Duration dengan info */}
+                  <div className="relative group">
+                    <div className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{booking.Vehicle.durasiBongkar}m</span>
+                    </div>
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      Durasi bongkar muat
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

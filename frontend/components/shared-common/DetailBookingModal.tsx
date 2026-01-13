@@ -18,11 +18,11 @@ import {
   Info,
   Settings,
   Edit,
-  Printer,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Booking } from "@/types/booking.type";
-import { toast } from "sonner";
+import { useUserInfo } from "../UserContext";
+import { ROLE } from "@/types/shared.type";
 
 const DetailBookingModal = ({ id }: { id: string }) => {
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -31,10 +31,11 @@ const DetailBookingModal = ({ id }: { id: string }) => {
     enabled: !!id,
   });
 
+  const { userInfo } = useUserInfo();
+
   const router = useRouter();
+
   const handleEdit = (booking: Booking) => {
-    toast("bisa mengedit driver saja, selain itu cancel saja");
-    return;
     router.push(`/vendor/booking/edit?bookingId=${booking.id}`);
   };
 
@@ -97,7 +98,7 @@ const DetailBookingModal = ({ id }: { id: string }) => {
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   <FileText className="w-6 h-6 text-primary" />
-                  Detail Booking
+                  Detail Booki
                 </h3>
                 <div className="flex items-center gap-3 mt-1">
                   <div className="flex items-center gap-2">
@@ -572,15 +573,17 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                         <Settings className="w-5 h-5 text-primary" />
                         Aksi
                       </h5>
-                      <div className="space-y-3">
-                        <button
-                          onClick={() => handleEdit(booking?.id)}
-                          className="btn btn-outline btn-primary w-full"
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Booking
-                        </button>
-                      </div>
+                      {userInfo.role === ROLE.ADMIN_VENDOR && (
+                        <div className="space-y-3">
+                          <button
+                            onClick={() => handleEdit(booking)}
+                            className="btn btn-outline btn-primary w-full"
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Booking
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

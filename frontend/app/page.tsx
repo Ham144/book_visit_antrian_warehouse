@@ -1,8 +1,8 @@
 "use client";
 
 import { AuthApi } from "@/api/auth";
+import { OrganizationApi } from "@/api/organization.api";
 import { useUserInfo } from "@/components/UserContext";
-import { UserInfo } from "@/types/auth";
 import { ROLE } from "@/types/shared.type";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -18,8 +18,20 @@ import {
   CalendarClock,
   Car,
   UserCog,
+  DockIcon,
+  CheckCheck,
+  Brain,
+  CarTaxiFront,
+  ArchiveRestore,
+  PlusCircle,
+  Lock,
+  Users,
+  FileText,
+  Activity,
+  Move,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function HomePage() {
   const { setUserInfo } = useUserInfo();
@@ -34,38 +46,66 @@ export default function HomePage() {
     },
   });
   const am_i_vendor = userInfo?.vendorName ? true : false;
-  const stats = [
+
+  const [stats, setStats] = useState([
     {
-      label: "Total Warehouse",
-      value: "12",
+      label: "Total Gudang Terdaftar",
+      value: 0,
       icon: Building,
-      trend: "+2",
       description: "Gudang aktif",
+      key: "totalWarehouse",
     },
     {
-      label: "Slot Aktif",
-      value: "48",
-      icon: Truck,
-      trend: "85%",
+      label: "Gate Aktif Terdaftar",
+      value: 0,
+      icon: DockIcon,
       description: "Kapasitas tersedia",
+      key: "activeSlot",
     },
     {
-      label: "Booking Hari Ini",
-      value: "23",
+      label: "IN PROGRESS Booking Hari Ini",
+      value: 0,
       icon: Calendar,
-      trend: "+5",
       description: "Kunjungan terjadwal",
+      key: "bookedToday",
     },
     {
-      label: "Rata-rata Delay",
-      value: "15m",
-      icon: Clock,
-      trend: "-3m",
-      description: "Dari minggu lalu",
+      label: "Finish Booking",
+      value: 0,
+      icon: CheckCheck,
+      description: "Keseluruhan",
+      key: "succeedBooking",
     },
-  ];
+  ]);
+
+  const { data: statsData, isLoading: isLoadingStats } = useQuery({
+    queryKey: ["stats"],
+    queryFn: async () => {
+      const data = await OrganizationApi.getLandingPage();
+      return data;
+    },
+    staleTime: 3 * 60_000 * 24, // 3 days
+  });
+
+  function statsMapping() {
+    if (statsData) {
+      setStats((prev) => {
+        return prev.map((stat) => {
+          return {
+            ...stat,
+            value: statsData[stat.key],
+          };
+        });
+      });
+    }
+  }
+
+  useEffect(() => {
+    statsMapping();
+  }, [statsData]);
 
   const features = [
+    // Fitur existing yang dipertahankan
     {
       title: "Booking Management",
       desc: "Atur jadwal kunjungan vendor dengan pemilihan warehouse dan slot",
@@ -108,13 +148,85 @@ export default function HomePage() {
       icon: UserCog,
       color: "bg-gray-500",
     },
-  ];
 
-  const queueData = [
-    { warehouse: "Gudang Pusat", capacity: 75, status: "sibuk" },
-    { warehouse: "Gudang Timur", capacity: 40, status: "normal" },
-    { warehouse: "Gudang Barat", capacity: 90, status: "penuh" },
-    { warehouse: "Gudang Utara", capacity: 25, status: "sepi" },
+    // Fitur-fitur baru berdasarkan requirements
+    {
+      title: "Live Queue Drag & Drop",
+      desc: "Drag booking antar status: IN_PROGRESS → UNLOADING, DELAYED → UNLOADING, antar dock, dan canceled",
+      href: "/queue/drag-drop",
+      icon: Move, // atau GripVertical icon
+      color: "bg-indigo-500",
+    },
+    {
+      title: "Busy Time Analytics",
+      desc: "Analisis waktu sibuk warehouse dengan visualisasi grafik dan prediksi",
+      href: "/analytics/busy-time",
+      icon: Activity,
+      color: "bg-pink-500",
+    },
+    {
+      title: "Complete Reports",
+      desc: "Laporan lengkap untuk admin dan vendor dengan export Excel/PDF",
+      href: "/reports",
+      icon: FileText,
+      color: "bg-amber-500",
+    },
+    {
+      title: "Multi-Tenancy",
+      desc: "Dukungan multi-tenant dengan isolasi data per perusahaan/vendor",
+      href: "/admin/tenants",
+      icon: Building,
+      color: "bg-cyan-500",
+    },
+    {
+      title: "Unlimited Vendor Users",
+      desc: "Tidak ada batasan jumlah user vendor dengan role-based access",
+      href: "/vendors/users",
+      icon: Users,
+      color: "bg-teal-500",
+    },
+    {
+      title: "Warehouse Lock Settings",
+      desc: "Pengaturan kunci per warehouse untuk maintenance atau downtime",
+      href: "/warehouse/settings",
+      icon: Lock,
+      color: "bg-rose-500",
+    },
+    {
+      title: "Auto Efficient Time Picker",
+      desc: "Sistem rekomendasi waktu booking otomatis berdasarkan efisiensi",
+      href: "/booking/smart-picker",
+      icon: Clock,
+      color: "bg-emerald-500",
+    },
+    {
+      title: "Unlimited Warehouse Creation",
+      desc: "Tambah warehouse tanpa batas dengan konfigurasi fleksibel",
+      href: "/warehouse/create",
+      icon: PlusCircle,
+      color: "bg-lime-500",
+    },
+    {
+      title: "Vehicle Type Rules",
+      desc: "Aturan khusus berdasarkan tipe kendaraan untuk waktu bongkar muat",
+      href: "/vehicles/rules",
+      icon: CarTaxiFront,
+      color: "bg-violet-500",
+    },
+    {
+      title: "Smart Queue Positioning",
+      desc: "Penempatan otomatis dengan smart check before/after di antrian",
+      href: "/queue/smart-positioning",
+      icon: Brain,
+      color: "bg-fuchsia-500",
+    },
+    {
+      title: "Canceled Inventory Management",
+      desc: "Kelola booking canceled dan kembalikan ke antrian dengan smart positioning",
+      href: "/queue/canceled-inventory",
+      icon: ArchiveRestore,
+      color: "bg-slate-600",
+    },
   ];
 
   return (
@@ -164,8 +276,12 @@ export default function HomePage() {
               className="btn btn-lg bg-white text-blue-700 hover:bg-gray-100 border-0 font-semibold px-8 gap-2"
             >
               <PlayCircle className="w-5 h-5" />
-              {userInfo?.homeWarehouse
+              {userInfo?.role === ROLE.ADMIN_ORGANIZATION
                 ? "Lihat Dashboard Admin"
+                : userInfo?.role === ROLE.ADMIN_VENDOR
+                ? "Mulai Order"
+                : userInfo?.role === ROLE.DRIVER_VENDOR
+                ? "Lihat Rencana"
                 : "Mulai Order"}
             </Link>
           </div>
@@ -204,17 +320,6 @@ export default function HomePage() {
                       }`}
                     />
                   </div>
-                  <span
-                    className={`text-sm font-semibold ${
-                      stat.trend.startsWith("+")
-                        ? "text-green-600 dark:text-green-400"
-                        : stat.trend.startsWith("-")
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-blue-600 dark:text-blue-400"
-                    }`}
-                  >
-                    {stat.trend}
-                  </span>
                 </div>
 
                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -264,101 +369,8 @@ export default function HomePage() {
                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                   {feature.desc}
                 </p>
-
-                <div className="mt-4 flex items-center text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  <span>Akses modul</span>
-                  <svg
-                    className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
               </Link>
             ))}
-          </div>
-        </div>
-      </section>
-      {/* Queue Summary */}
-      <section className="py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 md:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Status Antrian Hari Ini
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Monitoring real-time kepadatan gudang
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                <CheckCircle className="w-4 h-4" />
-                <span>Live Update</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {queueData.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl"
-                >
-                  <div className="flex items-center gap-3">
-                    <Building className="w-5 h-5 text-gray-400" />
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {item.warehouse}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 flex-1 max-w-md">
-                    <div className="flex-1">
-                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-500 ${
-                            item.status === "penuh"
-                              ? "bg-red-500"
-                              : item.status === "sibuk"
-                              ? "bg-orange-500"
-                              : item.status === "normal"
-                              ? "bg-green-500"
-                              : "bg-blue-500"
-                          }`}
-                          style={{ width: `${item.capacity}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {item.capacity}%
-                      </span>
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          item.status === "penuh"
-                            ? "bg-red-500"
-                            : item.status === "sibuk"
-                            ? "bg-orange-500"
-                            : item.status === "normal"
-                            ? "bg-green-500"
-                            : "bg-blue-500"
-                        }`}
-                      ></div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                        {item.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

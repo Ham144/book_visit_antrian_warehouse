@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import DraggableBookingCard from "./DraggableBookingCard";
 import { Booking } from "@/types/booking.type";
@@ -12,10 +12,7 @@ interface FullDroppableInventoryProps {
   bgColor: string;
   borderColor: string;
   icon: React.ReactNode;
-  className?: string;
-  acceptFrom?: BookingStatus[];
   onDetail?: (booking: Booking) => void;
-  isDragOverDelayed?: boolean;
 }
 
 const FullDroppableInventory = ({
@@ -23,116 +20,169 @@ const FullDroppableInventory = ({
   status,
   title,
   badgeColor,
+  bgColor,
+  borderColor,
   icon,
   onDetail,
-  isDragOverDelayed,
 }: FullDroppableInventoryProps) => {
-  const { setNodeRef, isOver, active } = useDroppable({
+  // 🔥 INI YANG PENTING: Gunakan useDroppable di PARENT
+  const { setNodeRef, isOver } = useDroppable({
     id: `inventory-${status}`,
     data: {
       type: "inventory",
       bookingStatus: status,
-      acceptFrom:
-        status === BookingStatus.CANCELED
-          ? [
-              BookingStatus.IN_PROGRESS,
-              BookingStatus.UNLOADING,
-              BookingStatus.DELAYED,
-            ]
-          : [],
     },
   });
 
+  // Tentukan styling berdasarkan status
+  const getStatusConfig = () => {
+    if (status === BookingStatus.CANCELED) {
+      return {
+        dropBg: "bg-rose-100/40",
+        dropBorder: "border-rose-400",
+        dropText: "text-rose-600",
+        icon: "🗑️",
+        message: "Batalkan Booking",
+      };
+    }
+    return {
+      dropBg: "bg-amber-100/40",
+      dropBorder: "border-amber-400",
+      dropText: "text-amber-600",
+      icon: "🕒",
+      message: "Tandai sebagai Terlambat",
+    };
+  };
+
+  const config = getStatusConfig();
+
   return (
-    <div className="relative flex-1 min-h-[160px] py-2">
-      {/* ===================== */}
-      {/* MAIN GRID LAYOUT */}
-      {/* ===================== */}
-      <div className="grid grid-rows-[auto_1fr] h-full  ">
-        {/* ROW 1: HEADER AREA (NON-DROPPABLE) */}
-        <div className="relative z-40 bg-white p-4 rounded-t-xl border-2 border-b-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {icon}
-              <div>
-                <h3 className="font-bold text-lg">{title}</h3>
-                <p className="text-xs text-gray-500">
-                  {bookings.length} booking • Drag & Drop
-                </p>
-              </div>
-            </div>
-            <span className={`badge ${badgeColor}`}>{bookings.length}</span>
+    // 🔥 PARENT CONTAINER sebagai DROPPABLE
+    <div
+      ref={setNodeRef}
+      className={`
+        relative flex-1 min-h-[160px] z4 rounded-xl p-4
+        border-2 ${borderColor}
+        transition-all duration-300
+        ${
+          isOver
+            ? `
+          ${config.dropBg}
+          border-4 ${config.dropBorder} border-dashed
+          scale-[1.02] shadow-xl
+        `
+            : `
+          ${bgColor}
+          hover:border-gray-300
+        `
+        }
+        group
+      `}
+      // 🔥 INI YANG MEMBUAT SEMUA AREA DROPPABLE
+      style={{
+        // Force stacking context
+        isolation: "isolate",
+        zIndex: 4,
+      }}
+    >
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-3 relative z-20">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 rounded-lg ${bgColor}`}>{icon}</div>
+          <div>
+            <h3 className="font-bold text-lg">{title}</h3>
+            <p className="text-xs text-gray-500">
+              {bookings.length} booking •{" "}
+              {status === BookingStatus.CANCELED
+                ? "Drag untuk mengembalikan"
+                : "Auto-generated"}
+            </p>
           </div>
         </div>
-
-        {/* ROW 2: CONTENT AREA (DROPPABLE) */}
-        <div className="relative">
-          {/* DROP OVERLAY - HANYA di CONTENT AREA */}
-          <div
-            ref={setNodeRef}
-            className={`
-              absolute inset-0 rounded-b-xl
-              transition-all duration-300
-              ${isOver ? "z-20 border-4 border-dashed" : "z-0 opacity-0"}
-              ${
-                status === BookingStatus.CANCELED
-                  ? "bg-rose-100/40 border-rose-400"
-                  : "bg-amber-100/40 border-amber-400"
-              }
-            `}
-          />
-
-          {/* CONTENT CONTAINER */}
-          <div
-            className={`
-            relative h-full p-4 rounded-b-xl border-2 border-t-0 z-10
-            ${
-              status === BookingStatus.CANCELED
-                ? "bg-rose-50 border-rose-200"
-                : "bg-amber-50 border-amber-200"
-            }
-          `}
-          >
-            {/* BOOKINGS GRID */}
-            <div
-              className={`
-                grid grid-cols-2 gap-3 pr-2
-                ${bookings.length > 4 ? "max-h-[140px] overflow-y-auto" : ""}
-                custom-scrollbar
-                relative z-30
-              `}
-            >
-              {bookings.length === 0 ? (
-                <div className="col-span-2 text-center py-8 text-gray-400">
-                  <div className="text-3xl mb-2">
-                    {status === BookingStatus.CANCELED ? "🗑️" : "🕒"}
-                  </div>
-                  <p className="text-sm">Kosong • Drop booking di sini</p>
-                </div>
-              ) : (
-                bookings.map((booking) => (
-                  <div key={booking.id} className="relative z-40">
-                    <DraggableBookingCard
-                      booking={booking}
-                      draggable={true}
-                      droppable={false}
-                      onDetail={() => onDetail(booking)}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+        <span className={`badge ${badgeColor}`}>{bookings.length}</span>
       </div>
 
-      {/* ===================== */}
+      {/* CONTENT AREA - BISA SCROLL & DRAG */}
+      <div
+        className={`
+          relative min-h-[100px]
+          ${bookings.length > 0 ? "overflow-y-auto max-h-[140px] pr-2" : ""}
+          custom-scrollbar
+        `}
+        // 🔥 MAGIC: Content area TETAP bisa di-interact meski parent droppable
+        style={{
+          position: "relative",
+          zIndex: 30,
+          pointerEvents: "auto", // 🔥 INI YANG PENTING!
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {bookings.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <div className="text-3xl mb-2">{config.icon}</div>
+            <p className="text-sm">Drop booking di sini</p>
+            <p className="text-xs mt-1">
+              Area hijau untuk {config.message.toLowerCase()}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {bookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="relative"
+                // 🔥 Mencegah event bubble ke parent droppable
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+              >
+                <DraggableBookingCard
+                  booking={booking}
+                  draggable={true}
+                  droppable={false}
+                  onDetail={() => onDetail(booking)}
+                  className="shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* DROP FEEDBACK OVERLAY */}
+      {isOver && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
+          <div
+            className={`
+            bg-white/95 backdrop-blur-sm px-6 py-4 rounded-xl shadow-2xl
+            border-2 ${config.dropBorder}
+            animate-in fade-in duration-200
+          `}
+          >
+            <div className="text-center">
+              <div className="text-2xl mb-2">{config.icon}</div>
+              <h4 className={`font-bold text-lg ${config.dropText}`}>
+                {config.message}
+              </h4>
+              <p className="text-sm text-gray-600 mt-1">
+                Lepaskan untuk melanjutkan
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HOVER HINT */}
-      {/* ===================== */}
-      {bookings.length > 0 && !isOver && (
-        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-40">
+      {!isOver && bookings.length > 0 && (
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-30">
           <div className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-full">
-            🟢 Drop area aktif
+            📍 Drag dari sini | Drop di sini
           </div>
         </div>
       )}

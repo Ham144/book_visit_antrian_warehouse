@@ -38,6 +38,7 @@ start 12/11/2025
 [x] REMINDER: Jangan pernah pakai enum di database lagi!!
 [x] add: member management
 [x] add: live queue untuk melihat booking vendor, preview detail booking vendor, mengatur ulang waktu booking vendor
+[x] fix: selected visualStartTime and visualEndTime tidak keliatan
 
 //live queue complex UI drag drop
 [x] add: bisa drag dari antrian IN_PROGRESS menjadi UNLOADING
@@ -52,9 +53,12 @@ start 12/11/2025
 () smart check before relativePositionTarget
 [x] add: bisa drag dari canceled ke unloading
 
-[] add: warehouse setting untuk ruling berbeda tiap warehouse
+[x] add: warehouse setting untuk ruling berbeda tiap warehouse
 [] add: My Warehouse belum tau buat apa
-[] add: dashboard driver & vendor admin
+[] add: dashboard driver & vendor admin dengan endpoint sudah ada stats/...
 
 //update antrian booking
 [x] add: perlu jenis VehicleType ada yang bisa masuk dan ada yang tidak bisa
+
+sulit :
+[] fix: droppable canceled inventory masih belum sempurna

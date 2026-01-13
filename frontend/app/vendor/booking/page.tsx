@@ -116,6 +116,18 @@ export default function BookingPage() {
           field: formData.arrivalTime,
           message: "Waktu kedatangan harus dipilih",
         },
+        {
+          field: formData.estimatedFinishTime,
+          message: "Gagal membuat est. finish time",
+        },
+        {
+          field: formData.driverUsername,
+          message: "Driver perlu dipilih",
+        },
+        {
+          field: formData.dockId,
+          message: "Dock Perlu dipilih",
+        },
       ];
 
       requiredFields.forEach(({ field, message }) => {

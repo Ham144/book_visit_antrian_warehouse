@@ -13,8 +13,10 @@ import {
   ArrowRight,
   CalendarIcon,
   Clock,
+  LucideMailWarning,
   Pencil,
   Trash2,
+  Users,
 } from "lucide-react";
 import QueueDetailModal from "@/components/admin/QueueDetailModal";
 import ConfirmationWithInput from "@/components/shared-common/ConfirmationWithInput";
@@ -36,6 +38,7 @@ import isDelayed from "@/lib/IsDelayed";
 import { SortableContainer } from "@/components/admin/SortableContainer";
 import { DropZoneLine } from "@/components/admin/DropConeLine";
 import FullDroppableInventory from "@/components/admin/FullDroppableInventory";
+import { IDock } from "@/types/dock.type";
 
 export default function LiveQueuePage() {
   const { userInfo } = useUserInfo();
@@ -160,38 +163,59 @@ export default function LiveQueuePage() {
      * 2. KE UNLOADING (IN_PROGRESS | DELAYED | CANCELED)
      * ===================================================== */
     if (targetData.bookingStatus === BookingStatus.UNLOADING) {
-      await BookingApi.dragAndDrop(sourceBooking.id!, {
-        action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
-        toStatus: "UNLOADING",
-        dockId: targetData.dockId || sourceBooking.dockId,
-        relativePositionTarget: targetData.bookingId
-          ? {
-              bookingId: targetData.bookingId,
-              type: "AFTER",
-            }
-          : { bookingId: "LAST", type: "AFTER" },
-      });
-
+      try {
+        await BookingApi.dragAndDrop(sourceBooking.id!, {
+          action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
+          toStatus: "UNLOADING",
+          dockId: targetData.dockId || sourceBooking.dockId,
+          relativePositionTarget: targetData.bookingId
+            ? {
+                bookingId: targetData.bookingId,
+                type: "AFTER",
+              }
+            : { bookingId: "LAST", type: "AFTER" },
+        });
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Gagal memperbarui booking"
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       return;
     }
 
     /* =====================================================
-     * 3. KE CANCELED (inventory)
+     * 3. KE CANCELED (inventory) - support both old and new drop area ID
      * ===================================================== */
     if (
       targetData.type === "inventory" &&
+      targetData.bookingStatus === BookingStatus.CANCELED &&
       sourceBooking.status !== BookingStatus.CANCELED
     ) {
       setSelectedBookingId(sourceBooking.id!);
       setCanceledReason(
-        `Dipindahkan via drag & drop - ${new Date().toLocaleString()}`
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`
       );
 
       (
         document.getElementById("cancel-confirmation") as HTMLDialogElement
       )?.showModal();
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      return;
+    }
+
+    // Handle canceled wrapper drop area
+    if (
+      over?.id === "inventory-CANCELED-wrapper" &&
+      sourceBooking.status !== BookingStatus.CANCELED
+    ) {
+      setSelectedBookingId(sourceBooking.id!);
+      setCanceledReason(
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`
+      );
+
+      (
+        document.getElementById("cancel-confirmation") as HTMLDialogElement
+      )?.showModal();
       return;
     }
 
@@ -199,17 +223,23 @@ export default function LiveQueuePage() {
      * 4. KE IN_PROGRESS (DELAYED | CANCELED | UNLOADING)
      * ===================================================== */
     if (targetData.bookingStatus === BookingStatus.IN_PROGRESS) {
-      await BookingApi.dragAndDrop(sourceBooking.id!, {
-        action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
-        toStatus: "IN_PROGRESS",
-        dockId: targetData.dockId || sourceBooking.dockId,
-        relativePositionTarget: targetData.bookingId
-          ? {
-              bookingId: targetData.bookingId,
-              type: "AFTER",
-            }
-          : { bookingId: "LAST", type: "AFTER" },
-      });
+      try {
+        await BookingApi.dragAndDrop(sourceBooking.id!, {
+          action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
+          toStatus: "IN_PROGRESS",
+          dockId: targetData.dockId || sourceBooking.dockId,
+          relativePositionTarget: targetData.bookingId
+            ? {
+                bookingId: targetData.bookingId,
+                type: "AFTER",
+              }
+            : { bookingId: "LAST", type: "AFTER" },
+        });
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Gagal memperbarui booking"
+        );
+      }
 
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       return;
@@ -223,15 +253,21 @@ export default function LiveQueuePage() {
       sourceBooking.status === BookingStatus.IN_PROGRESS &&
       sourceBooking.dockId !== targetData.dockId
     ) {
-      await BookingApi.dragAndDrop(sourceBooking.id!, {
-        action: "MOVE_OUTSIDE_DOCK",
-        toStatus: "IN_PROGRESS",
-        dockId: targetData.dockId,
-        relativePositionTarget: {
-          bookingId: "LAST",
-          type: "AFTER",
-        },
-      });
+      try {
+        await BookingApi.dragAndDrop(sourceBooking.id!, {
+          action: "MOVE_OUTSIDE_DOCK",
+          toStatus: "IN_PROGRESS",
+          dockId: targetData.dockId,
+          relativePositionTarget: {
+            bookingId: "LAST",
+            type: "AFTER",
+          },
+        });
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Gagal memperbarui booking"
+        );
+      }
 
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       return;
@@ -324,6 +360,10 @@ export default function LiveQueuePage() {
         queryKey: ["bookings"],
       });
       setCanceledReason("");
+      setSelectedBookingId(null);
+      (
+        document.getElementById("cancel-confirmation") as HTMLDialogElement
+      )?.close();
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || error.message);
@@ -433,152 +473,6 @@ export default function LiveQueuePage() {
       <div className="flex">
         <main className="flex-1 p-6">
           <div className="space-y-6">
-            {/* Header dan filter area */}
-            <div className="flex flex-wrap gap-2 items-center">
-              <button
-                onClick={() =>
-                  toast(
-                    "Halaman ini masih dalam tahap pengerjaan, dan kemungkinan bertemu bug masih tinggi"
-                  )
-                }
-                className="btn bg-black border-dashed border text-white hover:bg-gray-800 transition-colors"
-              >
-                Masih Dikembangkan
-              </button>
-
-              {/* Toleransi */}
-              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-300 hover:border-gray-400 transition-colors">
-                <Clock className="w-3 h-3 text-gray-500" />
-                <span className="text-xs sm:text-sm">
-                  Toleransi Keterlambatan
-                </span>
-                <input
-                  type="number"
-                  placeholder="15"
-                  value={delayTolerance}
-                  onChange={(e) =>
-                    setDelayTolerance(parseInt(e.target.value) || 0)
-                  }
-                  className="w-10 text-center px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded"
-                  min="0"
-                  max="60"
-                />
-                <span className="text-xs text-gray-500">mnt</span>
-              </div>
-
-              {/* Date Picker Minimalis */}
-              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-gray-300 hover:border-gray-400 transition-colors">
-                <CalendarIcon className="w-4 h-4 text-gray-500" />
-                <div className="flex gap-1 items-center">
-                  <select
-                    value={
-                      filter.date
-                        ? new Date(filter.date).getDate()
-                        : new Date().getDate()
-                    }
-                    onChange={(e) => {
-                      const day = parseInt(e.target.value);
-                      const currentDate = filter.date
-                        ? new Date(filter.date)
-                        : new Date();
-                      currentDate.setDate(day);
-                      setFilter({
-                        ...filter,
-                        date: currentDate.toISOString().split("T")[0],
-                      });
-                    }}
-                    className="px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded w-12"
-                  >
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                      <option key={day} value={day}>
-                        {day.toString().padStart(2, "0")}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-gray-400">/</span>
-                  <select
-                    value={
-                      filter.date
-                        ? new Date(filter.date).getMonth() + 1
-                        : new Date().getMonth() + 1
-                    }
-                    onChange={(e) => {
-                      const month = parseInt(e.target.value) - 1;
-                      const currentDate = filter.date
-                        ? new Date(filter.date)
-                        : new Date();
-                      currentDate.setMonth(month);
-                      setFilter({
-                        ...filter,
-                        date: currentDate.toISOString().split("T")[0],
-                      });
-                    }}
-                    className="px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded w-14"
-                  >
-                    {[
-                      "Jan",
-                      "Feb",
-                      "Mar",
-                      "Apr",
-                      "Mei",
-                      "Jun",
-                      "Jul",
-                      "Agu",
-                      "Sep",
-                      "Okt",
-                      "Nov",
-                      "Des",
-                    ].map((month, index) => (
-                      <option key={month} value={index + 1}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-gray-400">/</span>
-                  <select
-                    value={
-                      filter.date
-                        ? new Date(filter.date).getFullYear()
-                        : new Date().getFullYear()
-                    }
-                    onChange={(e) => {
-                      const year = parseInt(e.target.value);
-                      const currentDate = filter.date
-                        ? new Date(filter.date)
-                        : new Date();
-                      currentDate.setFullYear(year);
-                      setFilter({
-                        ...filter,
-                        date: currentDate.toISOString().split("T")[0],
-                      });
-                    }}
-                    className="px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded w-16"
-                  >
-                    {Array.from({ length: 5 }, (_, i) => {
-                      const year = new Date().getFullYear() - 2 + i;
-                      return year;
-                    }).map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={() => {
-                    const today = new Date();
-                    setFilter({
-                      ...filter,
-                      date: today.toISOString().split("T")[0],
-                    });
-                  }}
-                  className="ml-1 px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100 transition-colors"
-                >
-                  Hari Ini
-                </button>
-              </div>
-            </div>
-
             {/* Queue Grid by Dock */}
             {isLoading || loadingDocks ? (
               <div className="flex justify-center items-center py-16">
@@ -608,19 +502,26 @@ export default function LiveQueuePage() {
                   <div className="grid gap-3 grid-cols-4 w-full">
                     {Object.entries(filteredBookings).map(
                       ([dockId, bookingGroup]) => {
-                        const dock = docks.find((d) => d.id === dockId);
+                        const dock: IDock = docks.find((d) => d.id === dockId);
                         if (!dock) return null;
 
                         const unloadingBookings = bookingGroup.unloading;
                         const inProgressBookings = bookingGroup.inprogress;
 
                         return (
-                          <div key={dockId} className="flex flex-col gap-y-6 ">
-                            {/* Dock Header */}
+                          <div key={dockId} className="flex flex-col gap-y-2">
+                            {/* Dock Header - Compact & Modern */}
                             <div
-                              className={`btn btn-outline border ${
-                                dock.isActive ? "bg-primary" : "bg-slate-400"
-                              } text-white p-3 cursor-pointer flex`}
+                              className={`
+    relative px-3 py-2 cursor-pointer rounded-xl transition-all duration-300
+    ${
+      dock.isActive
+        ? "bg-gradient-to-r from-primary/90 to-primary/70 shadow-lg shadow-primary/20"
+        : "bg-gradient-to-r from-slate-500/80 to-slate-400/80"
+    }
+    text-white hover:shadow-md hover:scale-[1.02] active:scale-[0.99]
+    group
+  `}
                               onClick={() => {
                                 setSelectedDockId(dock.id!);
                                 (
@@ -630,13 +531,77 @@ export default function LiveQueuePage() {
                                 )?.showModal();
                               }}
                             >
-                              <h3 className="font-bold text-lg text-center flex items-center gap-x-4">
-                                {dock.name}
-                              </h3>
-                              <h4>({inProgressBookings.length})</h4>
-                              <div>
-                                <Pencil className="w-5 h-5" />
+                              {/* Header Content Grid */}
+                              <div className="flex items-center justify-between gap-2">
+                                {/* Left: Dock Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {/* Dock Name with Badge */}
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="font-bold text-base truncate">
+                                        {dock.name}
+                                      </h3>
+                                      {/* Active Status Indicator */}
+                                      <div
+                                        className={`
+            w-2 h-2 rounded-full
+            ${dock.isActive ? "bg-emerald-400 animate-pulse" : "bg-gray-300"}
+          `}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right: Stats & Actions */}
+                                <div className="flex items-center gap-3">
+                                  {/* Queue Count with Icon */}
+                                  <div className="flex flex-col items-center">
+                                    <div className="flex items-center gap-1">
+                                      <Users className="w-3 h-3 text-white/70" />
+                                      <span className="text-sm font-bold">
+                                        {inProgressBookings.length}
+                                      </span>
+                                    </div>
+                                    <span className="text-[9px] text-white/70 uppercase tracking-wide">
+                                      Antrian
+                                    </span>
+                                  </div>
+
+                                  {/* Vertical Divider */}
+                                  <div className="w-px h-6 bg-white/30" />
+
+                                  {/* Edit Button */}
+                                  <div
+                                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 
+                     transition-colors group-hover:bg-white/20"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </div>
+                                </div>
                               </div>
+
+                              {/* Hover Tooltip for More Types */}
+                              {dock?.allowedTypes?.length > 2 && (
+                                <div
+                                  className="absolute top-full left-0 mt-1 w-48 bg-gray-800 text-white 
+                   text-xs rounded-lg p-2 shadow-xl  opacity-0 
+                   group-hover:opacity-100 pointer-events-none transition-opacity "
+                                >
+                                  <div className="font-semibold mb-1">
+                                    Jenis Kendaraan:
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {dock.allowedTypes.map((type) => (
+                                      <span
+                                        key={type}
+                                        className="px-1.5 py-0.5 bg-gray-700 rounded"
+                                      >
+                                        {type}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* ============================= */}
@@ -651,10 +616,11 @@ export default function LiveQueuePage() {
                               type="dock-section"
                               bookingStatus={BookingStatus.UNLOADING}
                               dockId={dockId}
-                              className="space-y-2  min-h-[100px]"
+                              className="space-y-2  min-h-[100px] "
                               acceptFrom={[
                                 BookingStatus.IN_PROGRESS,
                                 BookingStatus.DELAYED,
+                                BookingStatus.CANCELED,
                               ]}
                             >
                               {/* Drop Zone di atas list (untuk area kosong) */}
@@ -762,11 +728,10 @@ export default function LiveQueuePage() {
                                         <DraggableBookingCard
                                           booking={booking}
                                           onDetail={() => onDetail(booking)}
-                                          onMarkFinished={() =>
+                                          onCancel={() =>
                                             handleUpdateStatus({
                                               id: booking.id!,
-                                              status: BookingStatus.FINISHED,
-                                              actualFinishTime: new Date(),
+                                              status: BookingStatus.CANCELED,
                                             })
                                           }
                                         />
@@ -794,11 +759,11 @@ export default function LiveQueuePage() {
                       }
                     )}
                   </div>
-                  {/* INVENTORY SECTION */}
-                  <div className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-400 shadow-lg">
+                  {/* INVENTORY SECTION - Fixed positioning dengan z-index yang tepat */}
+                  <div className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-400 shadow-lg z-30">
                     {/* Handle untuk tarik */}
                     <div
-                      className="h-6 bg-gray-200 border-t border-gray-300 cursor-ns-resize flex justify-center items-center"
+                      className="h-6 bg-gray-200 border-t border-gray-300 cursor-ns-resize flex justify-center items-center z-50 relative"
                       onMouseDown={(e) => {
                         const startY = e.clientY;
                         const startHeight = height;
@@ -832,10 +797,10 @@ export default function LiveQueuePage() {
                       <div className="w-16 h-1 bg-gray-400 rounded"></div>
                     </div>
 
-                    {/* Content */}
+                    {/* Content - z-index lebih rendah dari handle tapi cukup untuk drop detection */}
                     <div
                       style={{ height: `${height}px` }}
-                      className="overflow-auto "
+                      className="overflow-auto relative z-30"
                     >
                       <div className="grid grid-cols-2 gap-x-3 md:px-52">
                         {/* DELAYED */}
@@ -844,12 +809,13 @@ export default function LiveQueuePage() {
                             bookings={delayedBookings}
                             status={BookingStatus.DELAYED}
                             title="Delayed Bookings"
+                            onDetail={(booking) => {
+                              onDetail(booking);
+                            }}
                             badgeColor="badge-warning"
                             bgColor="bg-amber-50"
-                            onDetail={onDetail}
                             borderColor="border-amber-200"
                             icon={<Clock className="w-5 h-5 mr-2" />}
-                            isDragOverDelayed={isDragOverDelayed}
                           />
                         </div>
 
@@ -860,6 +826,9 @@ export default function LiveQueuePage() {
                             bookings={canceledBookings}
                             status={BookingStatus.CANCELED}
                             title="Canceled Bookings"
+                            onDetail={(booking) => {
+                              onDetail(booking);
+                            }}
                             badgeColor="badge-error"
                             bgColor="bg-red-50"
                             borderColor="border-rose-200"
@@ -870,9 +839,10 @@ export default function LiveQueuePage() {
                     </div>
                   </div>
 
-                  <DragOverlay>
+                  {/* DragOverlay - z-index tinggi untuk visual feedback, tapi tidak menghalangi drop detection */}
+                  <DragOverlay style={{ zIndex: 9999 }}>
                     {activeBooking && (
-                      <div className="card shadow-xl scale-105 rotate-1 border-primary">
+                      <div className="card shadow-xl scale-105 rotate-1 border-primary pointer-events-none">
                         <DraggableBookingCard
                           booking={activeBooking}
                           draggable={false}

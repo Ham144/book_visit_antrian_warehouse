@@ -62,7 +62,7 @@ export const SortableContainer = ({
             ? "ring-2 ring-primary ring-inset bg-primary/10"
             : ""
         }
-        transition-all duration-150 relative flex flex-col card justify-center
+        transition-all duration-150 relative flex flex-col  justify-center border border-dashed px-2
       `}
     >
       {children}

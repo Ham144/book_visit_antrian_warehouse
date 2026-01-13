@@ -97,13 +97,20 @@ export const mockVehicleBrands: string[] = [
   'Foton',
 ];
 
+export interface GetLandingPageStats {
+  totalWarehouse: number;
+  activeSlot: number;
+  bookedToday: number;
+  succeedBooking: number;
+}
+
 export type DragAndDropPayload =
   | {
       action: 'MOVE_WITHIN_DOCK';
       toStatus: 'UNLOADING' | 'IN_PROGRESS';
       dockId?: string;
       relativePositionTarget: {
-        type: 'BEFORE' | 'AFTER' | 'SWAP'; //SWAP hanya berlaku antar dock yang sama dan harus sama2 IN_PROGRESS
+        type: 'AFTER' | 'SWAP' | 'BEFORE'; //SWAP hanya berlaku antar dock yang sama dan harus sama2 IN_PROGRESS
         bookingId: string;
       };
     }
@@ -112,7 +119,7 @@ export type DragAndDropPayload =
       toStatus: 'UNLOADING' | 'CANCELED' | 'IN_PROGRESS';
       dockId?: string;
       relativePositionTarget: {
-        type: 'BEFORE' | 'AFTER' | 'SWAP';
+        type: 'AFTER' | 'SWAP' | 'BEFORE';
         bookingId: string;
       };
     };

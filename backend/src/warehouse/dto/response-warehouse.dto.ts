@@ -19,6 +19,10 @@ export class responseWarehouseDto {
   @Expose()
   @Type(() => LoginResponseDto)
   userWarehouseAccesses?: LoginResponseDto[];
+  @Expose()
+  intervalMinimalQueueu?: number;
+  @Expose()
+  delayTolerance?: number;
 
   @Expose({ groups: ['detail'] })
   @Type(() => LoginResponseDto)

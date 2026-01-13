@@ -9,7 +9,12 @@ import { AuthService } from 'src/user/auth.service';
 import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
-import { ROLE, SubscriptionPlan } from 'src/common/shared-enum';
+import {
+  BookingStatus,
+  GetLandingPageStats,
+  ROLE,
+  SubscriptionPlan,
+} from 'src/common/shared-enum';
 import { BaseProps } from 'src/common/shared-interface';
 
 @Injectable()
@@ -297,5 +302,59 @@ export class MyOrganizationService {
       },
     });
     return HttpStatus.ACCEPTED;
+  }
+
+  async getLandingPage() {
+    const response: GetLandingPageStats = {
+      totalWarehouse: 0,
+      activeSlot: 0,
+      bookedToday: 0,
+      succeedBooking: 0,
+    };
+    const now = new Date();
+    const todayGte = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+    );
+    const todayLte = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+    );
+
+    response.totalWarehouse = await this.prismaService.warehouse.count();
+    response.activeSlot = await this.prismaService.warehouse.count({
+      where: {
+        isActive: true,
+      },
+    });
+
+    response.activeSlot = await this.prismaService.dock.count({
+      where: {
+        isActive: true,
+      },
+    });
+
+    response.bookedToday = await this.prismaService.booking.count({
+      where: {
+        status: BookingStatus.IN_PROGRESS,
+        arrivalTime: {
+          gte: todayGte,
+          lte: todayLte,
+        },
+      },
+    });
+    response.succeedBooking = await this.prismaService.booking.count({
+      where: { status: BookingStatus.FINISHED },
+    });
+
+    return response;
   }
 }

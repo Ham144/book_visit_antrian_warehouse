@@ -112,7 +112,7 @@ export class BookingforVendorService {
 
     if (overlapDockedHour) {
       throw new BadRequestException(
-        `Waktu terkait overlap booking ${overlapDockedHour.id}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
+        `Waktu terkait overlap booking ${overlapDockedHour.code}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
       );
     }
 
@@ -237,4 +237,12 @@ export class BookingforVendorService {
     });
     return HttpStatus.ACCEPTED;
   }
+
+  async getStatsForDriver() {
+    const bookings = await this.prismaService.booking.findMany({
+      where: {},
+    });
+  }
+
+  async getStatsForAdminVendor() {}
 }
