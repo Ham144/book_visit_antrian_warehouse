@@ -23,6 +23,10 @@ export class responseWarehouseDto {
   intervalMinimalQueueu?: number;
   @Expose()
   delayTolerance?: number;
+  @Expose()
+  isAutoEfficientActive?: boolean;
+  @Expose()
+  maximumWeekSelection?: number;
 
   @Expose({ groups: ['detail'] })
   @Type(() => LoginResponseDto)

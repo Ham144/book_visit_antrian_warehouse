@@ -37,3 +37,10 @@ export interface BookingFilter {
   vendorName?: string | null; //untuk admin vendor
   date?: string | null;
 }
+
+export interface UpdateBookingStatus {
+  id: string;
+  status: BookingStatus;
+  actualFinishTime?: string;
+  actualArrivalTime?: string;
+}

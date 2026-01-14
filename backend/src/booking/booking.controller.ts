@@ -28,7 +28,7 @@ export class BookingController {
     return this.bookingForVendorService.create(createBookingDto, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization()
   @Get('/list')
   findAll(@Query() filter, @Auth() userInfo: any) {
     return this.bookingWarehouseService.findAll(filter, userInfo);

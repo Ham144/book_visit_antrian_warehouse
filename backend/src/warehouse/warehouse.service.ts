@@ -16,6 +16,8 @@ import { RedisService } from 'src/redis/redis.service';
 import { randomUUID } from 'crypto';
 import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { ROLE } from 'src/common/shared-enum';
+import { UpdateSettingWarehouseDto } from './dto/update-setting-warehouse.dto';
+import { responseSettingWarehouseDto } from './dto/respose-settings-warehouse.dto';
 
 @Injectable()
 export class WarehouseService {
@@ -304,5 +306,37 @@ export class WarehouseService {
       console.error('Delete error:', error);
       throw new InternalServerErrorException('Gagal menghapus warehouse');
     }
+  }
+
+  async getSettings(id: string) {
+    const settings = await this.prismaService.warehouse.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        name: true,
+        intervalMinimalQueueu: true,
+        delayTolerance: true,
+        isAutoEfficientActive: true,
+        maximumWeekSelection: true,
+      },
+    });
+
+    return plainToInstance(responseSettingWarehouseDto, settings, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  async updateSetting(payload: UpdateSettingWarehouseDto, id: string) {
+    await this.prismaService.warehouse.update({
+      where: {
+        id,
+      },
+      data: {
+        ...payload,
+      },
+    });
+
+    return HttpStatus.ACCEPTED;
   }
 }

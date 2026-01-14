@@ -18,8 +18,6 @@ import {
   Building2,
   PenTool,
   Crown,
-  ArrowRight,
-  ArrowLeft,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
@@ -129,7 +127,7 @@ export const vendorMenutItems = [
     label: "Dashboard",
     icon: LayoutDashboard,
     href: "/vendor/dashboard",
-    roles: [ROLE.DRIVER_VENDOR, ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
+    roles: [ROLE.ADMIN_VENDOR, ROLE.ADMIN_ORGANIZATION],
   },
   {
     id: "booking",
@@ -195,9 +193,10 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
     <div className="max-h-screen  flex flex-col w-full">
       <div className="flex flex-1">
         {/* SIDEBAR - Fixed dengan efek glassy */}
-        <aside
-          ref={sidebarRef}
-          className={`
+        {userInfo?.role != ROLE.DRIVER_VENDOR && (
+          <aside
+            ref={sidebarRef}
+            className={`
             fixed left-0 top-13 h-screen z-20
             bg-gradient-to-b from-emerald-50/90 to-white/90
             backdrop-blur-lg border-r border-emerald-100/50
@@ -209,62 +208,22 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
             before:absolute before:inset-0 
             before:bg-gradient-to-r
            `}
-        >
-          {/* tombol tutup buka  */}
-          {/* <div className="p-3 relative">
-            <button
-              onClick={() => setIsOpen((v) => !v)}
-              type="button"
-              className={`
-                w-full flex items-center justify-center
-                transition-all duration-300
-                rounded-xl
-                ${
-                  isOpen
-                    ? "bg-gradient-to-r from-emerald-500/10 to-emerald-400/10 px-4 py-3"
-                    : "p-3"
-                }
-                hover:from-emerald-500/20 hover:to-emerald-400/20
-                active:scale-95
-                relative overflow-hidden
-                before:absolute before:inset-0 
-                before:bg-gradient-to-r before:from-emerald-500/20 before:to-transparent
-                before:opacity-0 hover:before:opacity-100
-                before:transition-opacity before:duration-300
-              `}
-            >
-              {isOpen ? (
-                <span className="flex items-center justify-between w-full">
-                  <span className="text-sm font-semibold text-emerald-700">
-                    Tutup Menu
-                  </span>
-                  <div className="w-6 h-6 flex items-center justify-center bg-emerald-100 rounded-lg">
-                    <ArrowLeft size={14} className="text-emerald-600" />
-                  </div>
-                </span>
-              ) : (
-                <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-sm px-1">
-                  <ArrowRight size={26} className="text-white" />
-                </div>
-              )}
-            </button>
-          </div> */}
+          >
+            {/* Navigation */}
+            <nav className="flex-1 overflow-auto px-2 max-h-screen pb-32 ">
+              {adminMenuItems
+                .filter((item) =>
+                  item.roles.some((role) => userInfo?.role === role)
+                )
+                .map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname === item.href;
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-auto px-2 max-h-screen pb-32 ">
-            {adminMenuItems
-              .filter((item) =>
-                item.roles.some((role) => userInfo?.role === role)
-              )
-              .map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className={`
                       group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                       transition-all duration-300 relative overflow-hidden
                       ${
@@ -274,15 +233,15 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                       }
                       ${isOpen ? "justify-start" : "justify-center"}
                     `}
-                  >
-                    {/* Active indicator */}
-                    {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-300 rounded-r-full"></div>
-                    )}
+                    >
+                      {/* Active indicator */}
+                      {active && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-300 rounded-r-full"></div>
+                      )}
 
-                    {/* Icon with glow effect */}
-                    <div
-                      className={`
+                      {/* Icon with glow effect */}
+                      <div
+                        className={`
                       flex items-center justify-center transition-all duration-300
                       ${
                         active
@@ -290,40 +249,40 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                           : "text-emerald-500 group-hover:text-emerald-600"
                       }
                     `}
-                    >
-                      <Icon size={20} className="flex-shrink-0" />
-                    </div>
+                      >
+                        <Icon size={20} className="flex-shrink-0" />
+                      </div>
 
-                    {isOpen && (
-                      <span
-                        className={`
+                      {isOpen && (
+                        <span
+                          className={`
                         truncate ml-3 text-sm font-medium transition-all duration-300
                         ${active ? "text-white" : "text-emerald-700"}
                       `}
-                      >
-                        {item.label}
-                      </span>
-                    )}
+                        >
+                          {item.label}
+                        </span>
+                      )}
 
-                    {/* Hover glow effect */}
-                    {!active && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    )}
-                  </Link>
-                );
-              })}
+                      {/* Hover glow effect */}
+                      {!active && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      )}
+                    </Link>
+                  );
+                })}
 
-            {ITOnlyMenus.filter((item) =>
-              item.roles.some((role) => userInfo?.role === role)
-            ).map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
+              {ITOnlyMenus.filter((item) =>
+                item.roles.some((role) => userInfo?.role === role)
+              ).map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`
                       group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                       transition-all duration-300 relative overflow-hidden
                       ${
@@ -333,13 +292,13 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                       }
                       ${isOpen ? "justify-start" : "justify-center"}
                     `}
-                >
-                  {active && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-300 rounded-r-full"></div>
-                  )}
+                  >
+                    {active && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-300 rounded-r-full"></div>
+                    )}
 
-                  <div
-                    className={`
+                    <div
+                      className={`
                       flex items-center justify-center transition-all duration-300
                       ${
                         active
@@ -347,37 +306,37 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                           : "text-blue-500 group-hover:text-blue-600"
                       }
                     `}
-                  >
-                    <Icon size={20} className="flex-shrink-0" />
-                  </div>
+                    >
+                      <Icon size={20} className="flex-shrink-0" />
+                    </div>
 
-                  {isOpen && (
-                    <span
-                      className={`
+                    {isOpen && (
+                      <span
+                        className={`
                         truncate ml-3 text-sm font-medium transition-all duration-300
                         ${active ? "text-white" : "text-blue-700"}
                       `}
-                    >
-                      {item.label}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+                      >
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
 
-            {vendorMenutItems
-              .filter((item) =>
-                item.roles.some((role) => userInfo?.role === role)
-              )
-              .map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
+              {vendorMenutItems
+                .filter((item) =>
+                  item.roles.some((role) => userInfo?.role === role)
+                )
+                .map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname === item.href;
 
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className={`
                     group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                     transition-all duration-300 relative overflow-hidden
                     ${
@@ -387,13 +346,13 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                     }
                     ${isOpen ? "justify-start" : "justify-center"}
                   `}
-                  >
-                    {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-amber-300 rounded-r-full"></div>
-                    )}
+                    >
+                      {active && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-amber-300 rounded-r-full"></div>
+                      )}
 
-                    <div
-                      className={`
+                      <div
+                        className={`
                     flex items-center justify-center transition-all duration-300
                     ${
                       active
@@ -401,28 +360,29 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                         : "text-amber-500 group-hover:text-amber-600"
                     }
                   `}
-                    >
-                      <Icon size={20} className="flex-shrink-0" />
-                    </div>
+                      >
+                        <Icon size={20} className="flex-shrink-0" />
+                      </div>
 
-                    {isOpen && (
-                      <span
-                        className={`
+                      {isOpen && (
+                        <span
+                          className={`
                       truncate ml-3 text-sm font-medium transition-all duration-300
                       ${active ? "text-white" : "text-amber-700"}
                     `}
-                      >
-                        {item.label}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-          </nav>
+                        >
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+            </nav>
 
-          {/* Glassy bottom effect */}
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/50 to-transparent pointer-events-none"></div>
-        </aside>
+            {/* Glassy bottom effect */}
+            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/50 to-transparent pointer-events-none"></div>
+          </aside>
+        )}
 
         {/* MAIN CONTENT */}
         <div className="flex-1 overflow-hidden max-h-screen">{children}</div>

@@ -163,6 +163,16 @@ export default function LiveQueuePage() {
      * 2. KE UNLOADING (IN_PROGRESS | DELAYED | CANCELED)
      * ===================================================== */
     if (targetData.bookingStatus === BookingStatus.UNLOADING) {
+      const targetData = over.data.current;
+
+      const dock = docks.find((d) => d.id === targetData.dockId);
+      const existingUnloading = filteredBookings[targetData.dockId!].unloading;
+
+      if (existingUnloading.length > 0) {
+        return toast.error(
+          "Unloading di Gate" + dock.name + " sedang dilakukan"
+        );
+      }
       try {
         await BookingApi.dragAndDrop(sourceBooking.id!, {
           action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
@@ -605,11 +615,12 @@ export default function LiveQueuePage() {
                             </div>
 
                             {/* ============================= */}
+
                             {/* UNLOADING SECTION - Bisa menerima drop */}
                             {/* ============================= */}
 
-                            <div className="text-xs font-semibold text-warning uppercase ">
-                              Unloading ({unloadingBookings.length})
+                            <div className="text-xs font-semibold text-warning uppercase pb-4 ">
+                              Unloading Area
                             </div>
                             <SortableContainer
                               id={`unloading-section-${dockId}`}
@@ -760,7 +771,7 @@ export default function LiveQueuePage() {
                     )}
                   </div>
                   {/* INVENTORY SECTION - Fixed positioning dengan z-index yang tepat */}
-                  <div className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-400 shadow-lg z-30">
+                  <div className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-400 shadow-lg z-10">
                     {/* Handle untuk tarik */}
                     <div
                       className="h-6 bg-gray-200 border-t border-gray-300 cursor-ns-resize flex justify-center items-center z-50 relative"

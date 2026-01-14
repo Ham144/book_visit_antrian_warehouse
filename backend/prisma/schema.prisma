@@ -56,6 +56,8 @@ model Warehouse {
   //settings & Preferences
   delayTolerance Int @default(15)
   intervalMinimalQueueu Int @default(15)
+  isAutoEfficientActive Boolean @default(true)
+  maximumWeekSelection Int? @default(2)
 }
 
 model Vacant {

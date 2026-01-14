@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -20,6 +21,8 @@ import {
   refreshTokenOption,
 } from 'src/user/tokenCookieOptions';
 import { Authorization } from 'src/common/authorization.decorator';
+import { UpdateSettingWarehouseDto } from './dto/update-setting-warehouse.dto';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Controller('/warehouse')
 export class WarehouseController {
@@ -87,5 +90,23 @@ export class WarehouseController {
   @Delete(':id')
   deleteWarehouse(@Param('id') id: string) {
     return this.warehouseService.deleteWarehouse(id);
+  }
+
+  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Get('/settings')
+  getSettings(@Auth() userinfo: TokenPayload) {
+    return this.warehouseService.getSettings(userinfo.homeWarehouseId);
+  }
+
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Put('/settings')
+  updateSettings(
+    @Body() payload: UpdateSettingWarehouseDto,
+    @Auth() userinfo: TokenPayload,
+  ) {
+    return this.warehouseService.updateSetting(
+      payload,
+      userinfo.homeWarehouseId,
+    );
   }
 }

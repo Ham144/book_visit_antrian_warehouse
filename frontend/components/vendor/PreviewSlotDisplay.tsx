@@ -25,7 +25,6 @@ const PreviewSlotDisplay = ({
   currentBookingId,
 }: PreviewSlotDisplayProps) => {
   const isReadOnly = mode === "preview";
-  const isAutoEfficientActive = true;
 
   // States
   const [visualStartTime, setVisualStartTime] = useState<string | null>(null);
@@ -270,7 +269,7 @@ const PreviewSlotDisplay = ({
     // ===============================
     // 4. AUTO EFFICIENT (ANCHOR SEARCH)
     // ===============================
-    if (isAutoEfficientActive) {
+    if (formData.Warehouse.isAutoEfficientActive) {
       const applicableBusyTimes = getApplicableBusyTimesForDate(date);
       const dateBookings = getDateBookingsForDate(date);
 
@@ -428,19 +427,24 @@ const PreviewSlotDisplay = ({
       estimatedFinishTime: finishDateTime,
     });
 
-    if (isAutoEfficientActive) {
+    if (formData.Warehouse.isAutoEfficientActive) {
       toast.success("auto efficient active");
     }
   };
 
   // Calendar setup
+  const maximumWeekSelection = formData?.Warehouse?.maximumWeekSelection || 9;
+
   const today = new Date();
   const currentWeekStart = getStartOfWeek(today);
-  const availableWeeks = Array.from({ length: 12 }, (_, i) => {
-    const weekStart = new Date(currentWeekStart);
-    weekStart.setDate(currentWeekStart.getDate() + i * 7);
-    return weekStart;
-  });
+  const availableWeeks = Array.from(
+    { length: maximumWeekSelection },
+    (_, i) => {
+      const weekStart = new Date(currentWeekStart);
+      weekStart.setDate(currentWeekStart.getDate() + i * 7);
+      return weekStart;
+    }
+  );
 
   // UI Components
   const LoadingSpinner = () => (
@@ -452,7 +456,9 @@ const PreviewSlotDisplay = ({
   const WeekSelector = () => (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
       <h3 className="text-base font-medium mb-3">
-        {isReadOnly ? "Minggu Booking" : "Pilih Minggu (12 minggu ke depan)"}
+        {isReadOnly
+          ? "Minggu Booking"
+          : `Minggu yang dapat dipilih (${maximumWeekSelection} minggu ke depan)`}
       </h3>
       <div className="flex overflow-x-auto gap-2 pb-2 -mx-2 px-2">
         {availableWeeks.map((weekStart, i) => {
@@ -490,14 +496,18 @@ const PreviewSlotDisplay = ({
   );
 
   const TimeSlotGrid = () => {
-    const hours = Array.from({ length: 13 }, (_, i) => 6 + i); // 6:00 - 18:00
-    const startHour = 6;
-    const endHour = 18;
-    const totalHours = endHour - startHour;
+    const startHour = 8;
+    const endHour = 22; // atau 21, 23 sesuai kebutuhan
+    const hours = Array.from(
+      { length: endHour - startHour + 1 },
+      (_, i) => startHour + i
+    );
 
     const getBarPosition = (timeHour: number): number => {
       const clamped = Math.max(startHour, Math.min(endHour, timeHour));
-      return ((clamped - startHour) / totalHours) * 100;
+      // PERBAIKAN: 15 kolom, jam 8:00 = kolom 1 (0%), jam 9:00 = kolom 2 (100/15 = 6.67%)
+      // Rumus: (jam - startHour) * (100 / totalKolom)
+      return ((clamped - startHour) / hours.length) * 100;
     };
 
     const getApplicableBusyTimes = (date: Date): IDockBusyTime[] => {
@@ -592,11 +602,11 @@ const PreviewSlotDisplay = ({
         <div className="flex border-b pb-1">
           <div className="w-16 flex-shrink-0"></div>
           <div className="flex-1 relative min-w-0">
-            <div className="grid grid-cols-12 gap-0">
+            <div className={`grid grid-cols-[repeat(15,minmax(0,1fr))] gap-0`}>
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="text-center text-xs text-gray-500 font-medium"
+                  className="text-left text-xs text-gray-500 font-medium"
                 >
                   {hour}:00
                 </div>
@@ -670,16 +680,6 @@ const PreviewSlotDisplay = ({
                 <div className="flex items-center">
                   <div className="w-16 flex-shrink-0"></div>
                   <div className="flex-1 relative min-w-0 h-10">
-                    {/* Background grid */}
-                    <div className="absolute inset-0 grid grid-cols-12 gap-0">
-                      {hours.map((h) => (
-                        <div
-                          key={h}
-                          className="border-r border-gray-200 h-full"
-                        ></div>
-                      ))}
-                    </div>
-
                     {/* GARIS WAKTU SAAT INI - hanya untuk hari ini */}
                     {today && currentTime !== null && (
                       <>
@@ -719,6 +719,16 @@ const PreviewSlotDisplay = ({
                         </div>
                       </>
                     )}
+                    {/* TAMBAHKAN: Garis vertikal setiap jam untuk alignment */}
+                    {hours.map((h) => (
+                      <div
+                        key={`line-${h}`}
+                        className="absolute top-0 bottom-0 w-px bg-gray-300 pointer-events-none"
+                        style={{
+                          left: `${getBarPosition(h)}%`,
+                        }}
+                      />
+                    ))}
 
                     {/* Render each schedule as a track */}
                     {schedules.length === 0 ? (
@@ -945,7 +955,7 @@ const PreviewSlotDisplay = ({
                               visualStartTime &&
                               visualEndTime && (
                                 <div
-                                  className="absolute h-full rounded-lg border-2 border-blue-500 bg-blue-400/30 shadow-sm z-10"
+                                  className="absolute h-full rounded-lg border-2 border-blue-500 bg-blue-400/30 shadow-sm z-30 pointer-events-none"
                                   style={{
                                     left: `${getBarPosition(
                                       parseTimeToHours(visualStartTime) || 0
@@ -966,7 +976,7 @@ const PreviewSlotDisplay = ({
                                   )}-${visualEndTime.slice(0, 5)}`}
                                 >
                                   {/* Time label */}
-                                  <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                  <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap pointer-events-auto">
                                     <div className="text-xs font-medium bg-blue-500 text-white px-2 py-0.5 rounded">
                                       {visualStartTime.slice(0, 5)}-
                                       {visualEndTime.slice(0, 5)}
@@ -1216,10 +1226,10 @@ const PreviewSlotDisplay = ({
   }, []);
 
   return (
-    <div className="flex flex-col  h-[600px]">
+    <div className="flex flex-col  h-[600px] ">
       {/* Dock Selector */}
       {!isReadOnly && availableDocks?.length && mode === "justify" && (
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 ">
           <label className="block text-sm font-medium mb-2">
             Pilih Dock/Gate
           </label>

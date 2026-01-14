@@ -1,7 +1,6 @@
 "use client";
 
 import { useUserInfo } from "@/components/UserContext";
-import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
 
 export default function AdminDashboard() {
   const { userInfo } = useUserInfo();

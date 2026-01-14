@@ -255,13 +255,14 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href={
-                userInfo && !am_i_vendor
-                  ? userInfo?.role == ROLE.ADMIN_ORGANIZATION
-                    ? "/admin/member-management"
-                    : "/admin/dashboard"
-                  : userInfo?.role == ROLE.ADMIN_VENDOR
+                userInfo?.role === ROLE.ADMIN_ORGANIZATION ||
+                userInfo?.role === ROLE.USER_ORGANIZATION
+                  ? "/admin/member-management"
+                  : userInfo?.role === ROLE.ADMIN_VENDOR
                   ? "/vendor/dashboard"
-                  : "/vendor/dashboard"
+                  : userInfo?.role === ROLE.DRIVER_VENDOR
+                  ? "/vendor/driver-menu"
+                  : "/"
               }
               onClick={(e) => {
                 if (!userInfo) {

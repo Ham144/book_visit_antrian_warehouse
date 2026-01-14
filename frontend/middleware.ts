@@ -8,7 +8,7 @@ export function middleware(req: NextRequest) {
   const refreshToken = req.cookies.get("refresh_token")?.value;
   const pathname = req.nextUrl.pathname;
 
-  const DRIVER_VENDOR = ["/vendor/dashboard", "/vendor/booking"];
+  const DRIVER_VENDOR = ["/vendor/driver-menu"];
   const ADMIN_VENDOR = [
     "/vendor/dashboard",
     "/vendor/booking",

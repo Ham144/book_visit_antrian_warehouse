@@ -274,7 +274,6 @@ export class BookingWarehouseService {
     if (!booking.dockId && !payload.dockId) {
       throw new BadRequestException('Dock ID diperlukan untuk drag and drop');
     }
-    console.log('payload: ', payload);
 
     const { action, toStatus, dockId, relativePositionTarget } = payload;
     const targetDockId = dockId ?? booking.dockId;
@@ -306,6 +305,30 @@ export class BookingWarehouseService {
         where: { id },
         data: {
           status: 'CANCELED',
+        },
+      });
+      return { success: true };
+    }
+
+    /* ======================================
+     * 3. HANDLE STATUS UNLOADING (SIMPLE)
+     * ====================================== */
+    if (toStatus === 'UNLOADING') {
+      const existingQueueUnloading = await this.prismaService.booking.findFirst(
+        {
+          where: {
+            dockId: targetDockId,
+            status: 'UNLOADING',
+          },
+        },
+      );
+      if (existingQueueUnloading) {
+        return { success: false, message: 'Queue Unloading sedang ada' };
+      }
+      await this.prismaService.booking.update({
+        where: { id },
+        data: {
+          status: 'UNLOADING',
           actualFinishTime: new Date(),
         },
       });
@@ -313,56 +336,55 @@ export class BookingWarehouseService {
     }
 
     /* ======================================
-     * 5. AMBIL ANTRIAN YANG ADA (HANYA IN_PROGRESS)
+     * 4. DEFINE HELPER FUNCTIONS
      * ====================================== */
+    // Helper functions untuk waktu lokal
+    const getLocalHours = (date: Date): number => {
+      // Convert UTC ke WIB (UTC+7)
+      return (date.getUTCHours() + 7) % 24;
+    };
 
-    // Gunakan scheduleQueryDate untuk existingQueue juga
-    let scheduleQueryDate: Date;
-    const effectiveDate = scheduleQueryDate;
-    const existingQueue = await this.prismaService.booking.findMany({
-      where: {
-        dockId: targetDockId,
-        status: toStatus,
-        id: { not: booking.id },
-        arrivalTime: {
-          gte: new Date(effectiveDate.setHours(0, 0, 0, 0)),
-          lt: new Date(effectiveDate.getTime() + 24 * 60 * 60 * 1000),
-        },
-      },
-      include: { Vehicle: true },
-      orderBy: { arrivalTime: 'asc' },
-    });
+    const getLocalMinutes = (date: Date): number => {
+      return date.getUTCMinutes();
+    };
+
+    const toLocalMinutes = (date: Date): number => {
+      return getLocalHours(date) * 60 + getLocalMinutes(date);
+    };
+
+    const formatMinutes = (minutes: number): string => {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    };
+
+    const formatLocalTime = (date: Date): string => {
+      const hours = getLocalHours(date);
+      const minutes = getLocalMinutes(date);
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    };
 
     /* ======================================
-     * 4. TENTUKAN TANGGAL EFEKTIF & AMBIL SCHEDULE
+     * 5. TENTUKAN TANGGAL & AMBIL SCHEDULE
      * ====================================== */
-    // Tentukan tanggal untuk query schedule
+    // DRAG & DROP HANYA UNTUK HARI INI!
+    const TODAY = new Date();
+    const startOfToday = new Date(TODAY);
+    startOfToday.setUTCHours(0, 0, 0, 0); // Gunakan UTC
+    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
 
-    // Untuk kasus LAST dengan antrian kosong, gunakan hari ini
-    if (payload.relativePositionTarget?.bookingId === 'LAST') {
-      if (existingQueue.length > 0) {
-        scheduleQueryDate = new Date(
-          existingQueue[existingQueue.length - 1].arrivalTime,
-        );
-      } else if (booking.arrivalTime) {
-        scheduleQueryDate = new Date(booking.arrivalTime);
-      } else {
-        scheduleQueryDate = new Date();
-      }
-    }
-
-    // Reset jam ke 00:00:00 untuk query
-    const queryDateForSchedule = new Date(scheduleQueryDate);
-    queryDateForSchedule.setHours(0, 0, 0, 0);
+    // Ambil schedule untuk hari ini
+    const scheduleQueryDate = new Date(TODAY);
+    scheduleQueryDate.setUTCHours(0, 0, 0, 0); // Gunakan UTC untuk query
 
     const schedule = await this.getScheduleForDockDay(
       targetDockId,
-      queryDateForSchedule,
+      scheduleQueryDate,
     );
 
     if (!schedule) {
       throw new BadRequestException(
-        'Tidak ada jadwal untuk gate pada tanggal ini',
+        'Tidak ada jadwal untuk gate pada hari ini',
       );
     }
 
@@ -371,112 +393,197 @@ export class BookingWarehouseService {
     const scheduleStartMinutes = Math.round(scheduleStartHour * 60);
     const scheduleEndMinutes = Math.round(scheduleEndHour * 60);
 
+    console.log('DEBUG - Schedule hari ini:');
+    console.log(
+      '  scheduleStartHour:',
+      scheduleStartHour,
+      '=',
+      formatMinutes(scheduleStartMinutes),
+    );
+    console.log(
+      '  scheduleEndHour:',
+      scheduleEndHour,
+      '=',
+      formatMinutes(scheduleEndMinutes),
+    );
+
     /* ======================================
-     * 6. TENTUKAN effectiveArrivalTime BERDASARKAN POSISI
+     * 6. AMBIL ANTRIAN YANG ADA (HANYA UNTUK HARI INI!)
+     * ====================================== */
+    const existingQueue = await this.prismaService.booking.findMany({
+      where: {
+        dockId: targetDockId,
+        status: toStatus,
+        id: { not: booking.id },
+        arrivalTime: {
+          gte: startOfToday, // SELALU HARI INI (UTC)
+          lt: endOfToday, // SELALU HARI INI (UTC)
+        },
+      },
+      include: { Vehicle: true },
+      orderBy: { arrivalTime: 'asc' },
+    });
+
+    console.log('DEBUG - Antrian hari ini:');
+    console.log('  existingQueue count:', existingQueue.length);
+    existingQueue.forEach((b, i) => {
+      console.log(
+        `  ${i + 1}. ${b.code}: ${new Date(b.arrivalTime).toLocaleTimeString('id-ID')} - ${new Date(b.estimatedFinishTime).toLocaleTimeString('id-ID')}`,
+      );
+    });
+
+    /* ======================================
+     * 7. TENTUKAN effectiveArrivalTime BERDASARKAN POSISI
      * ====================================== */
     const durationMinutes = booking.Vehicle.durasiBongkar;
-    const intervalMinutes = booking.Warehouse?.intervalMinimalQueueu ?? 15;
+    const intervalMinutes = booking.Warehouse?.isAutoEfficientActive
+      ? booking.Warehouse.intervalMinimalQueueu
+      : 0;
 
     let effectiveArrivalTime: Date;
     let insertIndex = existingQueue.length;
 
+    // Helper untuk validasi waktu
+    const validateTimeFitsInSchedule = (startTime: Date): boolean => {
+      const startMins = toLocalMinutes(startTime);
+      const finishMins = startMins + durationMinutes;
+
+      console.log('DEBUG validateTimeFitsInSchedule:');
+      console.log('  startTime (local):', formatLocalTime(startTime));
+      console.log('  startMins:', startMins, '=', formatMinutes(startMins));
+      console.log('  finishMins:', finishMins, '=', formatMinutes(finishMins));
+      console.log(
+        '  scheduleEndMinutes:',
+        scheduleEndMinutes,
+        '=',
+        formatMinutes(scheduleEndMinutes),
+      );
+      console.log('  Result:', finishMins <= scheduleEndMinutes);
+
+      return finishMins <= scheduleEndMinutes;
+    };
+
+    // Helper untuk membuat Date dengan waktu lokal
+    const createDateWithLocalTime = (
+      baseDate: Date,
+      localMinutes: number,
+    ): Date => {
+      // Convert local minutes back to UTC
+      const localHours = Math.floor(localMinutes / 60);
+      const localMins = localMinutes % 60;
+
+      // Local to UTC: UTC = Local - 7
+      let utcHours = localHours - 7;
+      if (utcHours < 0) utcHours += 24;
+
+      const date = new Date(baseDate);
+      date.setUTCHours(utcHours, localMins, 0, 0);
+      return date;
+    };
+
     // CASE A: LAST - Ambil booking terakhir atau mulai dari schedule start
     if (relativePositionTarget.bookingId === 'LAST') {
       if (existingQueue.length === 0) {
-        // Tidak ada antrian
         const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-        console.log('DEBUG - LAST dengan antrian kosong:');
-        console.log(
-          '  currentMinutes:',
-          currentMinutes,
-          '=',
-          Math.floor(currentMinutes / 60) + ':' + (currentMinutes % 60),
+        const currentLocalMinutes = toLocalMinutes(now);
+        let candidateStartMinutes = currentLocalMinutes + intervalMinutes;
+        // Jangan mulai sebelum schedule start
+        candidateStartMinutes = Math.max(
+          candidateStartMinutes,
+          scheduleStartMinutes,
         );
-        console.log('  scheduleEndMinutes:', scheduleEndMinutes);
-        console.log('  durationMinutes:', durationMinutes);
-        console.log('  intervalMinutes:', intervalMinutes);
+        let candidateEndMinutes = currentLocalMinutes + durationMinutes;
 
-        // Hitung waktu mulai minimal (sekarang + interval)
-        const minStartMinutes = currentMinutes + intervalMinutes;
-
-        // Hitung waktu selesai jika mulai di minStartMinutes
-        const finishIfStartAtMin = minStartMinutes + durationMinutes;
-
-        console.log(
-          '  finishIfStartAtMin:',
-          finishIfStartAtMin,
-          '=',
-          Math.floor(finishIfStartAtMin / 60) + ':' + (finishIfStartAtMin % 60),
+        // Cek apakah bertabrakan dengan busy times candidateEndMinutes-nya jika ya majuin candidateStartMinutes
+        const applicableBusyTimes = await this.getApplicableBusyTimesForDate(
+          targetDockId,
+          startOfToday,
         );
 
-        // Cek apakah masih bisa muat hari ini
-        if (finishIfStartAtMin <= scheduleEndMinutes) {
-          // MASIH MUAT hari ini
-          effectiveArrivalTime = new Date(now);
-          effectiveArrivalTime.setHours(
-            Math.floor(minStartMinutes / 60),
-            minStartMinutes % 60,
-            0,
-            0,
+        for (const busyTime of applicableBusyTimes) {
+          const busyStart = this.parseTimeToHours(busyTime.from);
+          const busyEnd = this.parseTimeToHours(busyTime.to);
+
+          if (busyStart !== null && busyEnd !== null) {
+            const busyStartMinutes = busyStart * 60;
+            const busyEndMinutes = busyEnd * 60;
+
+            const overlaps =
+              (candidateStartMinutes >= busyStartMinutes &&
+                candidateStartMinutes < busyEndMinutes) ||
+              (candidateEndMinutes > busyStartMinutes &&
+                candidateEndMinutes <= busyEndMinutes) ||
+              (candidateStartMinutes <= busyStartMinutes &&
+                candidateEndMinutes >= busyEndMinutes);
+
+            if (overlaps) {
+              candidateStartMinutes += busyEndMinutes + intervalMinutes;
+              candidateEndMinutes = candidateStartMinutes + durationMinutes;
+              console.log(
+                `try candidateStartMinutes: ${candidateStartMinutes} ${candidateEndMinutes}`,
+              );
+            }
+          }
+        }
+        // Cek apakah arrivalTime dibawah jam pulang
+        if (candidateStartMinutes + durationMinutes <= scheduleEndMinutes) {
+          // MASIH MUAT - buat waktu dengan UTC yang benar
+          effectiveArrivalTime = createDateWithLocalTime(
+            now,
+            candidateStartMinutes,
           );
-          console.log('  MUAT - effectiveArrivalTime:', effectiveArrivalTime);
         } else {
-          // TIDAK MUAT hari ini, gunakan besok
-          console.log('  TIDAK MUAT hari ini, geser ke besok');
-          const tomorrow = new Date(now);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          effectiveArrivalTime = new Date(tomorrow);
-
-          // Set ke schedule start besok
-          const scheduleHour = Math.floor(scheduleStartHour);
-          const scheduleMinute = Math.round(
-            (scheduleStartHour - scheduleHour) * 60,
+          throw new BadRequestException(
+            `Tidak ada slot tersisa hari ini untuk booking ${durationMinutes} menit. ` +
+              `Jam operasional berakhir ${formatMinutes(scheduleEndMinutes)}, ` +
+              `slot terakhir harus mulai sebelum ${formatMinutes(scheduleEndMinutes - durationMinutes)}`,
           );
-          effectiveArrivalTime.setHours(scheduleHour, scheduleMinute, 0, 0);
-          console.log('  effectiveArrivalTime besok:', effectiveArrivalTime);
         }
       } else {
-        // Ada antrian - ambil booking terakhir
+        // Ada antrian
         const lastBooking = existingQueue[existingQueue.length - 1];
         const lastFinishTime = new Date(lastBooking.estimatedFinishTime);
-        const lastFinishMinutes =
-          lastFinishTime.getHours() * 60 + lastFinishTime.getMinutes();
+        const lastFinishLocalMinutes = toLocalMinutes(lastFinishTime);
 
-        console.log('DEBUG - LAST dengan antrian:');
+        console.log('  Ada antrian, lastBooking:', lastBooking.code);
         console.log(
-          '  lastFinishMinutes:',
-          lastFinishMinutes,
+          '  lastFinishTime (local):',
+          formatLocalTime(lastFinishTime),
           '=',
-          Math.floor(lastFinishMinutes / 60) + ':' + (lastFinishMinutes % 60),
-        );
-        console.log('  durationMinutes:', durationMinutes);
-        console.log('  intervalMinutes:', intervalMinutes);
-
-        // Hitung waktu mulai kandidat
-        const candidateStartMinutes = lastFinishMinutes + intervalMinutes;
-        const candidateFinishMinutes = candidateStartMinutes + durationMinutes;
-
-        console.log(
-          '  candidateFinishMinutes:',
-          candidateFinishMinutes,
-          '=',
-          Math.floor(candidateFinishMinutes / 60) +
-            ':' +
-            (candidateFinishMinutes % 60),
+          lastFinishLocalMinutes,
+          'menit',
         );
 
-        // Cek apakah muat
-        if (candidateFinishMinutes <= scheduleEndMinutes) {
-          effectiveArrivalTime = new Date(
-            lastFinishTime.getTime() + intervalMinutes * 60 * 1000,
+        // Hitung waktu mulai setelah booking terakhir
+        const candidateStartMinutes = lastFinishLocalMinutes + intervalMinutes;
+
+        console.log(
+          '  candidateStartMinutes:',
+          candidateStartMinutes,
+          '=',
+          formatMinutes(candidateStartMinutes),
+        );
+        console.log(
+          '  Perkiraan selesai:',
+          formatMinutes(candidateStartMinutes + durationMinutes),
+        );
+
+        // Validasi
+        if (candidateStartMinutes + durationMinutes <= scheduleEndMinutes) {
+          effectiveArrivalTime = createDateWithLocalTime(
+            lastFinishTime,
+            candidateStartMinutes,
           );
-          console.log('  MUAT - effectiveArrivalTime:', effectiveArrivalTime);
+          console.log(
+            '  ✅ MUAT - effectiveArrivalTime (Local):',
+            formatLocalTime(effectiveArrivalTime),
+          );
         } else {
-          // Tidak muat di hari ini
+          console.log('  ❌ TIDAK MUAT - akan melewati jam operasional');
           throw new BadRequestException(
-            `Tidak dapat menambah booking ke LAST karena akan melewati jam operasional berakhir (${Math.floor(scheduleEndHour)}:${String(Math.round((scheduleEndHour - Math.floor(scheduleEndHour)) * 60)).padStart(2, '0')}). Booking terakhir selesai ${lastFinishTime.toLocaleTimeString('id-ID')}, durasi booking ${durationMinutes} menit.`,
+            `Tidak dapat menambah booking setelah ${lastBooking.code}. ` +
+              `Booking akan selesai ${formatMinutes(candidateStartMinutes + durationMinutes)} ` +
+              `melewati jam operasional (${formatMinutes(scheduleEndMinutes)})`,
           );
         }
       }
@@ -484,11 +591,11 @@ export class BookingWarehouseService {
 
     // CASE B: BEFORE/AFTER booking tertentu
     else {
+      console.log('=== CASE B: BEFORE|AFTER|SWAP ===');
+
       const targetBooking = await this.prismaService.booking.findUnique({
         where: { id: relativePositionTarget.bookingId },
-        include: {
-          Vehicle: true,
-        },
+        include: { Vehicle: true },
       });
 
       if (!targetBooking) {
@@ -506,12 +613,13 @@ export class BookingWarehouseService {
       );
 
       if (targetIndex === -1) {
-        throw new BadRequestException('Target booking tidak ada dalam antrian');
+        throw new BadRequestException(
+          'Target booking tidak ada dalam antrian hari ini',
+        );
       }
 
-      // SWAP LOGIC - Tukar posisi tanpa geser yang lain
+      // SWAP LOGIC
       if (relativePositionTarget.type === 'SWAP') {
-        // Cek apakah durasi sama? Jika beda, FAIL
         const targetDuration = targetBooking.Vehicle?.durasiBongkar || 0;
         if (durationMinutes !== targetDuration) {
           throw new BadRequestException(
@@ -519,11 +627,10 @@ export class BookingWarehouseService {
           );
         }
 
-        // Tukar arrivalTime dan estimatedFinishTime
+        // Tukar waktu
         const tempArrivalTime = targetBooking.arrivalTime;
         const tempFinishTime = targetBooking.estimatedFinishTime;
 
-        // Update target booking dengan waktu booking yang didrag
         await this.prismaService.booking.update({
           where: { id: targetBooking.id },
           data: {
@@ -532,7 +639,6 @@ export class BookingWarehouseService {
           },
         });
 
-        // Update booking yang didrag dengan waktu target
         await this.prismaService.booking.update({
           where: { id },
           data: {
@@ -540,7 +646,7 @@ export class BookingWarehouseService {
             status: toStatus,
             arrivalTime: tempArrivalTime,
             estimatedFinishTime: tempFinishTime,
-            actualStartTime: toStatus === 'UNLOADING' ? new Date() : null,
+            actualStartTime: toStatus === 'IN_PROGRESS' ? new Date() : null,
           },
         });
 
@@ -552,26 +658,34 @@ export class BookingWarehouseService {
         insertIndex = targetIndex;
 
         if (targetIndex === 0) {
-          // Coba taruh sebelum booking pertama
+          // Sebelum booking pertama
           const firstArrivalTime = new Date(existingQueue[0].arrivalTime);
-          const candidateTime = new Date(
-            firstArrivalTime.getTime() -
-              durationMinutes * 60 * 1000 -
-              intervalMinutes * 60 * 1000,
-          );
+          const firstArrivalLocalMinutes = toLocalMinutes(firstArrivalTime);
 
-          // Validasi tidak sebelum schedule start
-          const candidateHour =
-            candidateTime.getHours() + candidateTime.getMinutes() / 60;
-          if (candidateHour >= scheduleStartHour) {
-            effectiveArrivalTime = candidateTime;
+          // Hitung waktu sebelum booking pertama
+          const candidateStartMinutes =
+            firstArrivalLocalMinutes - durationMinutes - intervalMinutes;
+
+          if (candidateStartMinutes >= scheduleStartMinutes) {
+            const candidateTime = createDateWithLocalTime(
+              firstArrivalTime,
+              candidateStartMinutes,
+            );
+
+            if (validateTimeFitsInSchedule(candidateTime)) {
+              effectiveArrivalTime = candidateTime;
+            } else {
+              throw new BadRequestException(
+                'Tidak dapat menempatkan sebelum booking pertama',
+              );
+            }
           } else {
             throw new BadRequestException(
               'Tidak ada ruang sebelum booking pertama',
             );
           }
         } else {
-          // Cari slot di antara dua booking
+          // Di antara dua booking
           const prevFinishTime = new Date(
             existingQueue[targetIndex - 1].estimatedFinishTime,
           );
@@ -579,49 +693,77 @@ export class BookingWarehouseService {
             existingQueue[targetIndex].arrivalTime,
           );
 
-          const gapMinutes =
-            (nextArrivalTime.getTime() - prevFinishTime.getTime()) /
-            (1000 * 60);
+          const prevFinishLocal = toLocalMinutes(prevFinishTime);
+          const nextArrivalLocal = toLocalMinutes(nextArrivalTime);
+
+          const gapMinutes = nextArrivalLocal - prevFinishLocal;
           const requiredMinutes = durationMinutes + intervalMinutes;
 
           if (gapMinutes >= requiredMinutes) {
-            effectiveArrivalTime = new Date(
-              prevFinishTime.getTime() + intervalMinutes * 60 * 1000,
+            const candidateStartMinutes = prevFinishLocal + intervalMinutes;
+            const candidateTime = createDateWithLocalTime(
+              prevFinishTime,
+              candidateStartMinutes,
             );
+
+            if (validateTimeFitsInSchedule(candidateTime)) {
+              effectiveArrivalTime = candidateTime;
+            } else {
+              throw new BadRequestException(`Tidak cukup waktu antara booking`);
+            }
           } else {
             throw new BadRequestException(
-              `Tidak ada cukup waktu antara booking ${existingQueue[targetIndex - 1].code} dan ${existingQueue[targetIndex].code}`,
+              `Tidak ada cukup waktu antara booking`,
             );
           }
         }
       } else if (relativePositionTarget.type === 'AFTER') {
         insertIndex = targetIndex + 1;
-
         const targetFinishTime = new Date(targetBooking.estimatedFinishTime);
+        const targetFinishLocal = toLocalMinutes(targetFinishTime);
 
         if (targetIndex === existingQueue.length - 1) {
           // Setelah booking terakhir
-          effectiveArrivalTime = new Date(
-            targetFinishTime.getTime() + intervalMinutes * 60 * 1000,
+          const candidateStartMinutes = targetFinishLocal + intervalMinutes;
+          const candidateTime = createDateWithLocalTime(
+            targetFinishTime,
+            candidateStartMinutes,
           );
+
+          if (validateTimeFitsInSchedule(candidateTime)) {
+            effectiveArrivalTime = candidateTime;
+          } else {
+            throw new BadRequestException(
+              `Tidak dapat menempatkan setelah booking terakhir`,
+            );
+          }
         } else {
-          // Cari slot di antara booking
+          // Di antara booking
           const nextArrivalTime = new Date(
             existingQueue[targetIndex + 1].arrivalTime,
           );
+          const nextArrivalLocal = toLocalMinutes(nextArrivalTime);
 
-          const gapMinutes =
-            (nextArrivalTime.getTime() - targetFinishTime.getTime()) /
-            (1000 * 60);
+          const gapMinutes = nextArrivalLocal - targetFinishLocal;
           const requiredMinutes = durationMinutes + intervalMinutes;
 
           if (gapMinutes >= requiredMinutes) {
-            effectiveArrivalTime = new Date(
-              targetFinishTime.getTime() + intervalMinutes * 60 * 1000,
+            const candidateStartMinutes = targetFinishLocal + intervalMinutes;
+            const candidateTime = createDateWithLocalTime(
+              targetFinishTime,
+              candidateStartMinutes,
             );
+
+            if (validateTimeFitsInSchedule(candidateTime)) {
+              effectiveArrivalTime = candidateTime;
+            } else {
+              throw new BadRequestException(
+                `Tidak cukup waktu setelah booking`,
+              );
+            }
           } else {
             throw new BadRequestException(
-              `Tidak ada cukup waktu setelah booking ${targetBooking.code}`,
+              `Tidak ada cukup waktu setelah booking`,
             );
           }
         }
@@ -629,56 +771,77 @@ export class BookingWarehouseService {
     }
 
     /* ======================================
-     * 7. VALIDASI WAKTU DENGAN SCHEDULE
+     * 8. VALIDASI WAKTU DENGAN SCHEDULE
      * ====================================== */
     const estimatedFinishTimeMs =
-      effectiveArrivalTime.getTime() + booking.Vehicle.durasiBongkar * 60_000;
+      effectiveArrivalTime.getTime() + durationMinutes * 60_000;
     const estimatedFinishTime = new Date(estimatedFinishTimeMs);
 
-    // Ambil menit dalam sehari dari waktu
-    const arrivalMinutes =
-      effectiveArrivalTime.getHours() * 60 + effectiveArrivalTime.getMinutes();
-    const finishMinutes = estimatedFinishTime.getHours() * 60;
+    const arrivalLocalMinutes = toLocalMinutes(effectiveArrivalTime);
+    const finishLocalMinutes = toLocalMinutes(estimatedFinishTime);
 
-    // Validasi 1: Tidak sebelum schedule start
-    if (arrivalMinutes < scheduleStartMinutes) {
+    console.log('=== FINAL VALIDASI ===');
+    console.log(
+      'effectiveArrivalTime (Local):',
+      formatLocalTime(effectiveArrivalTime),
+    );
+    console.log(
+      'estimatedFinishTime (Local):',
+      formatLocalTime(estimatedFinishTime),
+    );
+    console.log(
+      'arrivalLocalMinutes:',
+      arrivalLocalMinutes,
+      '=',
+      formatMinutes(arrivalLocalMinutes),
+    );
+    console.log(
+      'finishLocalMinutes:',
+      finishLocalMinutes,
+      '=',
+      formatMinutes(finishLocalMinutes),
+    );
+    console.log(
+      'scheduleEndMinutes:',
+      scheduleEndMinutes,
+      '=',
+      formatMinutes(scheduleEndMinutes),
+    );
+    console.log(
+      'finishLocalMinutes > scheduleEndMinutes?',
+      finishLocalMinutes > scheduleEndMinutes,
+    );
+
+    // Validasi schedule start
+    if (arrivalLocalMinutes < scheduleStartMinutes) {
       throw new BadRequestException(
-        `Waktu mulai (${effectiveArrivalTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}) sebelum jam operasional mulai (${Math.floor(scheduleStartHour)}:${String(Math.round((scheduleStartHour - Math.floor(scheduleStartHour)) * 60)).padStart(2, '0')})`,
+        `Waktu mulai (${formatMinutes(arrivalLocalMinutes)}) sebelum jam operasional mulai (${formatMinutes(scheduleStartMinutes)})`,
       );
     }
 
-    // Validasi 2: Tidak melewati schedule end
-    console.log(finishMinutes, scheduleEndMinutes);
-    if (finishMinutes > scheduleEndMinutes) {
-      const endHour = Math.floor(scheduleEndHour);
-      const endMinute = Math.round((scheduleEndHour - endHour) * 60);
+    // Validasi schedule end
+    if (finishLocalMinutes > scheduleEndMinutes) {
       throw new BadRequestException(
-        `Waktu selesai (${estimatedFinishTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}) melewati jam operasional berakhir (${endHour}:${String(endMinute).padStart(2, '0')})`,
+        `Waktu selesai (${formatMinutes(finishLocalMinutes)}) melewati jam operasional berakhir (${formatMinutes(scheduleEndMinutes)})`,
       );
     }
 
-    // Validasi 3: Tidak melewati tengah malam (jika schedule end < schedule start)
+    // Validasi overnight schedule
     if (scheduleEndMinutes < scheduleStartMinutes) {
-      // Schedule melewati tengah malam (contoh: 22:00 - 06:00)
-      // Untuk schedule overnight, finishMinutes mungkin kurang dari arrivalMinutes
-      const isOvernightFinish = finishMinutes < arrivalMinutes;
-
-      if (isOvernightFinish) {
-        // Finish di hari berikutnya, validasi terhadap scheduleEnd di hari berikutnya
-        if (finishMinutes > scheduleEndMinutes) {
-          throw new BadRequestException(
-            `Waktu selesai melewati jam operasional berakhir untuk schedule overnight`,
-          );
-        }
+      const isOvernightFinish = finishLocalMinutes < arrivalLocalMinutes;
+      if (isOvernightFinish && finishLocalMinutes > scheduleEndMinutes) {
+        throw new BadRequestException(
+          'Waktu selesai melewati jam operasional untuk schedule overnight',
+        );
       }
     }
 
     /* ======================================
-     * 8. VALIDASI DENGAN BUSY TIMES
+     * 9. VALIDASI DENGAN BUSY TIMES
      * ====================================== */
     const applicableBusyTimes = await this.getApplicableBusyTimesForDate(
       targetDockId,
-      effectiveDate,
+      startOfToday,
     );
 
     for (const busyTime of applicableBusyTimes) {
@@ -690,12 +853,12 @@ export class BookingWarehouseService {
         const busyEndMinutes = busyEnd * 60;
 
         const overlaps =
-          (arrivalMinutes >= busyStartMinutes &&
-            arrivalMinutes < busyEndMinutes) ||
-          (finishMinutes > busyStartMinutes &&
-            finishMinutes <= busyEndMinutes) ||
-          (arrivalMinutes <= busyStartMinutes &&
-            finishMinutes >= busyEndMinutes);
+          (arrivalLocalMinutes >= busyStartMinutes &&
+            arrivalLocalMinutes < busyEndMinutes) ||
+          (finishLocalMinutes > busyStartMinutes &&
+            finishLocalMinutes <= busyEndMinutes) ||
+          (arrivalLocalMinutes <= busyStartMinutes &&
+            finishLocalMinutes >= busyEndMinutes);
 
         if (overlaps) {
           throw new BadRequestException(
@@ -706,9 +869,8 @@ export class BookingWarehouseService {
     }
 
     /* ======================================
-     * 9. VALIDASI TABRAKAN DENGAN BOOKING LAIN
+     * 10. VALIDASI TABRAKAN DENGAN BOOKING LAIN
      * ====================================== */
-    // Buat array untuk validasi overlap
     const validationQueue = [...existingQueue];
     const newBookingSlot = {
       id: booking.id,
@@ -718,38 +880,25 @@ export class BookingWarehouseService {
 
     validationQueue.splice(insertIndex, 0, newBookingSlot as any);
 
-    //filter yang sudah > booking.vehicle.intervalMinimalQueueu
-    const now = new Date();
-    validationQueue.filter((bookingItem) => {
-      const arrivalTime = new Date(bookingItem.arrivalTime);
-      // Jika arrivalTime sudah lewat dari waktu sekarang(DELAYED) dan status finish
-      return (
-        arrivalTime < now &&
-        bookingItem.status !== BookingStatus.IN_PROGRESS &&
-        bookingItem.status !== BookingStatus.UNLOADING
-      );
-    });
-
-    // Urutkan berdasarkan arrivalTime untuk validasi
+    // Urutkan dan validasi overlap
     validationQueue.sort(
       (a, b) =>
         new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime(),
     );
 
-    // Validasi tidak ada overlap
     for (let i = 0; i < validationQueue.length - 1; i++) {
       const currentFinish = new Date(validationQueue[i].estimatedFinishTime);
       const nextArrival = new Date(validationQueue[i + 1].arrivalTime);
 
       if (currentFinish.getTime() > nextArrival.getTime()) {
         throw new BadRequestException(
-          `Terjadi tabrakan waktu dengan booking lain`,
+          'Terjadi tabrakan waktu dengan booking lain',
         );
       }
     }
 
     /* ======================================
-     * 10. UPDATE BOOKING (TANPA RESCHEDULE LAIN)
+     * 11. UPDATE BOOKING
      * ====================================== */
     await this.prismaService.booking.update({
       where: { id },
@@ -758,7 +907,7 @@ export class BookingWarehouseService {
         status: toStatus,
         arrivalTime: effectiveArrivalTime,
         estimatedFinishTime: estimatedFinishTime,
-        actualStartTime: toStatus === 'UNLOADING' ? new Date() : null,
+        actualStartTime: toStatus === 'IN_PROGRESS' ? new Date() : null,
       },
     });
 

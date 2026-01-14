@@ -1,5 +1,9 @@
 import axiosInstance from "@/lib/axios";
-import { Booking, BookingFilter } from "@/types/booking.type";
+import {
+  Booking,
+  BookingFilter,
+  UpdateBookingStatus,
+} from "@/types/booking.type";
 import { BookingStatus, DragAndDropPayload } from "@/types/shared.type";
 
 export const BookingApi = {
@@ -7,7 +11,7 @@ export const BookingApi = {
     const res = await axiosInstance.post("/api/booking", formData);
     return res.data;
   },
-  getAllBookingsList: async (filter: BookingFilter) => {
+  getAllBookingsList: async (filter: BookingFilter): Promise<Booking[]> => {
     const params = new URLSearchParams();
     if (filter?.searchKey) params.set("searchKey", filter.searchKey);
     if (filter.warehouseId) params.set("warehouseId", filter.warehouseId);
@@ -60,17 +64,14 @@ export const BookingApi = {
     );
     return res.data;
   },
-  updateBookingStatus: async (
-    id: string,
-    status: BookingStatus,
-    actualFinishTime?: Date
-  ) => {
-    const res = await axiosInstance.patch(`/api/booking/updateStatus/${id}`, {
-      status,
-      actualFinishTime,
-    });
+  updateBookingStatus: async (payload: UpdateBookingStatus) => {
+    const res = await axiosInstance.patch(
+      `/api/booking/updateStatus/${payload.id}`,
+      payload
+    );
     return res.data;
   },
+
   getStatsForDriver: async () => {
     const res = await axiosInstance.get("/api/booking/stats/stats-for-driver");
     return res.data;

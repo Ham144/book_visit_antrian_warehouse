@@ -30,7 +30,6 @@ interface DraggableBookingCardProps {
 
   onDetail?: () => void;
   onJustify?: () => void;
-  onStartUnloading?: () => void;
   onMarkFinished?: () => void;
   onCancel?: () => void;
 }
@@ -41,7 +40,6 @@ const DraggableBookingCard = ({
   droppable = true, // 🔥 Default true, false untuk inventory
   className = "",
   onDetail,
-  onStartUnloading,
   onMarkFinished,
   onCancel,
 }: DraggableBookingCardProps) => {
@@ -113,7 +111,12 @@ const DraggableBookingCard = ({
       ref={combinedRef}
       style={style}
       className={`
-        bg-white rounded-md border border-gray-200 p-2 min-w-[180px]
+        ${
+          booking.actualArrivalTime
+            ? "border-4 border-white border-dashed bg-teal-100"
+            : "bg-white"
+        }
+         rounded-md border  p-2 min-w-[180px]
         transition-all duration-150 w-full relative text-xs
         ${isDragging ? "opacity-30 shadow-lg scale-95" : ""}
         ${isOver ? "ring-2 ring-blue-300 ring-inset bg-blue-50" : ""}
@@ -135,12 +138,13 @@ const DraggableBookingCard = ({
                 {booking.code || booking.id.slice(0, 6)}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <Timer size={10} className="text-gray-400" />
-              <span className="font-medium text-gray-600 whitespace-nowrap">
-                {timeRemainingAutoUnloading(booking)}
-              </span>
-            </div>
+            {booking.status === BookingStatus.IN_PROGRESS && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-gray-600 whitespace-nowrap">
+                  Menuju {timeRemainingAutoUnloading(booking)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Driver & Vehicle in one line */}

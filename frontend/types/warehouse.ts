@@ -15,6 +15,17 @@ export interface Warehouse {
   createdAt?: Date;
   updatedAt?: Date;
   organizationName?: string;
+  isAutoEfficientActive?: boolean;
+  maximumWeekSelection?: number;
+}
+
+export interface WarehouseSetting {
+  id?: number;
+  name?: string;
+  intervalMinimalQueueu?: number;
+  delayTolerance?: number;
+  isAutoEfficientActive?: boolean;
+  maximumWeekSelection?: number;
 }
 
 export interface WarehouseFilter {

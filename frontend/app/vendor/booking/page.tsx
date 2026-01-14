@@ -811,7 +811,7 @@ export default function BookingPage() {
       ) : (
         <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-300px)]">
           {/* Dock List - Mobile: full width, Desktop: 1/3 */}
-          <div className="lg:w-1/3 flex flex-col">
+          <div className="w-96 flex flex-col">
             <div className="flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto pr-1 space-y-3">
                 {activeDocks.map((dock: IDock) => {
@@ -943,7 +943,7 @@ export default function BookingPage() {
           </div>
 
           {/* Preview Section - Mobile: full width, Desktop: 2/3 */}
-          <div className="lg:w-2/3 flex flex-col max-h-[calc(100vh-16rem] overflow-y-auto">
+          <div className="flex-1 flex flex-col md:max-h-[calc(100vh-16rem] overflow-y-auto">
             {formData.dockId ? (
               <PreviewSlotDisplay
                 formData={formData}

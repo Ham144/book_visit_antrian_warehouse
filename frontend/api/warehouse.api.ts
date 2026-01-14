@@ -1,5 +1,9 @@
 import axiosInstance from "@/lib/axios";
-import type { Warehouse, WarehouseFilter } from "@/types/warehouse";
+import type {
+  Warehouse,
+  WarehouseFilter,
+  WarehouseSetting,
+} from "@/types/warehouse";
 
 export const WarehouseApi = {
   createWarehouse: async (data: Warehouse): Promise<Warehouse> => {
@@ -55,5 +59,22 @@ export const WarehouseApi = {
   },
   deleteWarehouse: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/api/warehouse/${id}`);
+  },
+
+  getSettings: async (): Promise<WarehouseSetting> => {
+    const response = await axiosInstance.get<WarehouseSetting>(
+      `/api/warehouse/settings`
+    );
+    return response.data;
+  },
+
+  updateSetting: async (
+    payload: WarehouseSetting
+  ): Promise<WarehouseSetting> => {
+    const response = await axiosInstance.put<WarehouseSetting>(
+      `/api/warehouse/settings`,
+      payload
+    );
+    return response.data;
   },
 };
