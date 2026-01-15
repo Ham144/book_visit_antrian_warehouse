@@ -14,6 +14,8 @@ import { Auth } from 'src/common/auth.decorator';
 import { BookingforVendorService } from './booking-vendor.service';
 import { Authorization } from 'src/common/authorization.decorator';
 import { BookingWarehouseService } from './booking.service';
+import { UpdateBookingDto } from './dto/update-booking.dto';
+import { TokenPayload } from 'src/user/dto/token-payload.dto';
 
 @Controller('booking')
 export class BookingController {
@@ -58,17 +60,10 @@ export class BookingController {
     return this.bookingWarehouseService.dragAndDrop(id, body);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization()
   @Patch('/updateStatus/:id')
-  updateStatus(
-    @Param('id') id: string,
-    @Body() body: { status: string; actualFinishTime?: Date },
-  ) {
-    return this.bookingWarehouseService.updateBookingStatus(
-      id,
-      body.status,
-      body.actualFinishTime,
-    );
+  updateStatus(@Param('id') id: string, @Body() payload: UpdateBookingDto) {
+    return this.bookingWarehouseService.updateBookingStatus(id, payload);
   }
 
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
@@ -93,5 +88,18 @@ export class BookingController {
   @Get('/stats/stats-for-organization')
   getStatsForUserOrganizations() {
     return this.bookingWarehouseService.getStatsForUserOrganizations();
+  }
+
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Get('/admin-warehouse-reports')
+  getStatsForVendor(
+    @Query() filter: { startDate: string; endDate: string },
+    @Auth() userinfo: TokenPayload,
+  ) {
+    return this.bookingWarehouseService.adminReports(
+      userinfo,
+      filter.startDate,
+      filter.endDate,
+    );
   }
 }

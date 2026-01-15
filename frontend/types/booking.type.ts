@@ -41,6 +41,6 @@ export interface BookingFilter {
 export interface UpdateBookingStatus {
   id: string;
   status: BookingStatus;
-  actualFinishTime?: string;
-  actualArrivalTime?: string;
+  actualFinishTime?: Date;
+  actualArrivalTime?: Date;
 }

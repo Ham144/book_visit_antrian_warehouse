@@ -12,6 +12,7 @@ import {
   Car,
   User,
   X,
+  Notebook,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -19,6 +20,7 @@ import { useDroppable } from "@dnd-kit/core";
 import {
   calculateTimeProgress,
   DAYS,
+  FormatTimeIndonesian,
   timeRemainingAutoUnloading,
 } from "@/lib/constant";
 
@@ -163,46 +165,53 @@ const DraggableBookingCard = ({
           {/* Time Info - Minimal */}
           {booking.status === BookingStatus.IN_PROGRESS && (
             <div className="space-y-0.5 mt-1.5 border-t pt-1.5">
+              {/* Actual Arrival Time */}
+              {booking.actualArrivalTime && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Clock size={10} className="text-gray-400" />
+                    <span className="text-gray-600">
+                      Waktu Datang Sebenarnya:
+                    </span>
+                  </div>
+                  <span className="font-medium text-gray-800">
+                    {DAYS[new Date(booking.actualArrivalTime).getDay() - 1]}
+                    {booking.actualArrivalTime
+                      ? ", " + FormatTimeIndonesian(booking.actualArrivalTime)
+                      : "-"}
+                  </span>
+                </div>
+              )}
               {/* Arrival Time */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <Clock size={10} className="text-gray-400" />
-                  <span className="text-gray-600">Arrival Book:</span>
+                  <span className="text-gray-600">Waktu Datang Rencana:</span>
                 </div>
                 <span className="font-medium text-gray-800">
-                  {DAYS[new Date(booking.arrivalTime).getDay() - 1]}{" "}
+                  {DAYS[new Date(booking.arrivalTime).getDay() - 1]}
                   {booking.arrivalTime
-                    ? new Date(booking.arrivalTime).toLocaleTimeString(
-                        "id-ID",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        }
-                      )
+                    ? ", " + FormatTimeIndonesian(booking.arrivalTime)
                     : "-"}
                 </span>
               </div>
 
-              {/* Est. Finish */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Timer size={10} className="text-gray-400" />
-                  <span className="text-gray-600">Est. Finish:</span>
+              {/* actualStartTime */}
+              {booking.actualStartTime && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Timer size={10} className="text-gray-400" />
+                    <span className="text-gray-600">Waktu Mulai Bongkar:</span>
+                  </div>
+                  <span className="font-medium text-gray-800">
+                    {DAYS[new Date(booking.actualStartTime).getDay() - 1]}
+                    {booking.actualStartTime
+                      ? ", " + FormatTimeIndonesian(booking.actualStartTime)
+                      : "-"}
+                  </span>
                 </div>
-                <span className="font-medium text-gray-800">
-                  {booking.estimatedFinishTime
-                    ? new Date(booking.estimatedFinishTime).toLocaleTimeString(
-                        "id-ID",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        }
-                      )
-                    : "-"}
-                </span>
-              </div>
+              )}
+
               {/* Duration dengan native title attribute */}
               {booking.Vehicle?.durasiBongkar && (
                 <div className="flex flex-1 ">
@@ -228,10 +237,16 @@ const DraggableBookingCard = ({
                       <Clock className="w-3 h-3" />
                       <span>{booking.Vehicle.durasiBongkar}m</span>
                     </div>
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                      Durasi bongkar muat
-                    </div>
                   </div>
+                  {/* note untuk plat */}
+                  {booking.notes && (
+                    <div className="relative group">
+                      <div className="px-2 py-1 bg-blue-50 text-green-700 rounded-full text-xs font-medium flex items-center gap-1">
+                        <Notebook className="w-3 h-3" />
+                        <span className="w-20 truncate">{booking.notes}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -256,8 +271,22 @@ const DraggableBookingCard = ({
       {booking.status === BookingStatus.UNLOADING && (
         <div className="mt-1.5">
           <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
-            <span>Arrival</span>
-            <span>Est. Finish</span>
+            <span>
+              Start Time {FormatTimeIndonesian(booking.actualStartTime)}
+            </span>
+            <span>{booking.Vehicle.durasiBongkar}m</span>
+            <span>
+              Est. Finish{" "}
+              {booking.actualStartTime
+                ? FormatTimeIndonesian(
+                    new Date(
+                      // Bungkus string ini ke dalam new Date() dulu
+                      new Date(booking.actualStartTime).getTime() +
+                        booking.Vehicle.durasiBongkar * 60000
+                    )
+                  )
+                : "-"}
+            </span>
           </div>
           <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -267,17 +296,6 @@ const DraggableBookingCard = ({
               }}
             />
           </div>
-        </div>
-      )}
-
-      {/* Notes - Compact */}
-      {booking.notes && (
-        <div className="mt-1.5 pt-1.5 border-t border-gray-100">
-          <p className="text-gray-500 truncate text-[11px]">
-            <span className="text-gray-400">📝</span>{" "}
-            {booking.notes.slice(0, 50)}
-            {booking.notes.length > 50 ? "..." : ""}
-          </p>
         </div>
       )}
 

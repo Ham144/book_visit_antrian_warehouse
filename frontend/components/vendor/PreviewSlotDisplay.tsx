@@ -1293,16 +1293,17 @@ const PreviewSlotDisplay = ({
       {/* Notes */}
       {mode == "create" && (
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-base font-medium mb-2">Catatan Tambahan</h3>
-          <textarea
+          <h3 className="text-base font-medium mb-2">Plat Nomor/Short Note</h3>
+          <input
+            type="text"
             value={notes}
             onChange={(e) => {
               const newNotes = e.target.value;
               setNotes(newNotes);
               onUpdateFormData({ notes: newNotes });
             }}
-            placeholder="Catatan untuk operator gudang..."
-            className="w-full border rounded-lg px-3 py-2 text-sm h-24 resize-none"
+            placeholder="Plat Nomor/Short Note"
+            className="w-full border rounded-lg px-3 py-2 text-sm "
           />
           <p className="text-xs text-gray-500 mt-1">
             * Akan dilihat oleh operator gudang

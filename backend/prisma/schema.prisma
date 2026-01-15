@@ -55,7 +55,7 @@ model Warehouse {
   organization          Organization? @relation(fields: [organizationName], references: [name])
   //settings & Preferences
   delayTolerance Int @default(15)
-  intervalMinimalQueueu Int @default(15)
+  intervalMinimalQueueu Int @default(5)
   isAutoEfficientActive Boolean @default(true)
   maximumWeekSelection Int? @default(2)
 }

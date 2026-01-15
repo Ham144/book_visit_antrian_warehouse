@@ -1160,7 +1160,9 @@ export default function BookingPage() {
               <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <MessageSquare className="w-5 h-5 text-gray-500" />
-                  <h3 className="font-medium text-gray-700">Catatan</h3>
+                  <h3 className="font-medium text-gray-700">
+                    Plat Nomor / short note
+                  </h3>
                 </div>
                 <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
                   {formData.notes}

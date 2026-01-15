@@ -127,7 +127,6 @@ const MyWarehousePage = () => {
   const userWarehouseAccesses =
     (myWarehouse as any).userWarehouseAccesses || [];
   const bookings = myWarehouse.bookings || [];
-  const members = myWarehouse.userWarehouseAccesses || [];
 
   return (
     <div className="flex ">
@@ -183,76 +182,6 @@ const MyWarehousePage = () => {
               {myWarehouse.description && (
                 <p className="text-gray-600 mt-4">{myWarehouse.description}</p>
               )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Members Section */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Users className="w-5 h-5 text-leaf-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Members
-                  </h3>
-                  <span className="badge badge-primary">{members.length}</span>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {members.length > 0 ? (
-                    members.map((member: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {member.displayName || member.username}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {member.username}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">Tidak ada members</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Warehouse Access Section */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <UserCheck className="w-5 h-5 text-leaf-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Warehouse Access
-                  </h3>
-                  <span className="badge badge-primary">
-                    {userWarehouseAccesses.length}
-                  </span>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {userWarehouseAccesses.length > 0 ? (
-                    userWarehouseAccesses.map((access: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {access.displayName || access.username}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {access.username}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm">
-                      Tidak ada user dengan akses
-                    </p>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Bookings Section */}

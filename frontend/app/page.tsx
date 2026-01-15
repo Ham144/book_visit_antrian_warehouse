@@ -255,9 +255,10 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               href={
-                userInfo?.role === ROLE.ADMIN_ORGANIZATION ||
-                userInfo?.role === ROLE.USER_ORGANIZATION
+                userInfo?.role === ROLE.ADMIN_ORGANIZATION
                   ? "/admin/member-management"
+                  : userInfo?.role === ROLE.USER_ORGANIZATION
+                  ? "/admin/dashboard"
                   : userInfo?.role === ROLE.ADMIN_VENDOR
                   ? "/vendor/dashboard"
                   : userInfo?.role === ROLE.DRIVER_VENDOR
@@ -277,7 +278,8 @@ export default function HomePage() {
               className="btn btn-lg bg-white text-blue-700 hover:bg-gray-100 border-0 font-semibold px-8 gap-2"
             >
               <PlayCircle className="w-5 h-5" />
-              {userInfo?.role === ROLE.ADMIN_ORGANIZATION
+              {userInfo?.role === ROLE.ADMIN_ORGANIZATION ||
+              userInfo?.role === ROLE.USER_ORGANIZATION
                 ? "Lihat Dashboard Admin"
                 : userInfo?.role === ROLE.ADMIN_VENDOR
                 ? "Mulai Order"

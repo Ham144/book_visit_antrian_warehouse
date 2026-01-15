@@ -343,7 +343,11 @@ export default function LiveQueuePage() {
       status: BookingStatus;
       actualFinishTime?: Date;
     }) => {
-      return await BookingApi.updateBookingStatus(id, status, actualFinishTime);
+      return await BookingApi.updateBookingStatus({
+        id,
+        status,
+        actualFinishTime,
+      });
     },
     onSuccess: () => {
       toast.success("Status booking berhasil diupdate");

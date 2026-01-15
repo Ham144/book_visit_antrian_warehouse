@@ -43,18 +43,18 @@ export const timeRemainingAutoUnloading = (booking: Booking): string => {
 export const calculateTimeProgress = (booking: Booking): number => {
   try {
     const now = new Date();
-    const arrival = new Date(booking.actualArrivalTime);
-    const estimatedFinish = new Date(
+    const start = new Date(booking.actualStartTime);
+    const estimatedActualFinishTime = new Date(
       new Date(booking.actualStartTime).getTime() +
         booking.Vehicle.durasiBongkar * 60000
     );
 
-    if (isNaN(arrival.getTime()) || isNaN(estimatedFinish.getTime())) {
+    if (isNaN(start.getTime()) || isNaN(estimatedActualFinishTime.getTime())) {
       return 0;
     }
 
-    const totalDuration = estimatedFinish.getTime() - arrival.getTime();
-    const elapsedTime = now.getTime() - arrival.getTime();
+    const totalDuration = estimatedActualFinishTime.getTime() - start.getTime();
+    const elapsedTime = now.getTime() - start.getTime();
 
     if (totalDuration <= 0) return 100;
     if (elapsedTime <= 0) return 0;
@@ -80,4 +80,12 @@ export const normalizeDate = (d: Date) => {
   const n = new Date(d);
   n.setHours(0, 0, 0, 0);
   return n;
+};
+
+export const FormatTimeIndonesian = (date: Date) => {
+  return new Date(date).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 };

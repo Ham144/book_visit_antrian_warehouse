@@ -17,6 +17,7 @@ import { DockBusyTime, Prisma } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { BookingFilter } from 'src/common/shared-interface';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { ResponseReportsBookingDto } from './dto/response-reports-boking.dto';
 
 @Injectable()
 export class BookingWarehouseService {
@@ -130,7 +131,13 @@ export class BookingWarehouseService {
 
   //user|admin organization
   async justifyBooking(id: string, updateDto: UpdateBookingDto) {
-    const { arrivalTime, dockId } = updateDto;
+    const {
+      arrivalTime,
+      dockId,
+      actualStartTime,
+      actualFinishTime,
+      actualArrivalTime,
+    } = updateDto;
 
     // Get existing booking
     const existingBooking = await this.prismaService.booking.findUnique({
@@ -319,6 +326,10 @@ export class BookingWarehouseService {
           where: {
             dockId: targetDockId,
             status: 'UNLOADING',
+            actualStartTime: {
+              gte: new Date(new Date(new Date()).setHours(0, 0, 0, 0)),
+              lte: new Date(new Date().setHours(23, 59, 59, 999)),
+            },
           },
         },
       );
@@ -930,16 +941,32 @@ export class BookingWarehouseService {
   }
 
   async findAll(filter: BookingFilter, userInfo: TokenPayload) {
-    const { page, searchKey, weekStart, weekEnd } = filter;
+    const { page, searchKey, weekStart, weekEnd, date } = filter;
 
     const where: Prisma.BookingWhereInput = {
       organizationName: userInfo.organizationName,
     };
 
+    if (date && weekEnd) {
+      return new BadRequestException(
+        'filter date and weekEnd cannot be used together',
+      );
+    }
+
     if (weekStart && weekEnd) {
       console.log(
         'implementasi funsi untuk oreview flow untuk menunjukkan semua book hari dalam 1 minggu ',
       );
+    }
+
+    if (userInfo.role == ROLE.DRIVER_VENDOR) {
+      where.driverUsername = userInfo.username;
+
+      where.arrivalTime = {
+        // Bungkus dengan new Date() agar tipenya bukan 'number'
+        gte: new Date(new Date(date).setHours(0, 0, 0, 0)),
+        lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+      };
     }
 
     if (searchKey) {
@@ -1048,11 +1075,7 @@ export class BookingWarehouseService {
     });
   }
 
-  async updateBookingStatus(
-    id: string,
-    status: string,
-    actualFinishTime?: Date,
-  ) {
+  async updateBookingStatus(id: string, payload: UpdateBookingDto) {
     const existingBooking = await this.prismaService.booking.findUnique({
       where: { id },
     });
@@ -1061,12 +1084,15 @@ export class BookingWarehouseService {
       throw new NotFoundException(`Booking dengan id ${id} tidak ditemukan`);
     }
 
-    const updateData: any = {
-      status,
+    const updateData: Prisma.BookingUpdateInput = {
+      status: payload.status,
     };
+    if (payload.status === 'IN_PROGRESS' && payload.actualArrivalTime) {
+      updateData.actualArrivalTime = payload.actualArrivalTime;
+    }
 
-    if (status === 'FINISHED' && actualFinishTime) {
-      updateData.actualFinishTime = actualFinishTime;
+    if (payload.status === 'FINISHED' && payload.actualFinishTime) {
+      updateData.actualFinishTime = payload.actualFinishTime;
     }
 
     const updatedBooking = await this.prismaService.booking.update({
@@ -1087,4 +1113,186 @@ export class BookingWarehouseService {
   }
 
   async getStatsForUserOrganizations() {}
+
+  async adminReports(
+    userinfo: TokenPayload,
+    startDate: string,
+    endDate: string,
+  ) {
+    // Convert input dates
+    const end = new Date(endDate);
+    const start = new Date(startDate);
+
+    // Get bookings within date range - FIX: gunakan createdAt seperti kode yang berhasil
+    const bookings = await this.prismaService.booking.findMany({
+      where: {
+        organizationName: userinfo.organizationName,
+        warehouseId: userinfo.homeWarehouseId,
+        createdAt: {
+          gte: start,
+          lte: end,
+        },
+      },
+      include: {
+        Vehicle: true,
+        Warehouse: true,
+        Dock: true,
+        driver: true,
+        organization: true,
+      },
+    });
+
+    // Calculate on-time delivery rate - menggunakan status 'FINISHED' untuk completed
+    const finishedBookings = bookings.filter((b) => b.status === 'FINISHED');
+
+    const onTimeBookings = finishedBookings.filter((b) => {
+      // Check jika ada waktu aktual dan waktu kedatangan
+      if (!b.actualStartTime || !b.arrivalTime) {
+        return false;
+      }
+
+      const arrivalTime = new Date(b.arrivalTime);
+      const actualStartTime = new Date(b.actualStartTime);
+      const timeDifference = actualStartTime.getTime() - arrivalTime.getTime();
+      const toleranceMinutes = 30; // 30 minutes tolerance
+
+      const isOnTime = timeDifference <= toleranceMinutes * 60000;
+
+      return isOnTime;
+    });
+
+    const onTimeDeliveryRate =
+      finishedBookings.length > 0
+        ? (onTimeBookings.length / finishedBookings.length) * 100
+        : 0;
+
+    // Calculate average unload time (in minutes)
+    const bookingsWithFinishTime = finishedBookings.filter(
+      (b) => b.actualStartTime && b.actualFinishTime,
+    );
+
+    let averageUnloadTime = 0;
+    if (bookingsWithFinishTime.length > 0) {
+      const totalUnloadTime = bookingsWithFinishTime.reduce((sum, b) => {
+        const start = new Date(b.actualStartTime).getTime();
+        const finish = new Date(b.actualFinishTime).getTime();
+        const minutes = (finish - start) / (1000 * 60); // convert to minutes
+        return sum + minutes;
+      }, 0);
+
+      averageUnloadTime = totalUnloadTime / bookingsWithFinishTime.length;
+    }
+
+    // Calculate no-shows - booking yang dijadwalkan datang tapi tidak pernah muncul
+    const noShows = bookings.filter((b) => {
+      if (!b.arrivalTime) return false;
+      const arrivalTime = new Date(b.arrivalTime);
+      const now = new Date();
+      // 1. Jadwal kedatangan harus sudah lewat (sudah melewati waktu sekarang)
+      const isPastSchedule = arrivalTime < now;
+      // 2. Tidak ada actualArrivalTime (tidak pernah datang)
+      const neverArrived = !b.actualArrivalTime;
+      // 3. Status bukan FINISHED atau UNLOADING (tidak sedang/sudah diproses)
+      const isNotProcessing =
+        b.status !== 'FINISHED' && b.status !== 'UNLOADING';
+      // 4. Jadwal dalam periode yang difilter
+      const periodStart = new Date(start);
+      periodStart.setHours(0, 0, 0, 0);
+      const periodEnd = new Date(end);
+      periodEnd.setHours(23, 59, 59, 999);
+      const isInPeriod = arrivalTime >= periodStart && arrivalTime <= periodEnd;
+      const isNoShow =
+        isPastSchedule && neverArrived && isNotProcessing && isInPeriod;
+      return isNoShow;
+    }).length;
+    // Group by dock for dock performances
+    const dockMap = new Map<string, any>();
+
+    bookings.forEach((booking) => {
+      if (booking.Dock) {
+        const dockId = booking.Dock.id;
+
+        if (!dockMap.has(dockId)) {
+          dockMap.set(dockId, {
+            id: booking.Dock.id,
+            name: booking.Dock.name || `Dock ${booking.Dock.id}`,
+            totalBooking: 0,
+            finishedBookings: [],
+            onTimeBookings: [],
+            canceled: 0,
+            unloadTimes: [],
+          });
+        }
+
+        const dockData = dockMap.get(dockId);
+        dockData.totalBooking++;
+
+        if (booking.status === 'FINISHED') {
+          dockData.finishedBookings.push(booking);
+
+          // Hitung waktu bongkar jika ada
+          if (booking.actualStartTime && booking.actualFinishTime) {
+            const start = new Date(booking.actualStartTime).getTime();
+            const finish = new Date(booking.actualFinishTime).getTime();
+            const minutes = (finish - start) / (1000 * 60);
+            dockData.unloadTimes.push(minutes);
+          }
+
+          // Check if on-time for this dock
+          if (booking.actualStartTime && booking.arrivalTime) {
+            const arrivalTime = new Date(booking.arrivalTime);
+            const actualStartTime = new Date(booking.actualStartTime);
+            const timeDifference =
+              actualStartTime.getTime() - arrivalTime.getTime();
+            const toleranceMinutes = 30;
+
+            if (timeDifference <= toleranceMinutes * 60000) {
+              dockData.onTimeBookings.push(booking);
+            }
+          }
+        } else if (booking.status === 'CANCELED') {
+          dockData.canceled++;
+        }
+      }
+    });
+
+    // Calculate metrics for each dock
+    const dockPerformances = Array.from(dockMap.values()).map((dock) => {
+      const dockOnTimeRate =
+        dock.finishedBookings.length > 0
+          ? (dock.onTimeBookings.length / dock.finishedBookings.length) * 100
+          : 0;
+
+      let dockAvgUnloadTime = 0;
+      if (dock.unloadTimes.length > 0) {
+        dockAvgUnloadTime =
+          dock.unloadTimes.reduce((sum, time) => sum + time, 0) /
+          dock.unloadTimes.length;
+      }
+
+      return {
+        id: dock.id,
+        name: dock.name,
+        totalBooking: dock.totalBooking,
+        onTimeDeliveryRate: Math.round(dockOnTimeRate * 100) / 100,
+        averageUnloadTime: Math.round(dockAvgUnloadTime * 10) / 10,
+        noShows: 0,
+        canceled: dock.canceled,
+      };
+    });
+
+    return plainToInstance(
+      ResponseReportsBookingDto,
+      {
+        onTimeDeliveryRate: Math.round(onTimeDeliveryRate * 100) / 100,
+        averageUnloadTime: Math.round(averageUnloadTime * 10) / 10,
+        noShows,
+        totalBooking: bookings?.length || 0,
+        dockPerformances,
+      },
+      {
+        excludeExtraneousValues: true,
+      },
+    );
+  }
 }

@@ -88,4 +88,16 @@ export const BookingApi = {
     );
     return res.data;
   },
+  adminWarehouseReports: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const res = await axiosInstance.get(
+      "/api/booking/admin-warehouse-reports",
+      {
+        params,
+      }
+    );
+    return res.data;
+  },
 };
