@@ -39,8 +39,9 @@ start 12/11/2025
 [x] add: member management
 [x] add: live queue untuk melihat booking vendor, preview detail booking vendor, mengatur ulang waktu booking vendor
 [x] fix: selected visualStartTime and visualEndTime tidak keliatan
-[] fix: actualArrivalTime dicatat sebagai pertanda dia sudah dtg dan di live queue akan ada tanda bahwa ia telah datang, .
-[] fix: drag Waktu bertabrakan dengan busy time, harusnya ia mencari waktu kosong di dihari ini yang cukup bukan memaksa dekat dengan jam sekarang
+[x] fix: actualArrivalTime dicatat sebagai pertanda dia sudah dtg dan di live queue akan ada tanda bahwa ia telah datang.
+[x] fix: drag Waktu bertabrakan dengan busy time, harusnya ia mencari waktu kosong di dihari ini yang cukup bukan memaksa dekat dengan jam sekarang
+[] mod: dari awal harusnya pakai websocket(socket.io) karena ini app realtime
 
 //live queue complex UI drag drop
 [x] add: bisa drag dari antrian IN_PROGRESS menjadi UNLOADING

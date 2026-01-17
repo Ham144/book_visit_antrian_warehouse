@@ -124,8 +124,6 @@ const MyWarehousePage = () => {
     );
   }
 
-  const userWarehouseAccesses =
-    (myWarehouse as any).userWarehouseAccesses || [];
   const bookings = myWarehouse.bookings || [];
 
   return (
@@ -206,7 +204,7 @@ const MyWarehousePage = () => {
                   className="w-full pl-8 pr-6 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto  max-h-[70vh] overflow-y-auto">
                 {bookings.length > 0 ? (
                   <table className="table table-zebra w-full">
                     <thead>

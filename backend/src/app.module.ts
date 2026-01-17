@@ -12,6 +12,7 @@ import { BusyTimeModule } from './busy-time/busy-time.module';
 import { BookingModule } from './booking/booking.module';
 import { MyOrganizationModule } from './my-organization/my-organization.module';
 import { VendorModule } from './vendor/vendor.module';
+import { RedisIoAdapterModule } from './RedisIoAdapter/redis-io-adapter.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { VendorModule } from './vendor/vendor.module';
     MyOrganizationModule,
     BusyTimeModule,
     VendorModule,
+    RedisIoAdapterModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

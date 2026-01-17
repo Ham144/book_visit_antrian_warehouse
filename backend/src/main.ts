@@ -4,8 +4,15 @@ import * as cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/http-exception-filter';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaExceptionFilter } from './common/PrismaException';
+import { RedisIoAdapter } from './RedisIoAdapter/redis-io-adapter.service';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+
+  // jangan create server sendiri, cukup set adapter
+  app.useWebSocketAdapter(redisIoAdapter);
 
   app.setGlobalPrefix('api');
 

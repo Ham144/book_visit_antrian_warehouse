@@ -166,7 +166,7 @@ export default function Navigation() {
               </div>
               <div className="flex flex-col max-xl:hidden">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
-                  Antrian Gudang
+                  Antrian Gudang Real-time
                 </h1>
                 <div className="max-md:hidden text-xs text-gray-500 font-medium">
                   {userInfo?.role.includes("ORGANIZATION")
