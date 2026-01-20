@@ -9,10 +9,11 @@ import {
   CheckCircle,
   GripVertical,
   Clock,
-  Car,
   User,
   X,
   Notebook,
+  CheckCircle2,
+  TimerReset,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -34,6 +35,7 @@ interface DraggableBookingCardProps {
   onJustify?: () => void;
   onMarkFinished?: () => void;
   onCancel?: () => void;
+  onActualArrived?: () => void;
 }
 
 const DraggableBookingCard = ({
@@ -44,6 +46,7 @@ const DraggableBookingCard = ({
   onDetail,
   onMarkFinished,
   onCancel,
+  onActualArrived,
 }: DraggableBookingCardProps) => {
   // Tambahkan useSortable dengan data yang lengkap
   const {
@@ -143,7 +146,7 @@ const DraggableBookingCard = ({
             {booking.status === BookingStatus.IN_PROGRESS && (
               <div className="flex items-center gap-1">
                 <span className="font-medium text-gray-600 whitespace-nowrap">
-                  Menuju {timeRemainingAutoUnloading(booking)}
+                  {timeRemainingAutoUnloading(booking).includes("+") ? "Telah Berlalu" : "Menuju"}{timeRemainingAutoUnloading(booking)}
                 </span>
               </div>
             )}
@@ -230,6 +233,24 @@ const DraggableBookingCard = ({
                       Batalkan
                     </span>
                   </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onActualArrived()
+                    }}
+                    title="Batalkan booking ini"
+                    className="p-1.5 rounded-md hover:bg-teal-50 hover:text-teal-600 transition-colors group"
+                    type="button"
+                  >
+                    {
+                      booking.actualArrivalTime ? (
+                        <TimerReset className="w-3.5 h-3.5" />
+                      ) : <CheckCircle className="w-3.5 h-3.5" />
+                    }
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      {booking.actualArrivalTime ? "Kembalikan status Belum Datang" : "Konfirmasi Telah Tiba"}
+                    </span>
+                  </button>
 
                   {/* Duration dengan info */}
                   <div className="relative group">
@@ -238,6 +259,7 @@ const DraggableBookingCard = ({
                       <span>{booking.Vehicle.durasiBongkar}m</span>
                     </div>
                   </div>
+
                   {/* note untuk plat */}
                   {booking.notes && (
                     <div className="relative group">

@@ -132,7 +132,7 @@ model Booking {
   vehicleId           String
   //booking field
   arrivalTime         DateTime
-  estimatedFinishTime         DateTime
+  estimatedFinishTime DateTime
 
   actualArrivalTime   DateTime? //ini konfirmasi sudah sampai
   //unloading times

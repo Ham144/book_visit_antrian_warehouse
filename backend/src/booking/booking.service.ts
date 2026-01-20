@@ -13,11 +13,13 @@ import {
   DragAndDropPayload,
   ROLE,
 } from 'src/common/shared-enum';
-import { DockBusyTime, Prisma } from '@prisma/client';
+import { Booking, DockBusyTime, Prisma } from '@prisma/client';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
 import { BookingFilter } from 'src/common/shared-interface';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ResponseReportsBookingDto } from './dto/response-reports-boking.dto';
+import {  ResponseDashboardBookingDto } from './dto/response-dashboard-booking.dto';
+import { ResponseDockDto } from 'src/dock/dto/response-dock.dto';
 
 @Injectable()
 export class BookingWarehouseService {
@@ -65,19 +67,6 @@ export class BookingWarehouseService {
     return false;
   }
 
-  private checkTimeCollisions(
-    startTime: number,
-    durationHours: number,
-    events: Array<{ start: number; end: number }>,
-  ): boolean {
-    const endTime = startTime + durationHours;
-    for (const event of events) {
-      if (startTime < event.end && endTime > event.start) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   private async getApplicableBusyTimesForDate(
     dockId: string,
@@ -1089,10 +1078,18 @@ export class BookingWarehouseService {
     };
     if (payload.status === 'IN_PROGRESS' && payload.actualArrivalTime) {
       updateData.actualArrivalTime = payload.actualArrivalTime;
+      updateData.actualStartTime = null;
+    }
+    if (payload.status === 'IN_PROGRESS' && !payload.actualArrivalTime) {
+      updateData.actualArrivalTime = null;
+      updateData.actualStartTime = null;
     }
 
     if (payload.status === 'FINISHED' && payload.actualFinishTime) {
       updateData.actualFinishTime = payload.actualFinishTime;
+      if(!existingBooking.actualArrivalTime || !existingBooking.actualStartTime){
+        throw new BadRequestException('Kesalahan sistem : actualArrivalTime dan actualStartTime belum tercatat');
+      }
     }
 
     const updatedBooking = await this.prismaService.booking.update({
@@ -1111,7 +1108,7 @@ export class BookingWarehouseService {
       groups: ['detail'],
     });
   }
-
+ 
   async getStatsForUserOrganizations() {}
 
   async adminReports(
@@ -1295,4 +1292,557 @@ export class BookingWarehouseService {
       },
     );
   }
+
+  
+  async adminDashboard(userInfo: TokenPayload): Promise<ResponseDashboardBookingDto> {
+    // Dashboard hanya untuk waktu hari ini
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    // Ambil semua booking untuk organization user saat ini
+    const bookings = await this.prismaService.booking.findMany({
+      where: {
+        organizationName: userInfo.organizationName,
+        arrivalTime: {
+          gte: todayStart,
+          lte: todayEnd
+        }
+      },
+      include: {
+        Vehicle: true,
+        Warehouse: true,
+        Dock: true,
+        driver: {
+          include: {
+            vendor: true,
+          },
+        },
+        createdBy: {
+          select: {
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    // Ambil hanya dock dari warehouse nya
+    const docks = await this.prismaService.dock.findMany({
+      where: {
+        organizationName: userInfo.organizationName,
+        isActive: true,
+        warehouseId: userInfo.homeWarehouseId
+      },
+      include: {
+        vacants: true,
+        busyTimes: {
+          where: {
+            createdAt: {
+              gte: todayStart,
+            },
+          },
+        },
+        bookings: {
+          where: {
+            createdAt: {
+              gte: todayStart,
+            },
+            status: {
+              in: ['IN_PROGRESS', 'ARRIVED'],
+            },
+          },
+          include: {
+            driver: {
+              include: {
+                vendor: true,
+              },
+            },
+            Vehicle: true,
+          },
+        },
+        warehouse: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Hitung metrics
+    const totalBookingsToday = bookings.length;
+    
+    const activeBookings = bookings.filter(b => 
+      [BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING].includes(BookingStatus[b.status])
+    ).length;
+    
+    const completedToday = bookings.filter(b => 
+      [BookingStatus.FINISHED].includes(BookingStatus[b.status])
+    ).length;
+    
+    // Hitung delayed bookings (melebihi estimatedFinishTime)
+    const delayedBookings = bookings.filter(b => {
+      const late = b.arrivalTime.getTime() > new Date(new Date().getTime() + (b.Warehouse.delayTolerance * 60_000)).getTime();
+      if(b.status == 'IN_PROGRESS' && !b.actualArrivalTime && late) {
+        return true;
+      }
+    }).length;
+
+
+    // Hitung rata-rata processing time
+    const completedBookings = bookings.filter(b => 
+      b.status[b.status] === BookingStatus.FINISHED && b.actualStartTime && b.actualFinishTime
+    );
+    
+    const avgProcessingMinutes = completedBookings.length > 0
+      ? Math.round(completedBookings.reduce((acc, b) => {
+          const duration = b.actualFinishTime.getTime() - b.actualStartTime.getTime();
+          return acc + (duration / (1000 * 60));
+        }, 0) / completedBookings.length)
+      : 0;
+
+    // Hitung dock utilization
+    //terlalu simpel
+    // const totalDocks = docks.length;
+    // const activeDocks = docks.filter(d => 
+    //   d.bookings.some(b => [ BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING].includes(BookingStatus[b.status]))
+    // ).length;
+    // const dockUtilizationPercent = totalDocks > 0 
+    //   ? Math.round((activeDocks / totalDocks) * 100)
+    //   : 0;
+
+    const STATUS_WEIGHT: Record<BookingStatus, number> = {
+      [BookingStatus.UNLOADING]: 1,
+      [BookingStatus.IN_PROGRESS]: 0.8,
+      [BookingStatus.FINISHED]: 0,
+      [BookingStatus.CANCELED]: 0,
+    };
+
+    const getDockWeight = (bookings: Booking[]): number => {
+  return bookings.reduce((max, booking) => {
+    return Math.max(max, STATUS_WEIGHT[booking.status] ?? 0);
+  }, 0);
+  };
+
+const score =
+docks.reduce((sum, dock) => {
+  return sum + getDockWeight(dock.bookings);
+}, 0) / docks.length;
+
+const dockUtilizationPercent = Math.round(score * 100);
+
+const timeStringToMinutes = (time: string): number => {
+  const [hour, minute] = time.split(":").map(Number);
+  return hour * 60 + minute;
+};
+const nowToMinutes = (date: Date): number => {
+  return date.getHours() * 60 + date.getMinutes();
+};
+
+
+    // Prepare dock statuses
+    const dockStatuses = docks.map(dock => {
+      let status:
+        | "KOSONG"
+        | "TIDAK AKTIF"
+        | "SEDANG MEMBONGKAR"
+        | "SIBUK/ISTIRAHAT"
+        | "DILUAR JAM KERJA";
+    
+      let vendorName = "";
+      let remainingMinutes = 0;
+    
+      const now = new Date();
+      const nowTime = now.getTime();
+    
+      const todayVacant = dock.vacants.find(v => Days[v.day] === Days[now.getDay()]);
+    
+      if (!todayVacant) {
+        return {
+          dockId: dock.id,
+          dockName: dock.name,
+          status: "TIDAK AKTIF",
+        };
+      }
+    
+      const availableFrom = new Date(todayVacant.availableFrom).getTime();
+      const availableUntil = new Date(todayVacant.availableUntil).getTime();
+    
+      if (nowTime > availableUntil || nowTime < availableFrom) {
+        return {
+          dockId: dock.id,
+          dockName: dock.name,
+          status: "DILUAR JAM KERJA",
+        };
+      }
+
+      const nowMinutes = nowToMinutes(now);
+
+const onBusyTime = dock.busyTimes.find(bt => {
+  const fromMinutes = timeStringToMinutes(bt.from);
+  const toMinutes = timeStringToMinutes(bt.to);
+
+  const isInTimeRange =
+    nowMinutes >= fromMinutes && nowMinutes <= toMinutes;
+
+  if (bt.recurring === "DAILY") {
+    return isInTimeRange;
+  }
+
+  if (bt.recurring === "WEEKLY") {
+    return (
+      bt.recurringCustom?.includes(Days[now.getDay()]) &&
+      isInTimeRange
+    );
+  }
+
+  if (bt.recurring === "MONTHLY") {
+    return (
+      now.getDate() === bt.recurringStep &&
+      isInTimeRange
+    );
+  }
+
+  return false;
+});
+
+if(onBusyTime){
+  status = "SIBUK/ISTIRAHAT";
+  remainingMinutes = Math.max(
+    0,
+    Math.round(
+      (parseInt(onBusyTime.from) * 60_000 - nowMinutes) / 60
+    )
+  );
 }
+    
+      const unloading = dock.bookings.find(
+        b => b.status === BookingStatus.UNLOADING
+      );
+    
+      if (unloading) {
+        status = "SEDANG MEMBONGKAR";
+        remainingMinutes = Math.max(
+          0,
+          Math.round(
+            (unloading.actualStartTime.getTime() +
+              unloading.Vehicle.durasiBongkar * 60000 -
+              nowTime) /
+              60000
+          )
+        );
+        vendorName = unloading.driver.vendorName;
+      }
+    
+      return {
+        dockId: dock.id,
+        dockName: dock.name,
+        status,
+        vendorName,
+        remainingMinutes,
+      };
+    });
+    
+
+    // Prepare queue snapshot (top 5 waiting bookings)
+    const waitingBookings = bookings
+      .filter(b => ['WAITING', 'ASSIGNED'].includes(b.status))
+      .sort((a, b) => a.arrivalTime.getTime() - b.arrivalTime.getTime())
+      .slice(0, 5);
+
+    const queueSnapshot = waitingBookings.map(booking => {
+      const waitingMs = now.getTime() - booking.arrivalTime.getTime();
+      const waitingMinutes = Math.round(waitingMs / (1000 * 60));
+      const isOverdue = booking.estimatedFinishTime 
+        ? now.getTime() > booking.estimatedFinishTime.getTime()
+        : false;
+
+      // Convert dock to ResponseDockDto format
+      const dockDto: ResponseDockDto = booking.Dock ? {
+        id: booking.Dock.id,
+        name: booking.Dock.name,
+        warehouseId: booking.Dock.warehouseId,
+        photos: booking.Dock.photos,
+        allowedTypes: booking.Dock.allowedTypes,
+        isActive: booking.Dock.isActive,
+        priority: booking.Dock.priority,
+        organizationName: booking.Dock.organizationName,
+        // Tambahkan properti lain yang diperlukan
+      } : {
+        id: '',
+        name: 'Unassigned',
+        warehouseId: '',
+        photos: [],
+        allowedTypes: [],
+        isActive: false,
+        priority: 0,
+        organizationName: '',
+      };
+
+      return {
+        bookingId: booking.id,
+        code: booking.code,
+        vendorName: booking.driver?.vendor?.name || booking.driver?.displayName || 'Unknown',
+        arrivalTime: booking.arrivalTime.toISOString(),
+        estimatedFinishTime: booking.estimatedFinishTime?.toISOString(),
+        status: booking.status as "WAITING" | "ASSIGNED" | "ARRIVED",
+        dock: dockDto,
+        isOverdue,
+        waitingMinutes,
+      };
+    });
+
+    // Generate KPI data
+    const kpiData = this.generateKPIData(bookings, docks, now);
+
+    // Generate busy time data
+    const busyTimeData = this.generateBusyTimeData(docks, now);
+
+    // Generate alerts
+    const alerts = this.generateAlerts(bookings, docks, now);
+
+    return {
+      summaryMetrics: {
+        totalBookingsToday,
+        activeQueue: activeBookings,
+        completedToday,
+        delayedBookings,
+        avgProcessingMinutes,
+        dockUtilizationPercent,
+        lastUpdated: now.toISOString(),
+      },
+      dockStatuses,
+      queueSnapshot,
+      kpiData,
+      busyTimeData,
+      alerts,
+      filters: {
+        searchQuery: "",
+        selectedStatuses: [],
+        selectedDocks: [],
+        timeRange: {
+          start: todayStart.toISOString(),
+          end: todayEnd.toISOString(),
+        },
+        priorityFilter: "ALL",
+      },
+      selectedDock: null,
+      selectedBooking: null,
+      quickActionPanel: {
+        reassignModalOpen: false,
+        noteModalOpen: false,
+        autoEfficiencyEnabled: true,
+      },
+      connection: {
+        isConnected: true,
+        lastMessageTime: now.toISOString(),
+        error: null,
+      },
+    };
+  }
+
+  private generateKPIData(bookings: any[], docks: any[], now: Date) {
+    // Generate data untuk 5 jam terakhir
+    const hours = [];
+    for (let i = 4; i >= 0; i--) {
+      const hour = new Date(now.getTime() - (i * 60 * 60 * 1000));
+      hours.push(hour.getHours().toString().padStart(2, '0') + ':00');
+    }
+    
+    // Hitung queue length per jam (dummy calculation - ganti dengan data real)
+    const queueLengthTimeline = hours.map((time, index) => {
+      // Dalam implementasi nyata, query database untuk booking per jam
+      const hourBookings = bookings.filter(b => {
+        const bookingHour = new Date(b.createdAt).getHours();
+        return bookingHour === parseInt(time.split(':')[0]);
+      });
+      return {
+        time,
+        value: hourBookings.length || Math.floor(Math.random() * 15) + 5,
+      };
+    });
+
+    // Hitung average waiting time (dummy calculation)
+    const avgWaitingTime = hours.map((time, index) => ({
+      time,
+      minutes: Math.floor(Math.random() * 30) + 30,
+    }));
+
+    // Hitung dock throughput
+    const dockThroughput = docks.slice(0, 6).map(dock => {
+      const dockCompleted = bookings.filter(b => 
+        b.dockId === dock.id && b.status === 'COMPLETED'
+      ).length;
+      
+      return {
+        dock: dock.name,
+        completed: dockCompleted || Math.floor(Math.random() * 10) + 5,
+      };
+    });
+
+    return {
+      queueLengthTimeline,
+      avgWaitingTime,
+      dockThroughput,
+    };
+  }
+
+  private generateBusyTimeData(docks: any[], now: Date) {
+    const busyDocks = docks.filter(d => 
+      d.busyTimes.length > 0 || 
+      d.bookings.some((b: any) => ['IN_PROGRESS', 'ARRIVED'].includes(b.status))
+    );
+
+    if (busyDocks.length === 0) {
+      return {
+        currentBusyWindow: undefined,
+        nextBusyWindow: undefined,
+      };
+    }
+
+    // Cari current busy window berdasarkan busyTimes
+    const currentBusyTimes = docks.flatMap(d => d.busyTimes);
+    
+    let currentBusyWindow = undefined;
+    if (currentBusyTimes.length > 0) {
+      const busiest = currentBusyTimes[0]; // Ambil yang pertama
+      currentBusyWindow = {
+        from: busiest.from,
+        to: busiest.to,
+        affectedDocks: docks.filter(d => d.busyTimes.length > 0).map(d => d.name).slice(0, 3),
+        intensity: "HIGH" as const,
+      };
+    } else {
+      // Jika tidak ada busyTimes, cari berdasarkan booking density
+      const busyHour = new Date(now);
+      busyHour.setHours(now.getHours() - 1);
+      
+      const hourDocks = docks.filter(d => 
+        d.bookings.some((b: any) => {
+          const bookingTime = new Date(b.createdAt);
+          return bookingTime > busyHour;
+        })
+      );
+      
+      if (hourDocks.length > 0) {
+        currentBusyWindow = {
+          from: `${now.getHours() - 1}:00`,
+          to: `${now.getHours()}:00`,
+          affectedDocks: hourDocks.slice(0, 3).map(d => d.name),
+          intensity: hourDocks.length > 2 ? "HIGH" : "MEDIUM",
+        };
+      }
+    }
+
+    // Prediksi next busy window (dummy - bisa diimplementasi dengan machine learning)
+    const nextBusyWindow = {
+      from: `${now.getHours() + 2}:00`,
+      to: `${now.getHours() + 4}:00`,
+      predictedIntensity: Math.min(Math.floor((busyDocks.length / docks.length) * 100) + 20, 100),
+    };
+
+    return {
+      currentBusyWindow,
+      nextBusyWindow,
+    };
+  }
+
+  private generateAlerts(bookings: any[], docks: any[], now: Date) {
+    const alerts = [];
+
+    // 1. OVERDUE alerts
+    const overdueBookings = bookings.filter(b => {
+      if ((b.status === 'IN_PROGRESS' || b.status === 'ARRIVED') && b.estimatedFinishTime) {
+        return now.getTime() > b.estimatedFinishTime.getTime();
+      }
+      return false;
+    });
+
+    overdueBookings.forEach((booking, index) => {
+      const overdueMinutes = Math.round(
+        (now.getTime() - booking.estimatedFinishTime.getTime()) / (1000 * 60)
+      );
+      
+      alerts.push({
+        id: `alert-overdue-${booking.id}`,
+        type: "OVERDUE" as const,
+        severity: overdueMinutes > 30 ? "HIGH" : "MEDIUM",
+        bookingCode: booking.code,
+        message: `Booking ${booking.code} exceeded estimated finish time by ${overdueMinutes} minutes`,
+        timestamp: now.toISOString(),
+        acknowledged: false,
+        actionRequired: true,
+      });
+    });
+
+    // 2. NO_SHOW alerts
+    const noShowBookings = bookings.filter(b => {
+      if (b.status === 'WAITING' || b.status === 'ASSIGNED') {
+        const scheduledArrival = new Date(b.arrivalTime);
+        const gracePeriod = 30; // menit
+        const noShowTime = scheduledArrival.getTime() + (gracePeriod * 60 * 1000);
+        return now.getTime() > noShowTime;
+      }
+      return false;
+    });
+
+    noShowBookings.forEach((booking, index) => {
+      const lateMinutes = Math.round(
+        (now.getTime() - booking.arrivalTime.getTime()) / (1000 * 60)
+      );
+      
+      alerts.push({
+        id: `alert-noshow-${booking.id}`,
+        type: "NO_SHOW" as const,
+        severity: "MEDIUM",
+        bookingCode: booking.code,
+        message: `Booking ${booking.code} driver has not arrived ${lateMinutes} minutes after scheduled time`,
+        timestamp: now.toISOString(),
+        acknowledged: false,
+        actionRequired: true,
+      });
+    });
+
+    // 3. DOCK_BLOCKED alerts
+    const blockedDocks = docks.filter(d => d.busyTimes.length > 0);
+    
+    blockedDocks.forEach((dock, index) => {
+      alerts.push({
+        id: `alert-blocked-${dock.id}`,
+        type: "DOCK_BLOCKED" as const,
+        severity: "MEDIUM",
+        dockId: dock.id,
+        message: `Dock ${dock.name} is blocked due to scheduled maintenance`,
+        timestamp: now.toISOString(),
+        acknowledged: index > 0,
+        actionRequired: false,
+      });
+    });
+
+    // 4. SLA_BREACH alerts (untuk booking yang sudah selesai tapi terlambat)
+    const slaBreachBookings = bookings.filter(b => {
+      if (b.status === 'COMPLETED' && b.actualFinishTime && b.estimatedFinishTime) {
+        const breachMinutes = (b.actualFinishTime.getTime() - b.estimatedFinishTime.getTime()) / (1000 * 60);
+        return breachMinutes > 60; // SLA breach > 60 minutes
+      }
+      return false;
+    });
+
+    slaBreachBookings.forEach((booking, index) => {
+      const breachMinutes = Math.round(
+        (booking.actualFinishTime.getTime() - booking.estimatedFinishTime.getTime()) / (1000 * 60)
+      );
+      
+      alerts.push({
+        id: `alert-sla-${booking.id}`,
+        type: "SLA_BREACH" as const,
+        severity: "HIGH",
+        bookingCode: booking.code,
+        message: `SLA breach: Booking ${booking.code} completion time exceeded by ${breachMinutes} minutes`,
+        timestamp: now.toISOString(),
+        acknowledged: false,
+        actionRequired: true,
+      });
+    });
+
+    return alerts;
+  }}

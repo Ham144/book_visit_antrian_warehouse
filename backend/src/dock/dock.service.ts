@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpStatus,
   Injectable,
   InternalServerErrorException,
@@ -11,7 +12,7 @@ import { LoginResponseDto } from 'src/user/dto/login.dto';
 import { DockFilter, ResponseDockDto } from './dto/response-dock.dto';
 import { plainToInstance } from 'class-transformer';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
-import { VehicleType, Days } from 'src/common/shared-enum';
+import { VehicleType, Days, BookingStatus } from 'src/common/shared-enum';
 
 @Injectable()
 export class DockService {
@@ -177,6 +178,29 @@ export class DockService {
 
     if (!existingDock) {
       throw new NotFoundException(`Dock dengan id ${id} tidak ditemukan`);
+    }
+
+    if(existingDock.isActive == false) {
+      const now = new Date()
+      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+      const bookings = await this.prismaService.booking.findMany({
+        where: {
+          dockId: id,
+          status: {
+            in: [
+              BookingStatus.IN_PROGRESS,
+              BookingStatus.UNLOADING,
+            ]
+          },
+          arrivalTime: {
+            gte: from,
+          }
+        }
+      })
+      if(bookings.length) {
+        const bookingCodes = bookings.map(booking => booking.code).join(', ')
+        throw new BadRequestException("Ada booking yang sedang berlangsung di dock ini hari ini : "  + bookingCodes)
+      }
     }
 
     try {

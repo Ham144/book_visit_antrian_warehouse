@@ -88,6 +88,7 @@ export const BookingApi = {
     );
     return res.data;
   },
+  //ini untuk /admin/reports
   adminWarehouseReports: async (params?: {
     startDate?: string;
     endDate?: string;
@@ -97,6 +98,13 @@ export const BookingApi = {
       {
         params,
       }
+    );
+    return res.data;
+  },
+  //ini untuk admin/dashboards
+  adminWarehouseDashboard: async () => {
+    const res = await axiosInstance.get(
+      "/api/booking/admin-warehouse-dashboard",
     );
     return res.data;
   },

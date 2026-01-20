@@ -12,6 +12,7 @@ import {
   Search,
   Handshake,
   Key,
+  ChevronRight,
 } from "lucide-react";
 import { useUserInfo } from "../UserContext";
 import { useEffect, useRef, useState } from "react";
@@ -24,18 +25,23 @@ import { WarehouseApi } from "@/api/warehouse.api";
 import { Organization } from "@/types/organization";
 import { AccountType, UserApp, UserInfo } from "@/types/auth";
 import { Warehouse } from "@/types/warehouse";
+import { adminMenuItems, ITOnlyMenus, vendorMenutItems } from "../admin/side-nav";
+import ProfileModal from "./ProfileModal";
+import LoginModal from "./login-modal";
+import { ROLE } from "@/types/shared.type";
 
 export default function Navigation() {
-  const { userInfo, setUserInfo } = useUserInfo();
+  const {userInfo, setUserInfo} = useUserInfo()
+  
+  //search menu
   const searchBar = useRef<HTMLInputElement | null>(null);
-  const [accountType, setAccountType] = useState<AccountType>(AccountType.AD);
   const am_i_vendor = userInfo?.vendorName ? true : false;
+  
 
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-    organization: "CATUR SUKSES INTERNASIONAL",
-  });
+  const menus = [...adminMenuItems, ...ITOnlyMenus, ...vendorMenutItems]
+  const [searchKeyMenu, setSearchKeyMenu ] = useState('')
+  const [filteredMenus, setFilterMenus] = useState([]) 
+  
 
   const { data: warehouseAccess } = useQuery({
     queryKey: ["my-access-warehouses"],
@@ -47,56 +53,6 @@ export default function Navigation() {
     queryKey: ["my-organizations"],
     queryFn: OrganizationApi.getMyOrganizations,
   });
-
-  const router = useRouter();
-
-  const { mutateAsync: handeLoginAD } = useMutation({
-    mutationKey: ["userInfo"],
-    mutationFn: async () => {
-      const res = await AuthApi.loginUserLdap(formData);
-      return res;
-    },
-    onSuccess: (res: UserInfo) => {
-      (document.getElementById("login_modal") as any)?.close();
-      if (!res?.vendorName && res?.homeWarehouse) {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/vendor/dashboard");
-      }
-      window.location.reload();
-    },
-    onError: (er: any) => {
-      toast.error(er?.response?.data?.message || "Gagal login");
-    },
-  });
-
-  const { mutateAsync: handeLoginAPP } = useMutation({
-    mutationKey: ["userInfo"],
-    mutationFn: async () => {
-      const res = await AuthApi.loginUserAPP(formData);
-      return res;
-    },
-    onSuccess: (res: UserApp) => {
-      (document.getElementById("login_modal") as any)?.close();
-      window.location.reload();
-      if (!res?.vendorName && res?.homeWarehouse) {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/vendor/dashboard");
-      }
-    },
-    onError: (er: any) => {
-      toast.error(er?.response?.data?.message || "Gagal login");
-    },
-  });
-
-  const onSubmitLogin = () => {
-    if (accountType === AccountType.AD) {
-      handeLoginAD();
-    } else {
-      handeLoginAPP();
-    }
-  };
 
   const { mutateAsync: handleLogout } = useMutation({
     mutationKey: ["userInfo"],
@@ -136,20 +92,44 @@ export default function Navigation() {
     },
   });
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.ctrlKey && e.key.toLowerCase() === "k") {
-        e.preventDefault(); // cegah Chrome / Edge membuka search bar
-        e.stopPropagation();
-        searchBar.current?.focus();
-      }
+// 1️⃣ Ctrl+K fokus + click outside untuk clear menu
+useEffect(() => {
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.ctrlKey && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      e.stopPropagation();
+      searchBar.current?.focus();
+      setFilterMenus(menus);
     }
+  }
 
-    // pakai capture: true supaya override behaviour browser
-    document.addEventListener("keydown", onKeyDown, { capture: true });
-    return () =>
-      document.removeEventListener("keydown", onKeyDown, { capture: true });
-  }, []);
+  function handleClickOutside(event: MouseEvent) {
+    if (searchBar.current && !searchBar.current.contains(event.target as Node)) {
+      setFilterMenus([]);
+    }
+  }
+
+  document.addEventListener("keydown", onKeyDown, { capture: true });
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("keydown", onKeyDown, { capture: true });
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
+// 2️⃣ Filter menu saat searchKeyMenu berubah
+useEffect(() => {
+  if (searchKeyMenu.length > 0) {
+    const filtered = menus.filter((menu) =>
+      menu.label.toLowerCase().includes(searchKeyMenu.toLowerCase())
+    );
+    setFilterMenus(filtered);
+  } else {
+    setFilterMenus([]);
+  }
+}, [searchKeyMenu]);
+
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -164,11 +144,11 @@ export default function Navigation() {
               <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-2.5 rounded-xl shadow-lg">
                 <Truck className="text-white" size={24} />
               </div>
-              <div className="flex flex-col max-xl:hidden">
+              <div className="flex f  lex-col max-xl:hidden">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
-                  Antrian Gudang Real-time
+                CSI Queue Realtime
                 </h1>
-                <div className="max-md:hidden text-xs text-gray-500 font-medium">
+                <div className="max-md:hidden text-xs text-gray-500 font-medium translate-y-[-4px]">
                   {userInfo?.role.includes("ORGANIZATION")
                     ? "Portal Perusahaan"
                     : "Portal Vendor"}
@@ -181,28 +161,117 @@ export default function Navigation() {
           </div>
 
           {userInfo && (
-            <div className="relative group max-md:hidden">
-              <input
-                type="text"
-                ref={searchBar}
-                placeholder="Cari Menu..."
-                className=" md:w-[300px] pl-8 py-2 bg-white/80 backdrop-blur-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
-              />
+  <div 
+  ref={searchBar}
+   className="relative group max-md:hidden">
+    {/* Search Input Container */}
+    <div className="relative" 
+    >
+      <input
+        type="text"
+        value={searchKeyMenu}
+        onChange={(e) => setSearchKeyMenu(e.target.value)}
+        placeholder="Cari menu atau fitur..."
+        className="w-full md:w-[360px] pl-10 pr-28 py-3 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-lg text-gray-700 placeholder-gray-400"
+      />
 
-              {/* Search Icon */}
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      {/* Search Icon */}
+      <div className="absolute left-3 top-1/2 -translate-y-1/2">
+        <Search className="w-5 h-5 text-gray-400" />
+      </div>
 
-              {/* Keyboard Shortcut Hint */}
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded text-gray-500">
-                  Ctrl
-                </kbd>
-                <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 border border-gray-300 rounded text-gray-500">
-                  K
-                </kbd>
+      {/* Keyboard Shortcut */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <span className="text-xs text-gray-400 mr-2">Tekan</span>
+        <div className="flex items-center gap-1 bg-gradient-to-r from-gray-50 to-gray-100 px-2.5 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+          <kbd className="px-1.5 py-0.5 text-xs font-medium bg-white border border-gray-300 rounded-md shadow-sm text-gray-600 min-w-[24px] text-center">
+            ctrl
+          </kbd>
+          <span className="text-xs text-gray-400">+</span>
+          <kbd className="px-1.5 py-0.5 text-xs font-medium bg-white border border-gray-300 rounded-md shadow-sm text-gray-600 min-w-[24px] text-center">
+            K
+          </kbd>
+        </div>
+      </div>
+    </div>
+
+    {/* Search Results Dropdown */}
+    {filteredMenus.length > 0 && searchKeyMenu && (
+      <div className="absolute z-50 mt-3 w-full md:w-[420px] bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-blue-100/50 backdrop-blur-sm overflow-hidden animate-fadeIn">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-700">
+              Hasil Pencarian
+              <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                {filteredMenus.length}
+              </span>
+            </p>
+            <span className="text-xs text-gray-400">Tekan Esc untuk tutup</span>
+          </div>
+        </div>
+
+        {/* Results List */}
+        <div className="max-h-[480px] overflow-y-auto custom-scrollbar">
+          {filteredMenus.map((menu) => {
+            const IconComponent = menu.icon;
+            return (
+              <div
+                key={menu.id}
+                onClick={() => redirect(menu.href || menu.link)}
+                className="group/item px-4 py-3 hover:bg-blue-50/50 cursor-pointer transition-all duration-200 border-b border-gray-50 last:border-b-0 active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  {/* Icon Container */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center group-hover/item:shadow-sm transition-shadow">
+                    {IconComponent && (
+                      <IconComponent className="w-5 h-5 text-blue-600 group-hover/item:scale-110 transition-transform" />
+                    )}
+                  </div>
+
+                  {/* Menu Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-gray-800 group-hover/item:text-blue-700 truncate">
+                        {menu.label}
+                      </h3>
+                      {/* Badge untuk role */}
+                      {menu.roles?.includes(ROLE.ADMIN_ORGANIZATION) && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium">
+                          Admin
+                        </span>
+                      )}
+                      {menu.roles?.includes(ROLE.ADMIN_VENDOR) && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                          Vendor
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                      {menu.href || menu.link}
+                    </p>
+                  </div>
+
+                  {/* Arrow Indicator */}
+                  <div className="opacity-0 group-hover/item:opacity-100 transition-opacity">
+                    <ChevronRight className="w-5 h-5 text-blue-400" />
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
+          <p className="text-xs text-gray-400 text-center">
+            Gunakan ↑↓ untuk navigasi • Enter untuk memilih
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+)}
 
           {/* Right Section - Login/User Menu */}
           <div className="flex items-center space-x-4">
@@ -500,122 +569,9 @@ export default function Navigation() {
       </div>
 
       {/* Login Modal */}
-      <dialog id="login_modal" className="modal">
-        <div className="modal-box p-0 overflow-hidden max-w-md">
-          <div className="bg-gradient-to-r from-teal-500 to-emerald-600 p-6 text-white">
-            <h3 className="font-bold text-xl">Login ke Sistem</h3>
-            <p className="text-teal-100 mt-1">Masuk ke portal Antrian Gudang</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 p-1 bg-teal-50 rounded-xl border border-teal-100 shadow-inner">
-            <button
-              onClick={() => {
-                setAccountType(AccountType.AD);
-                setFormData({
-                  ...formData,
-                  username: "yafizham",
-                  password: "Catur2025!",
-                });
-              }}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
-                accountType === AccountType.AD
-                  ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg scale-[1.02]"
-                  : "bg-white text-teal-700 border border-teal-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-md"
-              }`}
-            >
-              <WarehouseIcon />
-              <span className="max-md:text-xs">Active Director</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setAccountType(AccountType.APP);
-                setFormData({
-                  ...formData,
-                  username: "",
-                  password: "mockuser",
-                });
-              }}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
-                accountType === AccountType.APP
-                  ? "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg scale-[1.02]"
-                  : "bg-white text-teal-700 border border-teal-200 hover:bg-teal-50 hover:border-teal-300 hover:shadow-md"
-              }`}
-            >
-              <Key />
-              <span className="max-md:text-xs">App</span>
-            </button>
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSubmitLogin();
-            }}
-            className="p-6 space-y-4"
-          >
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                type="text"
-                value={formData.username}
-                onChange={(e) =>
-                  setFormData({ ...formData, username: e.target.value })
-                }
-                placeholder="ham"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                type="password"
-                placeholder="******"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-              />
-            </div>
-
-            <button className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-              Login Sekarang
-            </button>
-
-            <div className="text-center">
-              <a
-                href="/forgot-password"
-                className="text-sm text-teal-600 hover:text-teal-700 transition-colors"
-              >
-                Lupa Password ?
-              </a>
-            </div>
-          </form>
-          <div className="modal-action p-4 bg-gray-50">
-            <form method="dialog">
-              <button className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-                Tutup
-              </button>
-            </form>
-          </div>
-        </div>
-        <Toaster key={"login"} />
-      </dialog>
-
-      <dialog id="profile_modal" className="modal">
-        <div className="modal-box">
-          <h3 className="font-bold text-lg">Profile!</h3>
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn">Close</button>
-            </form>
-          </div>
-        </div>
-      </dialog>
+      <LoginModal key={"login_modal"} />
+      
+      <ProfileModal key={"profile_modal"}  />
     </nav>
   );
 }

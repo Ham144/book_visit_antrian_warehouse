@@ -6,7 +6,9 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import { Pencil, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast, Toaster } from "sonner";
 
 interface DockOptionModalProps {
   selectedDockId: string;
@@ -40,8 +42,8 @@ const DockOptionModal = ({
         document.getElementById("dock-option-modal") as HTMLDialogElement
       )?.close();
     },
-    onError: (error) => {
-      console.error("Failed to toggle dock status:", error);
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Gagal memperbarui dock");
       // Show error message if needed
     },
   });
@@ -53,15 +55,15 @@ const DockOptionModal = ({
     }
   }, [dockData]);
 
+  const router = useRouter()
   // Handler for adding busy time
   const handleAddBusyTime = () => {
-    console.log("Adding busy time for dock:", selectedDockId);
-    // Implement your logic here
+    router.push("/admin/busy-times")
   };
 
   // Handler for editing opening hours
   const handleEditOpeningHours = () => {
-    console.log("Editing opening hours for dock:", selectedDockId);
+    router.push("/admin/gate")
     // Implement your logic here
   };
 
@@ -172,6 +174,7 @@ const DockOptionModal = ({
       <form method="dialog" className="modal-backdrop">
         <button>close</button>
       </form>
+      <Toaster  />
     </dialog>
   );
 };

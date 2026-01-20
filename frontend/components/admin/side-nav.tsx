@@ -23,7 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { useUserInfo } from "../UserContext";
 import { ROLE } from "@/types/shared.type";
 
-const adminMenuItems = [
+export const adminMenuItems = [
   {
     id: "dashboard",
     label: "Dashboard",
@@ -82,7 +82,7 @@ const adminMenuItems = [
   },
 ];
 
-const ITOnlyMenus = [
+export const ITOnlyMenus = [
   //IT Only---------
   {
     id: "All Warehouses",

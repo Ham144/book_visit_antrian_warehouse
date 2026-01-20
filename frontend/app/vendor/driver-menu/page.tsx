@@ -20,7 +20,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import React, { useState } from "react";
-import { toast } from "sonner";
+
+
 const DriverMenu = () => {
   const { userInfo } = useUserInfo();
   const [showConfirmation, setShowConfirmation] = useState(false);

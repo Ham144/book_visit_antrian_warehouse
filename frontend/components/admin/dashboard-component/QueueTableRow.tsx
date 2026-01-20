@@ -1,11 +1,6 @@
 import { FormatTimeIndonesian } from "@/lib/constant";
 
 const QueueTableRow = ({ booking }) => {
-  const priorityColors = {
-    HIGH: "bg-red-50 text-red-700 border-red-200",
-    NORMAL: "bg-blue-50 text-blue-700 border-blue-200",
-    LOW: "bg-gray-50 text-gray-700 border-gray-200",
-  };
 
   return (
     <tr
@@ -15,11 +10,8 @@ const QueueTableRow = ({ booking }) => {
     >
       <td className="py-2 px-3">
         <span
-          className={`text-xs px-2 py-1 rounded border ${
-            priorityColors[booking.priority]
-          }`}
         >
-          {booking.priority}
+          {booking.dock.name}
         </span>
       </td>
       <td className="py-2 px-3 font-medium">{booking.code}</td>

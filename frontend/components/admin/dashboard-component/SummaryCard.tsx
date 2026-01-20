@@ -1,4 +1,6 @@
-const SummaryCard = ({ metric, value, status, trend }) => {
+import { MessageCircleQuestion } from "lucide-react";
+
+const SummaryCard = ({ metric, value, status, tooltip }) => {
   const statusColors = {
     normal: "border-l-blue-500",
     warning: "border-l-amber-500",
@@ -11,20 +13,32 @@ const SummaryCard = ({ metric, value, status, trend }) => {
     >
       <div className="flex items-center justify-between">
         <div>
+          <div className="flex items-center justify-between gap-x-2">
           <p className="text-sm text-gray-500 dark:text-gray-400">{metric}</p>
+          {tooltip && (
+  <div className="relative group">
+    <MessageCircleQuestion
+      size={14}
+      className="text-gray-400 cursor-pointer"
+    />
+
+    <div className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      hidden group-hover:block
+      bg-gray-800 text-white text-xs rounded px-3 py-2
+      flex-wrap w-96  z-50
+    ">
+      {tooltip}
+    </div>
+  </div>
+)}
+
+
+          </div>
           <p className="text-2xl font-bold mt-1">{value}</p>
         </div>
         <div className="text-gray-400">{/* Icon based on metric */}</div>
       </div>
-      {trend && (
-        <div
-          className={`text-xs mt-2 ${
-            trend > 0 ? "text-red-500" : "text-green-500"
-          }`}
-        >
-          {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
-        </div>
-      )}
     </div>
   );
 };

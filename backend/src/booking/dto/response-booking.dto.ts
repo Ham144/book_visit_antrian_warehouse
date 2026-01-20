@@ -42,7 +42,7 @@ export class ResponseBookingDto {
   @Expose({ groups: ['detail'] })
   canceledReason?: string;
 
-  @Expose({ groups: ['detail'] })
+  @Expose()
   notes?: string | null;
 
   @Expose()

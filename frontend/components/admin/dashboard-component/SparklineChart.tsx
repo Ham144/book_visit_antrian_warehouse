@@ -1,7 +1,7 @@
 const SparklineChart = ({ data, title, color = "blue" }) => {
-  const maxValue = Math.max(...data.map((d) => d.value));
-  const minValue = Math.min(...data.map((d) => d.value));
-
+  const maxValue = Math.max(...data?.map((d) => d.value));
+  const minValue = Math.min(...data?.map((d) => d.value));
+  
   return (
     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
       <h4 className="text-sm font-medium mb-3">{title}</h4>

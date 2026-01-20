@@ -1,6 +1,6 @@
 # Warehouse Visitation book - CSI
 
-Sistem manajemen Role-Based Access Control (RBAC) untuk warehouse logistics dengan integrasi Active Directory.
+Sistem manajemen Role-Based Access Control (RBAC) untuk warehouse logistics dengan credential Active Directory.
 
 ---
 
@@ -40,17 +40,17 @@ Role pengguna ditentukan secara otomatis saat login melalui Active Directory ber
 Langkah-langkah melakukan booking kunjungan:
 
 1. Pilih **warehouse** tujuan
+2. Pilih **driver** anda
+2. Pilih **kendaraan** 
 2. Pilih **tanggal** kunjungan
-3. Sistem otomatis meng-assign:
-   - Dock
-   - Jam kedatangan
-4. Sistem generate **kode antrian**
+4. Pilih  **Dock** yang cocok
+
 
 ### Contoh Output Booking
 
 ```
 Booking 1: CSI-ham  → 08:00 | Dock A
-Booking 2: CSI-jasa → 10:00 | Dock A
+Booking 2: CSI-csi → 10:00 | Dock A
 ```
 
 ---
@@ -61,33 +61,27 @@ Booking 2: CSI-jasa → 10:00 | Dock A
 
 Proses standar untuk setiap kunjungan yang dijadwalkan:
 
-1. **Konfirmasi kedatangan** vendor (contoh: `CSI-ham`)
-2. Klik tombol **Start Unload**
-3. Klik tombol **End Unload**
-4. Ulangi proses untuk kunjungan berikutnya (contoh: `CSI-jasa`)
-
-```
-Vendor 1 (CSI-ham)
-└─ Konfirmasi → Start Unload → End Unload
-
-Vendor 2 (CSI-jasa)
-└─ Konfirmasi → Start Unload → End Unload
-```
+1. **Konfirmasi kedatangan** vendor (contoh: `CSI-ham`) di live queue atau /admin/dashboard
+2. Klik tombol **Konfirmasi Telah Tiba** untuk mencatat bahwa ia telah tiba
+2. Klik cancel untuk membuat waktu booking bisa di ambil alih
+2. bukan hanya canceled, arrival time yang dijanjikan yang lebih dari jam saat ini tapi belum juga datang juga akan bisa diambil alih (DELAYED)
+3. geser booking ke unloading section (waktu unloading akan dimulai disitu) 
+4. jika unloading telah selesai maka tekan tombol "mark selesai"
 
 ---
 
 ## ⚠️ Penanganan Keterlambatan
 
-> **Toleransi keterlambatan:** 15 menit
-
+> **Toleransi keterlambatan:** 15 menit (bisa di setting di admin page)
+ 
 ### Skenario 1: Satu Vendor Terlambat
 
-**Contoh:** `CSI-ham` terlambat, `CSI-jasa` tepat waktu
+**Contoh:** `CSI-ham` terlambat, `CSI-csi` tepat waktu
 
 #### Langkah Admin Warehouse:
 
 1. Set status **"Pending Queue"** untuk `CSI-ham`
-2. Proses vendor tepat waktu (`CSI-jasa`):
+2. Proses vendor tepat waktu (`CSI-csi`):
 
    ```
    Konfirmasi kedatangan → Start Unload → End Unload
@@ -104,12 +98,11 @@ Vendor 2 (CSI-jasa)
    #### ✗ Jika waktu kosong tidak tersedia/tidak cukup:
 
    - Vendor menunggu slot waktu kosong berikutnya yang sesuai
-
 ---
 
 ### Skenario 2: Dua Vendor Terlambat
 
-**Contoh:** `CSI-ham` dan `CSI-jasa` keduanya terlambat
+**Contoh:** `CSI-ham` dan `CSI-csi` keduanya terlambat
 
 #### Langkah Admin Warehouse:
 
@@ -117,7 +110,7 @@ Vendor 2 (CSI-jasa)
 
    ```
    Priority 1: CSI-ham
-   Priority 2: CSI-jasa
+   Priority 2: CSI-csi
    ```
 
 2. Proses vendor berdasarkan:
@@ -128,16 +121,8 @@ Vendor 2 (CSI-jasa)
 
 ## 📝 Catatan Penting
 
-- Keterlambatan maksimal sebelum masuk pending queue: **15 menit**
+- Keterlambatan maksimal sebelum masuk pending queue: **15 menit** (bisa disetting di setting warehouse)
 - Vendor yang terlambat diproses berdasarkan ketersediaan slot waktu
-- Urutan pending queue mengikuti urutan kedatangan/booking awal
-- Sistem dock assignment bersifat otomatis
-
----
-
-## 📞 Kontak & Support
-
-Untuk pertanyaan lebih lanjut mengenai sistem RBAC ini, silakan hubungi tim IT atau warehouse operations.
 
 ---
 

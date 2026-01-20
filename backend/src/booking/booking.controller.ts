@@ -102,4 +102,14 @@ export class BookingController {
       filter.endDate,
     );
   }
+
+  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Get('/admin-warehouse-dashboard')
+  adminDashboard(
+    @Auth() userinfo: TokenPayload,
+  ) {
+    return this.bookingWarehouseService.adminDashboard(
+      userinfo,
+    );
+  }
 }

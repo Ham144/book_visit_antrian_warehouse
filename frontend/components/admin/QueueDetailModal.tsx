@@ -254,7 +254,7 @@ const QueueDetailModal = ({
               </div>
             </div>
             <div className="bg-gray-50 p-1.5 rounded border">
-              <div className="text-gray-500 truncate">Time</div>
+              <div className="text-gray-500 truncate">Book Time</div>
               <div className="font-semibold">
                 {selectedBooking?.arrivalTime ? (
                   <>
