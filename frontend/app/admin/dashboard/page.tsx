@@ -17,7 +17,6 @@ import { id } from "date-fns/locale";
 import AlertItem from "@/components/admin/dashboard-component/AlertItem";
 import DockStatusCard from "@/components/admin/dashboard-component/DockStatusCard";
 import QueueTableRow from "@/components/admin/dashboard-component/QueueTableRow";
-import QuickActionPanel from "./QuickActionPanel";
 import SparklineChart from "@/components/admin/dashboard-component/SparklineChart";
 import SummaryCard from "@/components/admin/dashboard-component/SummaryCard";
 import { IDock } from "@/types/dock.type";

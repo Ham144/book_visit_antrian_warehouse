@@ -10,22 +10,12 @@ export class ResponseDashboardBookingDto {
       dockUtilizationPercent: number;
       lastUpdated: string;
     };
-  
     dockStatuses: Array<{
-      dockId: string;
-      dockName: string;
-      status: 
-      | "KOSONG"
-      | "TIDAK AKTIF"
-      | "SEDANG MEMBONGKAR"
-      | "SIBUK/ISTIRAHAT"
-      | "DILUAR JAM KERJA" 
-      bookingCode?: string;
-      vendorName?: string;
-      estimatedFinishTime?: string;
-      remainingMinutes: number;
-      isOverdue: boolean;
-      colorStatus: "green" | "yellow" | "red";
+      dockId: string,
+      dockName: string,
+      status: string,
+      vendorName?: string,
+      remainingMinutes?: number,
     }>;
   
     queueSnapshot: Array<{

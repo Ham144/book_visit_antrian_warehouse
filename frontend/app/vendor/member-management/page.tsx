@@ -31,8 +31,8 @@ const MemberManagementPage = () => {
 
   const initialUserAPP: UserApp = {
     username: "",
-    password: "mockuser",
-    passwordConfirm: "mockuser",
+    password: "",
+    passwordConfirm: "",
     description: "",
     displayName: "",
     homeWarehouseId: "",

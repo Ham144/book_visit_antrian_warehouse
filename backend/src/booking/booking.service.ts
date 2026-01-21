@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -88,34 +87,6 @@ export class BookingWarehouseService {
       }
       return false;
     });
-  }
-
-  private async getScheduleForDockDay(
-    dockId: string,
-    date: Date,
-  ): Promise<{ startHour: number; endHour: number }> {
-    const dayEnum = this.mapDayIndexToEnum(date.getDay());
-
-    const vacant = await this.prismaService.vacant.findUnique({
-      where: {
-        dockId_day: {
-          dockId,
-          day: dayEnum,
-        },
-      },
-    });
-
-    if (vacant && vacant.availableFrom && vacant.availableUntil) {
-      const startHour = this.parseTimeToHours(vacant.availableFrom);
-      const endHour = this.parseTimeToHours(vacant.availableUntil);
-
-      if (startHour !== null && endHour !== null) {
-        return { startHour, endHour };
-      }
-    }
-
-    // Fallback to default 06:00-18:00
-    return { startHour: 6, endHour: 18 };
   }
 
   //user|admin organization
@@ -267,12 +238,12 @@ export class BookingWarehouseService {
       throw new NotFoundException('Booking tidak ditemukan');
     }
 
-    if (!booking.dockId && !payload.dockId) {
-      throw new BadRequestException('Dock ID diperlukan untuk drag and drop');
-    }
-
     const { action, toStatus, dockId, relativePositionTarget } = payload;
     const targetDockId = dockId ?? booking.dockId;
+
+    const bookingBody: Prisma.BookingUpdateInput  = {
+      status: toStatus,
+    }
 
     /* ======================================
      * 2. VALIDASI TIPE KENDARAAN DENGAN DOCK
@@ -318,63 +289,71 @@ export class BookingWarehouseService {
             actualStartTime: {
               gte: new Date(new Date(new Date()).setHours(0, 0, 0, 0)),
               lte: new Date(new Date().setHours(23, 59, 59, 999)),
+            },actualArrivalTime: {
+              gte: new Date(new Date(new Date()).setHours(0, 0, 0, 0)),
+              lte: new Date(new Date().setHours(23, 59, 59, 999)),
+            },
+          },
+          include: {
+            Dock: {
+              select: {
+                name: true
+              }
             },
           },
         },
       );
       if (existingQueueUnloading) {
-        return { success: false, message: 'Queue Unloading sedang ada' };
+        const message = `Pembongkaran sedang ada di ${existingQueueUnloading.Dock.name}`
+        return { success: false, message };
+      }
+      
+      const updatingBooking = await this.prismaService.booking.findFirst({
+        where: {id}
+      })
+      const bookingData : Prisma.BookingUpdateInput = {
+        status: 'UNLOADING',
+        actualStartTime: new Date().toISOString(),
+        actualFinishTime: null,
+        canceledReason: null
+      };
+      //jika langsung drag ke unloading tanpa konfirmasi telah datang
+      if(!updatingBooking.actualArrivalTime){
+        bookingData.actualArrivalTime = new Date().toISOString();
       }
       await this.prismaService.booking.update({
-        where: { id },
-        data: {
-          status: 'UNLOADING',
-          actualFinishTime: new Date(),
-        },
+        where: { 
+          id: id
+         },
+        data: bookingData,
       });
       return { success: true };
     }
-
+    
     /* ======================================
-     * 4. DEFINE HELPER FUNCTIONS
+     * 3.SELEBIHNYA KODE UNTUK IN_PROGRESS 
      * ====================================== */
-    // Helper functions untuk waktu lokal
-    const getLocalHours = (date: Date): number => {
-      // Convert UTC ke WIB (UTC+7)
-      return (date.getUTCHours() + 7) % 24;
-    };
-
-    const getLocalMinutes = (date: Date): number => {
-      return date.getUTCMinutes();
-    };
-
-    const toLocalMinutes = (date: Date): number => {
-      return getLocalHours(date) * 60 + getLocalMinutes(date);
-    };
-
-    const formatMinutes = (minutes: number): string => {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-    };
-
-    const formatLocalTime = (date: Date): string => {
-      const hours = getLocalHours(date);
-      const minutes = getLocalMinutes(date);
-      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-    };
-
+    
     /* ======================================
      * 5. TENTUKAN TANGGAL & AMBIL SCHEDULE
      * ====================================== */
-    // DRAG & DROP HANYA UNTUK HARI INI!
-    const TODAY = new Date();
-    const startOfToday = new Date(TODAY);
-    startOfToday.setUTCHours(0, 0, 0, 0); // Gunakan UTC
-    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+    // PASTIKAN DRAG & DROP HANYA UNTUK HARI INI!
+    const now = new Date();
+
+    // UTC hari ini (IMMUTABLE)
+    const startOfTodayUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      0, 0, 0, 0
+    ));
+    
+    const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000);
+    
+    
 
     // Ambil schedule untuk hari ini
-    const scheduleQueryDate = new Date(TODAY);
+    const scheduleQueryDate = new Date(now);
     scheduleQueryDate.setUTCHours(0, 0, 0, 0); // Gunakan UTC untuk query
 
     const schedule = await this.getScheduleForDockDay(
@@ -393,45 +372,60 @@ export class BookingWarehouseService {
     const scheduleStartMinutes = Math.round(scheduleStartHour * 60);
     const scheduleEndMinutes = Math.round(scheduleEndHour * 60);
 
-    console.log('DEBUG - Schedule hari ini:');
-    console.log(
-      '  scheduleStartHour:',
-      scheduleStartHour,
-      '=',
-      formatMinutes(scheduleStartMinutes),
-    );
-    console.log(
-      '  scheduleEndHour:',
-      scheduleEndHour,
-      '=',
-      formatMinutes(scheduleEndMinutes),
-    );
 
     /* ======================================
-     * 6. AMBIL ANTRIAN YANG ADA (HANYA UNTUK HARI INI!)
+     * 6. AMBIL ANTRIAN YANG ADA (HANYA UNTUK HARI INI!) 
+     *  Note:  CANCELED, FINISHED, arrivalTime < now : di ignore
      * ====================================== */
+    
     const existingQueue = await this.prismaService.booking.findMany({
       where: {
         dockId: targetDockId,
-        status: toStatus,
         id: { not: booking.id },
-        arrivalTime: {
-          gte: startOfToday, // SELALU HARI INI (UTC)
-          lt: endOfToday, // SELALU HARI INI (UTC)
+
+        // ❌ IGNORE
+        status: {
+          notIn: [BookingStatus.CANCELED, BookingStatus.FINISHED],
         },
+
+        OR: [
+          // ✅ UNLOADING → dock masih terpakai
+          {
+            status: BookingStatus.UNLOADING,
+            arrivalTime: {
+              gte: startOfTodayUTC,
+              lt: endOfTodayUTC,
+            },
+          },
+
+          // ✅ IN_PROGRESS → SUDAH DATANG
+          {
+            status: BookingStatus.IN_PROGRESS,
+            actualArrivalTime: {
+              not: null,
+            },
+            arrivalTime: {
+              gte: startOfTodayUTC,
+              lt: endOfTodayUTC,
+            },
+          },
+
+          // ✅ IN_PROGRESS → BELUM DATANG tapi BELUM TERLAMBAT
+          {
+            status: BookingStatus.IN_PROGRESS,
+            actualArrivalTime: null,
+            arrivalTime: {
+              gt: now,
+              lt: endOfTodayUTC,
+            },
+          },
+        ],
       },
       include: { Vehicle: true },
       orderBy: { arrivalTime: 'asc' },
     });
 
-    console.log('DEBUG - Antrian hari ini:');
-    console.log('  existingQueue count:', existingQueue.length);
-    existingQueue.forEach((b, i) => {
-      console.log(
-        `  ${i + 1}. ${b.code}: ${new Date(b.arrivalTime).toLocaleTimeString('id-ID')} - ${new Date(b.estimatedFinishTime).toLocaleTimeString('id-ID')}`,
-      );
-    });
-
+    
     /* ======================================
      * 7. TENTUKAN effectiveArrivalTime BERDASARKAN POSISI
      * ====================================== */
@@ -445,47 +439,17 @@ export class BookingWarehouseService {
 
     // Helper untuk validasi waktu
     const validateTimeFitsInSchedule = (startTime: Date): boolean => {
-      const startMins = toLocalMinutes(startTime);
+      const startMins = this.toLocalMinutes(startTime);
       const finishMins = startMins + durationMinutes;
-
-      console.log('DEBUG validateTimeFitsInSchedule:');
-      console.log('  startTime (local):', formatLocalTime(startTime));
-      console.log('  startMins:', startMins, '=', formatMinutes(startMins));
-      console.log('  finishMins:', finishMins, '=', formatMinutes(finishMins));
-      console.log(
-        '  scheduleEndMinutes:',
-        scheduleEndMinutes,
-        '=',
-        formatMinutes(scheduleEndMinutes),
-      );
-      console.log('  Result:', finishMins <= scheduleEndMinutes);
-
       return finishMins <= scheduleEndMinutes;
-    };
-
-    // Helper untuk membuat Date dengan waktu lokal
-    const createDateWithLocalTime = (
-      baseDate: Date,
-      localMinutes: number,
-    ): Date => {
-      // Convert local minutes back to UTC
-      const localHours = Math.floor(localMinutes / 60);
-      const localMins = localMinutes % 60;
-
-      // Local to UTC: UTC = Local - 7
-      let utcHours = localHours - 7;
-      if (utcHours < 0) utcHours += 24;
-
-      const date = new Date(baseDate);
-      date.setUTCHours(utcHours, localMins, 0, 0);
-      return date;
     };
 
     // CASE A: LAST - Ambil booking terakhir atau mulai dari schedule start
     if (relativePositionTarget.bookingId === 'LAST') {
       if (existingQueue.length === 0) {
+        //kondisi tidak ada booking 
         const now = new Date();
-        const currentLocalMinutes = toLocalMinutes(now);
+        const currentLocalMinutes = this.toLocalMinutes(now);
         let candidateStartMinutes = currentLocalMinutes + intervalMinutes;
         // Jangan mulai sebelum schedule start
         candidateStartMinutes = Math.max(
@@ -497,99 +461,41 @@ export class BookingWarehouseService {
         // Cek apakah bertabrakan dengan busy times candidateEndMinutes-nya jika ya majuin candidateStartMinutes
         const applicableBusyTimes = await this.getApplicableBusyTimesForDate(
           targetDockId,
-          startOfToday,
+          startOfTodayUTC,
         );
-
-        for (const busyTime of applicableBusyTimes) {
-          const busyStart = this.parseTimeToHours(busyTime.from);
-          const busyEnd = this.parseTimeToHours(busyTime.to);
-
-          if (busyStart !== null && busyEnd !== null) {
-            const busyStartMinutes = busyStart * 60;
-            const busyEndMinutes = busyEnd * 60;
-
-            const overlaps =
-              (candidateStartMinutes >= busyStartMinutes &&
-                candidateStartMinutes < busyEndMinutes) ||
-              (candidateEndMinutes > busyStartMinutes &&
-                candidateEndMinutes <= busyEndMinutes) ||
-              (candidateStartMinutes <= busyStartMinutes &&
-                candidateEndMinutes >= busyEndMinutes);
-
-            if (overlaps) {
-              candidateStartMinutes += busyEndMinutes + intervalMinutes;
-              candidateEndMinutes = candidateStartMinutes + durationMinutes;
-              console.log(
-                `try candidateStartMinutes: ${candidateStartMinutes} ${candidateEndMinutes}`,
-              );
-            }
-          }
-        }
+        //loooooping mencari jam yang tidak tabrakan dengan busytimes
+         const loopingAvoidResult = this.loopingAvoidBusyTime(candidateStartMinutes, candidateEndMinutes, durationMinutes,  applicableBusyTimes)
+         candidateStartMinutes = loopingAvoidResult.candidateStartMinutes
+         candidateEndMinutes = loopingAvoidResult.candidateEndMinutes
+         
         // Cek apakah arrivalTime dibawah jam pulang
-        if (candidateStartMinutes + durationMinutes <= scheduleEndMinutes) {
-          // MASIH MUAT - buat waktu dengan UTC yang benar
-          effectiveArrivalTime = createDateWithLocalTime(
-            now,
-            candidateStartMinutes,
-          );
-        } else {
-          throw new BadRequestException(
-            `Tidak ada slot tersisa hari ini untuk booking ${durationMinutes} menit. ` +
-              `Jam operasional berakhir ${formatMinutes(scheduleEndMinutes)}, ` +
-              `slot terakhir harus mulai sebelum ${formatMinutes(scheduleEndMinutes - durationMinutes)}`,
-          );
-        }
+        effectiveArrivalTime = this.checkOutOfRangeVacant(candidateStartMinutes, durationMinutes, scheduleEndMinutes)
       } else {
         // Ada antrian
         const lastBooking = existingQueue[existingQueue.length - 1];
         const lastFinishTime = new Date(lastBooking.estimatedFinishTime);
-        const lastFinishLocalMinutes = toLocalMinutes(lastFinishTime);
+        const lastFinishLocalMinutes = this.toLocalMinutes(lastFinishTime);
 
-        console.log('  Ada antrian, lastBooking:', lastBooking.code);
-        console.log(
-          '  lastFinishTime (local):',
-          formatLocalTime(lastFinishTime),
-          '=',
-          lastFinishLocalMinutes,
-          'menit',
-        );
-
+        const applicableBusyTimes = await this.getApplicableBusyTimesForDate(
+          targetDockId,
+          startOfTodayUTC,
+        );        
+        
         // Hitung waktu mulai setelah booking terakhir
-        const candidateStartMinutes = lastFinishLocalMinutes + intervalMinutes;
+        let candidateStartMinutes = lastFinishLocalMinutes + intervalMinutes;
+        let candidateEndMinutes = candidateStartMinutes + durationMinutes;
 
-        console.log(
-          '  candidateStartMinutes:',
-          candidateStartMinutes,
-          '=',
-          formatMinutes(candidateStartMinutes),
-        );
-        console.log(
-          '  Perkiraan selesai:',
-          formatMinutes(candidateStartMinutes + durationMinutes),
-        );
+        //loooooping mencari jam yang tidak tabrakan dengan busytimes
+        const loopingAvoidResult = this.loopingAvoidBusyTime(candidateStartMinutes, candidateEndMinutes, durationMinutes,  applicableBusyTimes)
+        candidateStartMinutes = loopingAvoidResult.candidateStartMinutes
+        candidateEndMinutes = loopingAvoidResult.candidateEndMinutes
 
-        // Validasi
-        if (candidateStartMinutes + durationMinutes <= scheduleEndMinutes) {
-          effectiveArrivalTime = createDateWithLocalTime(
-            lastFinishTime,
-            candidateStartMinutes,
-          );
-          console.log(
-            '  ✅ MUAT - effectiveArrivalTime (Local):',
-            formatLocalTime(effectiveArrivalTime),
-          );
-        } else {
-          console.log('  ❌ TIDAK MUAT - akan melewati jam operasional');
-          throw new BadRequestException(
-            `Tidak dapat menambah booking setelah ${lastBooking.code}. ` +
-              `Booking akan selesai ${formatMinutes(candidateStartMinutes + durationMinutes)} ` +
-              `melewati jam operasional (${formatMinutes(scheduleEndMinutes)})`,
-          );
-        }
+        // Cek apakah arrivalTime dibawah jam pulang
+        effectiveArrivalTime = this.checkOutOfRangeVacant(candidateStartMinutes, durationMinutes, scheduleEndMinutes)
+        
       }
     }
-
-    // CASE B: BEFORE/AFTER booking tertentu
+    // CASE B: BEFORE/AFTER/SWAP booking tertentu
     else {
       console.log('=== CASE B: BEFORE|AFTER|SWAP ===');
 
@@ -636,6 +542,8 @@ export class BookingWarehouseService {
           data: {
             arrivalTime: booking.arrivalTime,
             estimatedFinishTime: booking.estimatedFinishTime,
+            actualArrivalTime: null,
+            canceledReason: null
           },
         });
 
@@ -655,19 +563,20 @@ export class BookingWarehouseService {
 
       // BEFORE/AFTER LOGIC
       if (relativePositionTarget.type === 'BEFORE') {
+        throw new BadRequestException("Emang sengaja, jatuh ke before after logix berhasil")
         insertIndex = targetIndex;
 
         if (targetIndex === 0) {
           // Sebelum booking pertama
           const firstArrivalTime = new Date(existingQueue[0].arrivalTime);
-          const firstArrivalLocalMinutes = toLocalMinutes(firstArrivalTime);
+          const firstArrivalLocalMinutes = this.toLocalMinutes(firstArrivalTime);
 
           // Hitung waktu sebelum booking pertama
           const candidateStartMinutes =
             firstArrivalLocalMinutes - durationMinutes - intervalMinutes;
 
           if (candidateStartMinutes >= scheduleStartMinutes) {
-            const candidateTime = createDateWithLocalTime(
+            const candidateTime = this.createDateWithLocalTime(
               firstArrivalTime,
               candidateStartMinutes,
             );
@@ -693,15 +602,15 @@ export class BookingWarehouseService {
             existingQueue[targetIndex].arrivalTime,
           );
 
-          const prevFinishLocal = toLocalMinutes(prevFinishTime);
-          const nextArrivalLocal = toLocalMinutes(nextArrivalTime);
+          const prevFinishLocal = this.toLocalMinutes(prevFinishTime);
+          const nextArrivalLocal = this.toLocalMinutes(nextArrivalTime);
 
           const gapMinutes = nextArrivalLocal - prevFinishLocal;
           const requiredMinutes = durationMinutes + intervalMinutes;
 
           if (gapMinutes >= requiredMinutes) {
             const candidateStartMinutes = prevFinishLocal + intervalMinutes;
-            const candidateTime = createDateWithLocalTime(
+            const candidateTime = this.createDateWithLocalTime(
               prevFinishTime,
               candidateStartMinutes,
             );
@@ -720,12 +629,12 @@ export class BookingWarehouseService {
       } else if (relativePositionTarget.type === 'AFTER') {
         insertIndex = targetIndex + 1;
         const targetFinishTime = new Date(targetBooking.estimatedFinishTime);
-        const targetFinishLocal = toLocalMinutes(targetFinishTime);
+        const targetFinishLocal = this.toLocalMinutes(targetFinishTime);
 
         if (targetIndex === existingQueue.length - 1) {
           // Setelah booking terakhir
           const candidateStartMinutes = targetFinishLocal + intervalMinutes;
-          const candidateTime = createDateWithLocalTime(
+          const candidateTime = this.createDateWithLocalTime(
             targetFinishTime,
             candidateStartMinutes,
           );
@@ -742,14 +651,14 @@ export class BookingWarehouseService {
           const nextArrivalTime = new Date(
             existingQueue[targetIndex + 1].arrivalTime,
           );
-          const nextArrivalLocal = toLocalMinutes(nextArrivalTime);
+          const nextArrivalLocal = this.toLocalMinutes(nextArrivalTime);
 
           const gapMinutes = nextArrivalLocal - targetFinishLocal;
           const requiredMinutes = durationMinutes + intervalMinutes;
 
           if (gapMinutes >= requiredMinutes) {
             const candidateStartMinutes = targetFinishLocal + intervalMinutes;
-            const candidateTime = createDateWithLocalTime(
+            const candidateTime = this.createDateWithLocalTime(
               targetFinishTime,
               candidateStartMinutes,
             );
@@ -777,52 +686,19 @@ export class BookingWarehouseService {
       effectiveArrivalTime.getTime() + durationMinutes * 60_000;
     const estimatedFinishTime = new Date(estimatedFinishTimeMs);
 
-    const arrivalLocalMinutes = toLocalMinutes(effectiveArrivalTime);
-    const finishLocalMinutes = toLocalMinutes(estimatedFinishTime);
-
-    console.log('=== FINAL VALIDASI ===');
-    console.log(
-      'effectiveArrivalTime (Local):',
-      formatLocalTime(effectiveArrivalTime),
-    );
-    console.log(
-      'estimatedFinishTime (Local):',
-      formatLocalTime(estimatedFinishTime),
-    );
-    console.log(
-      'arrivalLocalMinutes:',
-      arrivalLocalMinutes,
-      '=',
-      formatMinutes(arrivalLocalMinutes),
-    );
-    console.log(
-      'finishLocalMinutes:',
-      finishLocalMinutes,
-      '=',
-      formatMinutes(finishLocalMinutes),
-    );
-    console.log(
-      'scheduleEndMinutes:',
-      scheduleEndMinutes,
-      '=',
-      formatMinutes(scheduleEndMinutes),
-    );
-    console.log(
-      'finishLocalMinutes > scheduleEndMinutes?',
-      finishLocalMinutes > scheduleEndMinutes,
-    );
-
+    const arrivalLocalMinutes = this.toLocalMinutes(effectiveArrivalTime);
+    const finishLocalMinutes = this.toLocalMinutes(estimatedFinishTime);
     // Validasi schedule start
     if (arrivalLocalMinutes < scheduleStartMinutes) {
       throw new BadRequestException(
-        `Waktu mulai (${formatMinutes(arrivalLocalMinutes)}) sebelum jam operasional mulai (${formatMinutes(scheduleStartMinutes)})`,
+        `Waktu mulai (${this.formatMinutes(arrivalLocalMinutes)}) sebelum jam operasional mulai (${this.formatMinutes(scheduleStartMinutes)})`,
       );
     }
 
     // Validasi schedule end
     if (finishLocalMinutes > scheduleEndMinutes) {
       throw new BadRequestException(
-        `Waktu selesai (${formatMinutes(finishLocalMinutes)}) melewati jam operasional berakhir (${formatMinutes(scheduleEndMinutes)})`,
+        `Waktu selesai (${this.formatMinutes(finishLocalMinutes)}) melewati jam operasional berakhir (${this.formatMinutes(scheduleEndMinutes)})`,
       );
     }
 
@@ -841,7 +717,7 @@ export class BookingWarehouseService {
      * ====================================== */
     const applicableBusyTimes = await this.getApplicableBusyTimesForDate(
       targetDockId,
-      startOfToday,
+      startOfTodayUTC,
     );
 
     for (const busyTime of applicableBusyTimes) {
@@ -898,35 +774,24 @@ export class BookingWarehouseService {
     }
 
     /* ======================================
-     * 11. UPDATE BOOKING
+     * 11. UPDATE BOOKING for UNLOADING
      * ====================================== */
+    bookingBody.actualStartTime = null;
+    bookingBody.actualFinishTime = null;
+    bookingBody.Dock = {
+      connect: { id: targetDockId },
+    };
+    bookingBody.canceledReason = null;
+    bookingBody.status = BookingStatus.IN_PROGRESS;
+    bookingBody.arrivalTime = effectiveArrivalTime;
+    bookingBody.estimatedFinishTime = estimatedFinishTime;
     await this.prismaService.booking.update({
       where: { id },
-      data: {
-        dockId: targetDockId,
-        status: toStatus,
-        arrivalTime: effectiveArrivalTime,
-        estimatedFinishTime: estimatedFinishTime,
-        actualStartTime: toStatus === 'IN_PROGRESS' ? new Date() : null,
-      },
+      data: bookingBody,
     });
+    
 
     return { success: true };
-  }
-
-  /* ======================================
-   * HELPER: Parse waktu ke jam desimal
-   * ====================================== */
-  private parseTimeToHours(timeString: string): number | null {
-    if (!timeString) return null;
-
-    const match = timeString.match(/^(\d{1,2}):(\d{2})$/);
-    if (!match) return null;
-
-    const hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-
-    return hours + minutes / 60;
   }
 
   async findAll(filter: BookingFilter, userInfo: TokenPayload) {
@@ -963,13 +828,23 @@ export class BookingWarehouseService {
         {
           code: {
             contains: searchKey,
+            mode: "insensitive"
           },
         },
         {
           driverUsername: {
             contains: searchKey,
+            mode: "insensitive"
           },
         },
+        {
+          Vehicle: {
+            brand: {
+              contains: searchKey,
+              mode: "insensitive"
+            }
+          }
+        }
       ];
     }
 
@@ -1010,7 +885,7 @@ export class BookingWarehouseService {
   }
 
   //unutk queue
-  async semiDetailList(filter: BookingFilter, userInfo: TokenPayload) {
+  async semiDetailList(filter: BookingFilter, userInfo: TokenPayload, showAllStatus = false) {
     const { date } = filter;
 
     const where: Prisma.BookingWhereInput = {
@@ -1036,7 +911,13 @@ export class BookingWarehouseService {
         },
       ];
     }
-
+    //CANCELED, FINISHED, tidak dikeluarkan agar bisa di takeover, unloading tetap ditampilkan!
+    if(!showAllStatus){
+      where.status = {
+        notIn: [BookingStatus.CANCELED, BookingStatus.FINISHED]
+      }
+    }
+    
     const bookings = await this.prismaService.booking.findMany({
       where,
       orderBy: {
@@ -1076,11 +957,11 @@ export class BookingWarehouseService {
     const updateData: Prisma.BookingUpdateInput = {
       status: payload.status,
     };
-    if (payload.status === 'IN_PROGRESS' && payload.actualArrivalTime) {
+    if (payload.status === BookingStatus.IN_PROGRESS && payload.actualArrivalTime) {
       updateData.actualArrivalTime = payload.actualArrivalTime;
       updateData.actualStartTime = null;
     }
-    if (payload.status === 'IN_PROGRESS' && !payload.actualArrivalTime) {
+    if (payload.status === BookingStatus.IN_PROGRESS && !payload.actualArrivalTime) {
       updateData.actualArrivalTime = null;
       updateData.actualStartTime = null;
     }
@@ -1293,7 +1174,6 @@ export class BookingWarehouseService {
     );
   }
 
-  
   async adminDashboard(userInfo: TokenPayload): Promise<ResponseDashboardBookingDto> {
     // Dashboard hanya untuk waktu hari ini
     const now = new Date();
@@ -1400,16 +1280,6 @@ export class BookingWarehouseService {
         }, 0) / completedBookings.length)
       : 0;
 
-    // Hitung dock utilization
-    //terlalu simpel
-    // const totalDocks = docks.length;
-    // const activeDocks = docks.filter(d => 
-    //   d.bookings.some(b => [ BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING].includes(BookingStatus[b.status]))
-    // ).length;
-    // const dockUtilizationPercent = totalDocks > 0 
-    //   ? Math.round((activeDocks / totalDocks) * 100)
-    //   : 0;
-
     const STATUS_WEIGHT: Record<BookingStatus, number> = {
       [BookingStatus.UNLOADING]: 1,
       [BookingStatus.IN_PROGRESS]: 0.8,
@@ -1423,221 +1293,198 @@ export class BookingWarehouseService {
   }, 0);
   };
 
-const score =
-docks.reduce((sum, dock) => {
-  return sum + getDockWeight(dock.bookings);
-}, 0) / docks.length;
+  const score =
+  docks.reduce((sum, dock) => {
+    return sum + getDockWeight(dock.bookings);
+  }, 0) / docks.length;
 
-const dockUtilizationPercent = Math.round(score * 100);
+  const dockUtilizationPercent = Math.round(score * 100);
 
-const timeStringToMinutes = (time: string): number => {
-  const [hour, minute] = time.split(":").map(Number);
-  return hour * 60 + minute;
-};
-const nowToMinutes = (date: Date): number => {
-  return date.getHours() * 60 + date.getMinutes();
-};
+  const timeStringToMinutes = (time: string): number => {
+    const [hour, minute] = time.split(":").map(Number);
+    return hour * 60 + minute;
+  };
+  const nowToMinutes = (date: Date): number => {
+    return date.getHours() * 60 + date.getMinutes();
+  };
 
+  const dockStatuses = docks.map(dock => {
+    let status:
+      | "KOSONG"
+      | "TIDAK AKTIF"
+      | "SEDANG MEMBONGKAR"
+      | "SIBUK/ISTIRAHAT"
+      | "DILUAR JAM KERJA" = "KOSONG";
 
-    // Prepare dock statuses
-    const dockStatuses = docks.map(dock => {
-      let status:
-        | "KOSONG"
-        | "TIDAK AKTIF"
-        | "SEDANG MEMBONGKAR"
-        | "SIBUK/ISTIRAHAT"
-        | "DILUAR JAM KERJA";
-    
-      let vendorName = "";
-      let remainingMinutes = 0;
-    
-      const now = new Date();
-      const nowTime = now.getTime();
-    
-      const todayVacant = dock.vacants.find(v => Days[v.day] === Days[now.getDay()]);
-    
-      if (!todayVacant) {
-        return {
-          dockId: dock.id,
-          dockName: dock.name,
-          status: "TIDAK AKTIF",
-        };
+    let vendorName = "";
+    let remainingMinutes = 0;
+
+    const now = new Date();
+    const nowTime = now.getTime();
+    const nowMinutes = nowToMinutes(now);
+
+    const days = Object.values(Days);
+    const todayVacant = dock.vacants.find(v =>{
+      return Days[v.day] === days[now.getDay()]
+    });
+
+    if (!todayVacant) {
+      status = "TIDAK AKTIF";
+      return { dockId: dock.id, dockName: dock.name, status };
+    }
+
+    const availableFrom = new Date(todayVacant.availableFrom).getTime();
+    const availableUntil = new Date(todayVacant.availableUntil).getTime();
+
+    if (nowTime < availableFrom || nowTime > availableUntil) {
+      status = "DILUAR JAM KERJA";
+      return { dockId: dock.id, dockName: dock.name, status };
+    }
+
+    const onBusyTime = dock.busyTimes.find(bt => {
+      const from = timeStringToMinutes(bt.from);
+      const to = timeStringToMinutes(bt.to);
+      const inRange = nowMinutes >= from && nowMinutes <= to;
+
+      if (bt.recurring === "DAILY") return inRange;
+      if (bt.recurring === "WEEKLY")
+        return bt.recurringCustom?.includes(Days[now.getDay()]) && inRange;
+      if (bt.recurring === "MONTHLY")
+        return now.getDate() === bt.recurringStep && inRange;
+      return false;
+    });
+
+    if (onBusyTime) {
+      status = "SIBUK/ISTIRAHAT";
+      remainingMinutes =
+        timeStringToMinutes(onBusyTime.to) - nowMinutes;
+    }
+    if(dock.bookings.length > 0){
+      console.log(dock.bookings[0].code);
+    }
+    const unloading = dock.bookings.find(
+      b => {
+        return BookingStatus[b.status] === BookingStatus.UNLOADING
       }
-    
-      const availableFrom = new Date(todayVacant.availableFrom).getTime();
-      const availableUntil = new Date(todayVacant.availableUntil).getTime();
-    
-      if (nowTime > availableUntil || nowTime < availableFrom) {
-        return {
-          dockId: dock.id,
-          dockName: dock.name,
-          status: "DILUAR JAM KERJA",
-        };
-      }
-
-      const nowMinutes = nowToMinutes(now);
-
-const onBusyTime = dock.busyTimes.find(bt => {
-  const fromMinutes = timeStringToMinutes(bt.from);
-  const toMinutes = timeStringToMinutes(bt.to);
-
-  const isInTimeRange =
-    nowMinutes >= fromMinutes && nowMinutes <= toMinutes;
-
-  if (bt.recurring === "DAILY") {
-    return isInTimeRange;
-  }
-
-  if (bt.recurring === "WEEKLY") {
-    return (
-      bt.recurringCustom?.includes(Days[now.getDay()]) &&
-      isInTimeRange
     );
-  }
 
-  if (bt.recurring === "MONTHLY") {
-    return (
-      now.getDate() === bt.recurringStep &&
-      isInTimeRange
-    );
-  }
-
-  return false;
-});
-
-if(onBusyTime){
-  status = "SIBUK/ISTIRAHAT";
-  remainingMinutes = Math.max(
-    0,
-    Math.round(
-      (parseInt(onBusyTime.from) * 60_000 - nowMinutes) / 60
-    )
-  );
-}
-    
-      const unloading = dock.bookings.find(
-        b => b.status === BookingStatus.UNLOADING
+    if (unloading) {
+      status = "SEDANG MEMBONGKAR";
+      remainingMinutes = Math.max(
+        0,
+        Math.round(
+          (unloading.actualStartTime.getTime() +
+            unloading.Vehicle.durasiBongkar * 60000 -
+            nowTime) /
+            60000
+        )
       );
-    
-      if (unloading) {
-        status = "SEDANG MEMBONGKAR";
-        remainingMinutes = Math.max(
-          0,
-          Math.round(
-            (unloading.actualStartTime.getTime() +
-              unloading.Vehicle.durasiBongkar * 60000 -
-              nowTime) /
-              60000
-          )
-        );
-        vendorName = unloading.driver.vendorName;
-      }
-    
-      return {
-        dockId: dock.id,
-        dockName: dock.name,
-        status,
-        vendorName,
-        remainingMinutes,
-      };
-    });
-    
-
-    // Prepare queue snapshot (top 5 waiting bookings)
-    const waitingBookings = bookings
-      .filter(b => ['WAITING', 'ASSIGNED'].includes(b.status))
-      .sort((a, b) => a.arrivalTime.getTime() - b.arrivalTime.getTime())
-      .slice(0, 5);
-
-    const queueSnapshot = waitingBookings.map(booking => {
-      const waitingMs = now.getTime() - booking.arrivalTime.getTime();
-      const waitingMinutes = Math.round(waitingMs / (1000 * 60));
-      const isOverdue = booking.estimatedFinishTime 
-        ? now.getTime() > booking.estimatedFinishTime.getTime()
-        : false;
-
-      // Convert dock to ResponseDockDto format
-      const dockDto: ResponseDockDto = booking.Dock ? {
-        id: booking.Dock.id,
-        name: booking.Dock.name,
-        warehouseId: booking.Dock.warehouseId,
-        photos: booking.Dock.photos,
-        allowedTypes: booking.Dock.allowedTypes,
-        isActive: booking.Dock.isActive,
-        priority: booking.Dock.priority,
-        organizationName: booking.Dock.organizationName,
-        // Tambahkan properti lain yang diperlukan
-      } : {
-        id: '',
-        name: 'Unassigned',
-        warehouseId: '',
-        photos: [],
-        allowedTypes: [],
-        isActive: false,
-        priority: 0,
-        organizationName: '',
-      };
-
-      return {
-        bookingId: booking.id,
-        code: booking.code,
-        vendorName: booking.driver?.vendor?.name || booking.driver?.displayName || 'Unknown',
-        arrivalTime: booking.arrivalTime.toISOString(),
-        estimatedFinishTime: booking.estimatedFinishTime?.toISOString(),
-        status: booking.status as "WAITING" | "ASSIGNED" | "ARRIVED",
-        dock: dockDto,
-        isOverdue,
-        waitingMinutes,
-      };
-    });
-
-    // Generate KPI data
-    const kpiData = this.generateKPIData(bookings, docks, now);
-
-    // Generate busy time data
-    const busyTimeData = this.generateBusyTimeData(docks, now);
-
-    // Generate alerts
-    const alerts = this.generateAlerts(bookings, docks, now);
+      vendorName = unloading.driver.vendorName;
+    }
 
     return {
-      summaryMetrics: {
-        totalBookingsToday,
-        activeQueue: activeBookings,
-        completedToday,
-        delayedBookings,
-        avgProcessingMinutes,
-        dockUtilizationPercent,
-        lastUpdated: now.toISOString(),
-      },
-      dockStatuses,
-      queueSnapshot,
-      kpiData,
-      busyTimeData,
-      alerts,
-      filters: {
-        searchQuery: "",
-        selectedStatuses: [],
-        selectedDocks: [],
-        timeRange: {
-          start: todayStart.toISOString(),
-          end: todayEnd.toISOString(),
-        },
-        priorityFilter: "ALL",
-      },
-      selectedDock: null,
-      selectedBooking: null,
-      quickActionPanel: {
-        reassignModalOpen: false,
-        noteModalOpen: false,
-        autoEfficiencyEnabled: true,
-      },
-      connection: {
-        isConnected: true,
-        lastMessageTime: now.toISOString(),
-        error: null,
-      },
+      dockId: dock.id,
+      dockName: dock.name,
+      status,
+      vendorName,
+      remainingMinutes,
     };
+  });
+   // Prepare queue snapshot (top 5 waiting bookings)
+   const waitingBookings = bookings
+   .filter(b => ['WAITING', 'ASSIGNED'].includes(b.status))
+   .sort((a, b) => a.arrivalTime.getTime() - b.arrivalTime.getTime())
+   .slice(0, 5);
+
+ const queueSnapshot = waitingBookings.map(booking => {
+   const waitingMs = now.getTime() - booking.arrivalTime.getTime();
+   const waitingMinutes = Math.round(waitingMs / (1000 * 60));
+   const isOverdue = booking.estimatedFinishTime 
+     ? now.getTime() > booking.estimatedFinishTime.getTime()
+     : false;
+
+   // Convert dock to ResponseDockDto format
+   const dockDto: ResponseDockDto = booking.Dock ? {
+     id: booking.Dock.id,
+     name: booking.Dock.name,
+     warehouseId: booking.Dock.warehouseId,
+     photos: booking.Dock.photos,
+     allowedTypes: booking.Dock.allowedTypes,
+     isActive: booking.Dock.isActive,
+     priority: booking.Dock.priority,
+     organizationName: booking.Dock.organizationName,
+     // Tambahkan properti lain yang diperlukan
+   } : {
+     id: '',
+     name: 'Unassigned',
+     warehouseId: '',
+     photos: [],
+     allowedTypes: [],
+     isActive: false,
+     priority: 0,
+     organizationName: '',
+   };
+
+   return {
+     bookingId: booking.id,
+     code: booking.code,
+     vendorName: booking.driver?.vendor?.name || booking.driver?.displayName || 'Unknown',
+     arrivalTime: booking.arrivalTime.toISOString(),
+     estimatedFinishTime: booking.estimatedFinishTime?.toISOString(),
+     status: booking.status as "WAITING" | "ASSIGNED" | "ARRIVED",
+     dock: dockDto,
+     isOverdue,
+     waitingMinutes,
+   };
+ });
+
+ // Generate KPI data
+ const kpiData = this.generateKPIData(bookings, docks, now);
+
+ // Generate busy time data
+ const busyTimeData = this.generateBusyTimeData(docks, now);
+
+ // Generate alerts
+ const alerts = this.generateAlerts(bookings, docks, now);
+
+ return {
+   summaryMetrics: {
+     totalBookingsToday,
+     activeQueue: activeBookings,
+     completedToday,
+     delayedBookings,
+     avgProcessingMinutes,
+     dockUtilizationPercent,
+     lastUpdated: now.toISOString(),
+   },
+   dockStatuses,
+   queueSnapshot,
+   kpiData,
+   busyTimeData,
+   alerts,
+   filters: {
+     searchQuery: "",
+     selectedStatuses: [],
+     selectedDocks: [],
+     timeRange: {
+       start: todayStart.toISOString(),
+       end: todayEnd.toISOString(),
+     },
+     priorityFilter: "ALL",
+   },
+   selectedDock: null,
+   selectedBooking: null,
+   quickActionPanel: {
+     reassignModalOpen: false,
+     noteModalOpen: false,
+     autoEfficiencyEnabled: true,
+   },
+   connection: {
+     isConnected: true,
+     lastMessageTime: now.toISOString(),
+     error: null,
+   },
+ };
   }
 
   private generateKPIData(bookings: any[], docks: any[], now: Date) {
@@ -1845,4 +1692,140 @@ if(onBusyTime){
     });
 
     return alerts;
-  }}
+  }
+  // Helper untuk membuat Date dengan waktu lokal
+  private createDateWithLocalTime = (
+    baseDate: Date,
+    localMinutes: number,
+  ): Date => {
+    // Convert local minutes back to UTC
+    const localHours = Math.floor(localMinutes / 60);
+    const localMins = localMinutes % 60;
+
+    // Local to UTC: UTC = Local - 7
+    let utcHours = localHours - 7;
+    if (utcHours < 0) utcHours += 24;
+
+    const date = new Date(baseDate);
+    date.setUTCHours(utcHours, localMins, 0, 0);
+    return date;
+  };
+
+  private checkOutOfRangeVacant(candidateStartMinutes: number, durationMinutes: number, scheduleEndMinutes: number) {
+    let effectiveArrivalTime;
+    const now = new Date()
+    if (candidateStartMinutes + durationMinutes <= scheduleEndMinutes) {
+      // MASIH MUAT - buat waktu dengan UTC yang benar
+      effectiveArrivalTime = this.createDateWithLocalTime(
+        now,
+        candidateStartMinutes,
+      );
+      return effectiveArrivalTime;
+    } else {
+      throw new BadRequestException(
+        `Tidak ada slot tersisa hari ini untuk booking ${durationMinutes} menit. ` +
+          `Jam operasional berakhir ${this.formatMinutes(scheduleEndMinutes)}, ` +
+          `slot terakhir harus mulai sebelum ${this.formatMinutes(scheduleEndMinutes - durationMinutes)}`,
+      );
+    }
+  }
+    // Helper functions untuk waktu lokal
+    private getLocalHours = (date: Date): number => {
+      // Convert UTC ke WIB (UTC+7)
+      return (date.getUTCHours() + 7) % 24;
+    };
+
+    private getLocalMinutes = (date: Date): number => {
+      return date.getUTCMinutes();
+    };
+
+    private toLocalMinutes = (date: Date): number => {
+      return this.getLocalHours(date) * 60 + this.getLocalMinutes(date);
+    };
+
+    private formatMinutes = (minutes: number): string => {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    };
+
+    private formatLocalTime = (date: Date): string => {
+      const hours = this.getLocalHours(date);
+      const minutes = this.getLocalMinutes(date);
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    };
+
+    private loopingAvoidBusyTime = (candidateStartMinutes: number, candidateEndMinutes: number, durationMinutes: number, applicableBusyTimes: Array<{ from : string, to: string}>) => {
+      for (const busyTime of applicableBusyTimes) {
+        const busyStart = this.parseTimeToHours(busyTime.from);
+        const busyEnd = this.parseTimeToHours(busyTime.to);
+
+        if (busyStart !== null && busyEnd !== null) {
+          const busyStartMinutes = busyStart * 60;
+          const busyEndMinutes = busyEnd * 60;
+
+
+
+          const overlaps =
+            (candidateStartMinutes >= busyStartMinutes &&
+              candidateStartMinutes < busyEndMinutes) ||
+            (candidateEndMinutes > busyStartMinutes &&
+              candidateEndMinutes <= busyEndMinutes) ||
+            (candidateStartMinutes <= busyStartMinutes &&
+              candidateEndMinutes >= busyEndMinutes);
+
+          if (overlaps) {
+            candidateStartMinutes = busyEndMinutes;
+            candidateEndMinutes = candidateStartMinutes + (durationMinutes);
+            
+            console.log(
+              `loopingAvoidBusyTime maju: ${candidateStartMinutes} ${candidateEndMinutes}`,
+            );
+          }
+        }
+      }
+      return { candidateStartMinutes, candidateEndMinutes };
+    }
+    
+    private parseTimeToHours(timeString: string): number | null {
+      if (!timeString) return null;
+  
+      const match = timeString.match(/^(\d{1,2}):(\d{2})$/);
+      if (!match) return null;
+  
+      const hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+  
+      return hours + minutes / 60;
+    }
+    
+
+  private async getScheduleForDockDay(
+    dockId: string,
+    date: Date,
+  ): Promise<{ startHour: number; endHour: number }> {
+    const dayEnum = this.mapDayIndexToEnum(date.getDay());
+
+    const vacant = await this.prismaService.vacant.findUnique({
+      where: {
+        dockId_day: {
+          dockId,
+          day: dayEnum,
+        },
+      },
+    });
+
+    if (vacant && vacant.availableFrom && vacant.availableUntil) {
+      const startHour = this.parseTimeToHours(vacant.availableFrom);
+      const endHour = this.parseTimeToHours(vacant.availableUntil);
+
+      if (startHour !== null && endHour !== null) {
+        return { startHour, endHour };
+      }
+    }
+
+    // Fallback to default 06:00-18:00
+    return { startHour: 6, endHour: 18 };
+  }
+    
+}

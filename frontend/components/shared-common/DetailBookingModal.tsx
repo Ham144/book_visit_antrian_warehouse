@@ -16,13 +16,8 @@ import {
   Timer,
   AlertTriangle,
   Info,
-  Settings,
-  Edit,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Booking } from "@/types/booking.type";
-import { useUserInfo } from "../UserContext";
-import { ROLE } from "@/types/shared.type";
+import { BookingStatus } from "@/types/shared.type";
 
 const DetailBookingModal = ({ id }: { id: string }) => {
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
@@ -30,14 +25,6 @@ const DetailBookingModal = ({ id }: { id: string }) => {
     queryFn: async () => await BookingApi.getDetailById(id),
     enabled: !!id,
   });
-
-  const { userInfo } = useUserInfo();
-
-  const router = useRouter();
-
-  const handleEdit = (booking: Booking) => {
-    router.push(`/vendor/booking/edit?bookingId=${booking.id}`);
-  };
 
   if (isLoadingBooking) {
     return (
@@ -91,14 +78,14 @@ const DetailBookingModal = ({ id }: { id: string }) => {
       className="modal modal-bottom sm:modal-middle"
     >
       {booking && (
-        <div className="modal-box max-w-5xl max-h-[90vh] overflow-hidden p-0">
+        <div className="modal-box max-w-5xl max-h-[90vh] overflow-hidden">
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4">
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-1 py-3">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   <FileText className="w-6 h-6 text-primary" />
-                  Detail Booki
+                  Detail Booking
                 </h3>
                 <div className="flex items-center gap-3 mt-1">
                   <div className="flex items-center gap-2">
@@ -128,7 +115,7 @@ const DetailBookingModal = ({ id }: { id: string }) => {
 
           {/* Content dengan scroll */}
           <div
-            className="overflow-y-auto p-6"
+            className="overflow-y-auto p-6 pb-40"
             style={{ maxHeight: "calc(90vh - 80px)" }}
           >
             {/* Timeline Section */}
@@ -549,7 +536,7 @@ const DetailBookingModal = ({ id }: { id: string }) => {
                           </div>
                         )}
 
-                        {booking?.canceledReason && (
+                        {booking?.canceledReason && booking.status == BookingStatus.CANCELED && (
                           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <div className="flex items-center gap-2 mb-2 text-red-800">
                               <AlertTriangle className="w-5 h-5" />
@@ -568,23 +555,6 @@ const DetailBookingModal = ({ id }: { id: string }) => {
 
                   {/* Action Buttons */}
                   <div className="card bg-white border border-gray-200 shadow-sm">
-                    <div className="card-body">
-                      <h5 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                        <Settings className="w-5 h-5 text-primary" />
-                        Aksi
-                      </h5>
-                      {userInfo.role === ROLE.ADMIN_VENDOR && (
-                        <div className="space-y-3">
-                          <button
-                            onClick={() => handleEdit(booking)}
-                            className="btn btn-outline btn-primary w-full"
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit Booking
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>

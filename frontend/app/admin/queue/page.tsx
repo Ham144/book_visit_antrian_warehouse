@@ -121,19 +121,19 @@ export default function LiveQueuePage() {
 
     if (!over) return;
 
-    const sourceBooking = active.data.current?.booking;
+    const sourceBooking: Booking = active.data.current?.booking;
     const targetData = over.data.current;
 
     if (!sourceBooking || !targetData) return;
-
     const sameDock = sourceBooking.dockId === targetData.dockId;
-
     //validasi
-    const dock = docks.find((d: IDock) => d.id === targetData.dockId);
-    if(!dock.isActive) {
+    const dock: IDock = docks.find((d: IDock) => d.id === targetData.dockId);
+    if( targetData?.dockId &&!dock?.isActive ) {
       return toast.error("Dock sedang tidak aktif");
     }
-
+    if(targetData?.dockId && !dock?.allowedTypes?.includes(sourceBooking.Vehicle.vehicleType)){
+      return toast.error(`Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle.vehicleType}` );
+    }
     /* =====================================================
      * 1. REORDER IN_PROGRESS (dock sama)
      * ===================================================== */
@@ -564,8 +564,7 @@ export default function LiveQueuePage() {
                           <div key={dockId} className="flex flex-col gap-y-2 border border-dashed p-1">
                             {/* Dock Header - Compact & Modern */}
                             <div
-                              className={`
-    relative px-3 py-2 cursor-pointer rounded-xl transition-all duration-300
+                              className={`relative px-3 py-2 cursor-pointer rounded-xl transition-all duration-300
     ${
       dock?.isActive
         ? "bg-gradient-to-r from-primary/90 to-primary/70 shadow-lg shadow-primary/20"
@@ -851,7 +850,6 @@ export default function LiveQueuePage() {
                     >
                       <div className="w-16 h-1 bg-gray-400 rounded"></div>
                     </div>
-
                     {/* Content - z-index lebih rendah dari handle tapi cukup untuk drop detection */}
                     <div
                       style={{ height: `${height}px` }}

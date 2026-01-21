@@ -4,7 +4,7 @@ import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { ResponseBookingDto } from './dto/response-booking.dto';
 import { TokenPayload } from 'src/user/dto/token-payload.dto';
-import { Days } from 'src/common/shared-enum';
+import { BookingStatus, Days } from 'src/common/shared-enum';
 
 @Injectable()
 export class BookingforVendorService {
@@ -94,7 +94,7 @@ export class BookingforVendorService {
       where: {
         dockId: dockId,
         // id: { not: createBookingDto.id },//untuk update
-        status: { not: 'CANCELED' },
+        status: { notIn: [BookingStatus.CANCELED, BookingStatus.FINISHED, BookingStatus.UNLOADING] },
         AND: [
           {
             arrivalTime: {
@@ -103,7 +103,7 @@ export class BookingforVendorService {
           },
           {
             arrivalTime: {
-              gt: new Date(arrival.getTime() - durationMinutes * 60_000),
+              gt: new Date(arrival.getTime()),
             },
           },
         ],
@@ -115,24 +115,19 @@ export class BookingforVendorService {
         `Waktu terkait overlap booking ${overlapDockedHour.code}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
       );
     }
-
-    const organization = await this.prismaService.organization.findFirst({
-      where: {
-        name: userInfo.organizationName,
-      },
-    });
-    const abbr = organization.name
-      .toUpperCase()
-      .split(' ')
-      .map((word) => word[0])
-      .join('');
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const randStr = Array(6)
-      .fill(0)
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
-    const code = `${abbr}-${randStr}`;
-
+    const time = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(arrivalTime));
+    
+    const randomAlphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
+    const identifyer = randomAlphabet[Math.floor(Math.random() * randomAlphabet.length)];
+    console.log(identifyer)
+    const code = `${driverUsername.slice(0, 7)}-${vehicle.brand.slice(0, 7)}-${identifyer[0]}`;
+    
+    
     await this.prismaService.booking.create({
       data: {
         status: 'IN_PROGRESS',
@@ -184,39 +179,11 @@ export class BookingforVendorService {
     });
   }
 
-  async unLoad(id: string, arrivalTime: Date) {
-    await this.prismaService.booking.update({
-      where: {
-        id,
-      },
-      data: {
-        arrivalTime: arrivalTime,
-        status: 'UNLOADING',
-      },
-    });
-    return HttpStatus.ACCEPTED;
-  }
-
-  async finish(id: string, actualFinishTime: Date) {
-    await this.prismaService.booking.update({
-      where: {
-        id,
-      },
-      data: {
-        actualFinishTime: actualFinishTime,
-        status: 'FINISHED',
-      },
-    });
-    return HttpStatus.ACCEPTED;
-  }
-
-  async cancelBook(id: string, body: { canceledReason: string }) {
+  async cancelBook(id: string, userinfo: TokenPayload, body: { canceledReason: string }) {
     const { canceledReason } = body;
-
     const isMine = await this.prismaService.booking.findFirst({
       where: {
         id,
-        // createByUsername: userInfo.username,
       },
     });
 
@@ -232,7 +199,7 @@ export class BookingforVendorService {
       },
       data: {
         status: 'CANCELED',
-        canceledReason,
+        canceledReason: canceledReason + "by " + userinfo.username,
       },
     });
     return HttpStatus.ACCEPTED;

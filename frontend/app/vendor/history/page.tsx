@@ -111,7 +111,7 @@ export default function HistoryPage() {
           >
             <ArrowLeft size={16} className="mr-1" /> Previous page
           </button>
-          <span className="text-lg font-bold ">{filter.page}</span>
+          <span className="text-lg font-bold  border px-5 py-2 bg-primary text-white rounded-md">{filter.page}</span>
           <button
             onClick={() => {
               setFilter((prev) => ({

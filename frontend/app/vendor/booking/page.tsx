@@ -139,6 +139,7 @@ export default function BookingPage() {
     onSuccess: () => {
       setIsBookCompleted(true);
       toast.success("Booking berhasil dibuat");
+      window.location.href = "/vendor/booking";
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Gagal membuat booking");

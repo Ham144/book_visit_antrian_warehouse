@@ -1,6 +1,7 @@
 import { Booking } from "@/types/booking.type";
 import { BookingStatus, ROLE } from "@/types/shared.type";
 import { useUserInfo } from "../UserContext";
+import { X } from "lucide-react";
 
 interface BookingListCardProps {
   booking: Booking;
@@ -61,7 +62,7 @@ const BookingListCard = ({
       case BookingStatus.DELAYED:
         return {
           textClass: "bg-red-100 text-red-800",
-          label: "Menunuggu",
+          label: "Terlambat",
           icon: "⏳",
         };
     }
@@ -185,25 +186,19 @@ const BookingListCard = ({
         </div>
 
         {/* Waktu Selesai */}
-        {BookingStatus[booking.status] === BookingStatus.IN_PROGRESS && (
-          <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-blue-600 text-sm">🏁</span>
-                <span className="text-xs sm:text-sm text-blue-700">
-                  Estimasi Selesai
-                </span>
-              </div>
-              <span className="font-semibold text-blue-800 text-sm sm:text-base">
-                {formatTime(booking.estimatedFinishTime)}
-              </span>
-            </div>
-            {booking.actualFinishTime && (
+        {booking.actualFinishTime && booking.status== BookingStatus.FINISHED && (
               <div className="mt-1 flex items-center gap-2 text-xs text-green-600">
                 <span>✓ Selesai: {formatTime(booking.actualFinishTime)}</span>
               </div>
-            )}
-          </div>
+        )}
+
+        {/* status Batal */}
+        {booking.status == BookingStatus.CANCELED && booking.canceledReason && (
+              <div className="mt-1 flex items-center gap-2 text-xs text-green-600">
+                <span><X color="red" className="w-4 h-4" />
+                </span>
+                Alasan Pembatalan: {booking.canceledReason}
+              </div>
         )}
 
         {/* Tombol Action - hanya muncul untuk DRIVER_VENDOR */}

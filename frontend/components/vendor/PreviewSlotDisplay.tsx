@@ -299,15 +299,16 @@ const PreviewSlotDisplay = ({
         date.getFullYear() === now.getFullYear();
 
       let minimumAllowedHour = scheduleStartHour;
-
+      
       if (isToday) {
         minimumAllowedHour = Math.max(
           scheduleStartHour,
-          now.getHours() + now.getMinutes() / 60 + 0.5
-        );
+          now.getHours() + now.getMinutes() / 60 + 0.01
+        );//0.01 = 1 menit majuin dikit biar ga kebingungan adminnya karena booking langsung jatuh ke delayed
       }
 
       const candidateStarts: number[] = [minimumAllowedHour];
+
 
       eventBoundaries
         .sort((a, b) => a.start - b.start)
@@ -1275,6 +1276,11 @@ const PreviewSlotDisplay = ({
           </li>
           <li>
             Terdapat interval Minimal Queue yang menjaga jarak antar kunjungan.
+          </li>
+          <li>
+          booking dengan status CANCELED, FINISHED tidak ditampilkan karena memang boleh di ambil alih 
+          </li><li>
+          Di drag and drop atau justify, status yang sudah telat menurut toleransi juga akan di ambil alih, tampilan booking seperti tertimpa kemungkinan karena alasan ini
           </li>
         </ol>
 

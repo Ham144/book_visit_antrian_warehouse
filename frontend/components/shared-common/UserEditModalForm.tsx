@@ -97,6 +97,9 @@ export default function UserEditModalForm({
               <h3 className="font-bold text-lg text-gray-800">
                 {!isCreating ? "Edit User" : "Tambah User Baru"}
               </h3>
+              {isCreating && <div className="flex text-xs p-1 border ">
+                User Berikut akan login dengan APP method
+              </div>}
             </div>
             <button
               onClick={handleClose}
@@ -338,48 +341,48 @@ export default function UserEditModalForm({
                     ))}
                   </select>
                 </div>
-              ) : (
-                <div className="form-control col-span-2">
-                  <label className="label py-2 ">
-                    <span className="label-text font-medium text-gray-700 flex items-center">
-                      <Handshake className="w-4 h-4 mr-2 text-leaf-green-500" />
-                      Vendor Name
-                    </span>
-                  </label>
+              ) : 
+              !am_i_vendor && <div className="form-control col-span-2">
+              <label className="label py-2 ">
+                <span className="label-text font-medium text-gray-700 flex items-center">
+                  <Handshake className="w-4 h-4 mr-2 text-leaf-green-500" />
+                  Vendor Name
+                </span>
+              </label>
 
-                  <select
-                    disabled={am_i_vendor}
-                    className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                    value={formData.vendorName || ""}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        vendorName: e.target.value || undefined,
-                        description: null,
-                      });
-                    }}
-                  >
-                    <option
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFormData((prev) => ({
-                          ...prev,
-                          vendorName: null,
-                          description: null,
-                        }));
-                      }}
-                      value="empty"
-                    >
-                      Pilih vendor
-                    </option>
-                    {vendors?.map((vendor: IVendor) => (
-                      <option key={vendor.name} value={vendor.name}>
-                        {vendor.name}{" "}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <select
+                disabled={am_i_vendor}
+                className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                value={formData.vendorName || ""}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    vendorName: e.target.value || undefined,
+                    description: null,
+                  });
+                }}
+              >
+                <option
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFormData((prev) => ({
+                      ...prev,
+                      vendorName: null,
+                      description: null,
+                    }));
+                  }}
+                  value="empty"
+                >
+                  Pilih vendor
+                </option>
+                {vendors?.map((vendor: IVendor) => (
+                  <option key={vendor.name} value={vendor.name}>
+                    {vendor.name}{" "}
+                  </option>
+                ))}
+              </select>
+            </div>
+              }
 
               {/* ROLE */}
               <div className="form-control col-span-2">
@@ -551,11 +554,11 @@ export default function UserEditModalForm({
                     <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
-
+                
                 <input
                   type="text"
                   placeholder="short description"
-                  className="input input-bordered w-full px-2 "
+                  className="input input-bordered w-full px-2"
                   value={formData.description || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })

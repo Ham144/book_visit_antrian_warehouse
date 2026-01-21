@@ -145,8 +145,8 @@ const DraggableBookingCard = ({
             </div>
             {booking.status === BookingStatus.IN_PROGRESS && (
               <div className="flex items-center gap-1">
-                <span className="font-medium text-gray-600 whitespace-nowrap">
-                  {timeRemainingAutoUnloading(booking).includes("+") ? "Telah Berlalu" : "Menuju"}{timeRemainingAutoUnloading(booking)}
+                <span className={`font-medium text-gray-600 whitespace-nowrap ${timeRemainingAutoUnloading(booking).includes("+") && ' animate-bounce text-red-500'}`}>
+                  {timeRemainingAutoUnloading(booking).includes("+") ? "Telah Berlalu " : "Menuju "}{timeRemainingAutoUnloading(booking)}
                 </span>
               </div>
             )}

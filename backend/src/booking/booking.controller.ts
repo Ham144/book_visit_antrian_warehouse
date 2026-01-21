@@ -68,8 +68,8 @@ export class BookingController {
 
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Delete('/cancel/:id')
-  cancelBook(@Param('id') id: string, @Body() body) {
-    return this.bookingForVendorService.cancelBook(id, body);
+  cancelBook(@Param('id') id: string, @Auth() userInfo, @Body() body) {
+    return this.bookingForVendorService.cancelBook(id,  userInfo, body);
   }
 
   @Authorization('DRIVER_VENDOR', 'ADMIN_ORGANIZATION')
