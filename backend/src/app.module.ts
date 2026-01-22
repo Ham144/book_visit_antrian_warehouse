@@ -13,6 +13,7 @@ import { BookingModule } from './booking/booking.module';
 import { MyOrganizationModule } from './my-organization/my-organization.module';
 import { VendorModule } from './vendor/vendor.module';
 import { RedisIoAdapterModule } from './RedisIoAdapter/redis-io-adapter.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { RedisIoAdapterModule } from './RedisIoAdapter/redis-io-adapter.module';
     BusyTimeModule,
     VendorModule,
     RedisIoAdapterModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

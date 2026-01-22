@@ -1,9 +1,11 @@
 import { Booking } from "@/types/booking.type";
 import { IDock } from "@/types/dock.type";
 
+//Backend Polling & socket di port yg sama
 export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
   ? process.env.NEXT_PUBLIC_BASE_URL
   : "http://192.168.169.12:3001";
+
 // Calculate time remaining dari arrivalTime menuju now
 export const timeRemainingAutoUnloading = (booking: Booking): string => {
   try {

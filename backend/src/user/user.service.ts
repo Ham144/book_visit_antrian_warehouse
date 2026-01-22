@@ -183,6 +183,7 @@ export class UserService {
       excludeExtraneousValues: true,
     });
   }
+  
   async deleteAppUser(username: string) {
     await this.prismaService.user.delete({
       where: {

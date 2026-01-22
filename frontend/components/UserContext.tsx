@@ -19,7 +19,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     async function fetchUser() {
       try {
         const res = await AuthApi.getUserInfo();
-        setUserInfo(res);
+        setUserInfo(res as UserInfo);
       } catch (err: any) {
         // Silent fail jika 403/401 (user belum login)
         if (err?.response?.status === 403 || err?.response?.status === 401) {

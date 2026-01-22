@@ -4,6 +4,7 @@ import { UserProvider } from "@/components/UserContext";
 import ToasterProvider from "@/components/ToasterProvider";
 import { Metadata } from "next";
 import Navigation from "@/components/shared-common/navigation";
+import ChatBubble from "@/components/shared-common/ChatBubble";
 
 export const metadata: Metadata = {
   title: "CSI Queue Realtime",
@@ -26,6 +27,7 @@ export default function RootLayout({
           <UserProvider>
             <Navigation />
             <ToasterProvider>{children}</ToasterProvider>
+            <ChatBubble />
           </UserProvider>
         </QueryClientProviderWrapper>
       </body>

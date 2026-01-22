@@ -197,15 +197,25 @@ model Vendor {
   organization Organization @relation(fields: [organizationName], references: [name])
 }
 
-model Counter {
-  id               String      @id @default(uuid())
-  organizationName String
-  warehouseId      String
-  dockId           String
-  date             DateTime
-  sequence_value   Int
+// CHAT FEATURE
+model Room {
+  id            String   @id @default(cuid()) //harusnya bukan cuid tapi custom
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime?
 
-  @@unique([organizationName, warehouseId, dockId, date])
+  chats         Chat[]
 }
 
+model Chat {
+  id        String   @id @default(cuid())
+  roomId    String
+  senderId  String   // refer ke User (tidak perlu relasi Prisma kalau sudah kompleks)
+  message   String
+  status    String   //read, unread
 
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+}
