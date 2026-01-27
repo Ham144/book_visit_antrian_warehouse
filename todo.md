@@ -48,17 +48,32 @@ start 12/11/2025
 [x] add: bisa drag dari DELAYED menjadi UNLOADING
 [x] add: bisa drag dari DELAYED menjadi CANCELED
 [] add: bisa tukar urutan dock yang sama :
-() smart check after relativePositionTarget
-() smart check before relativePositionTarget
-[x] add: bisa drag dari antrian ke CANCELED (inventory section)
-[x] add: bisa drag dari canceled ke antrian :
-() smart check after relativePositionTarget
-() smart check before relativePositionTarget
+[x] add: bisa drag dari inprogress ke CANCELED (inventory section)
+[x] add: bisa drag dari canceled ke inprogress
 [x] add: bisa drag dari canceled ke unloading
+[x] add: bisa drag SWAP
+[x] add: bisa drag BEFORE, AFTER
+[] fix: side-nav tidak bisa ngembang
+
+<!-- REALTIME TEST CASE CHECK: -->
+
+[x] buat booking baru langsung muncul
+[x] perubahan status completed
+[x] perubahan status canceled
+[x] perubahan status unloading
+[x] perubahan status delayed
+[x] keterlambatan sesuai waktu delayeTolerance
+[x] nomor plat wajib
+[x] fix: code tidak cukup hanya {driver}-{vendor}, nanti kalau banyak akan duplikat
+[x] driver menu realtime monitoring
+[x] perbaikin tampilan supir yang lebih jelas
+[] bisa ubah driver setelah booking
+[] mod: race condition booking
 
 [x] add: warehouse setting untuk ruling berbeda tiap warehouse
 [] add: My Warehouse belum tau buat apa
 [] add: dashboard driver & vendor admin dengan endpoint sudah ada stats/...
+[] add: ganti driver
 
 //update antrian booking
 [x] add: perlu jenis VehicleType ada yang bisa masuk dan ada yang tidak bisa

@@ -11,14 +11,14 @@ export interface IChat {
   export interface IRoom {
     roomId: string,
     recipientId: string,
-    lastMessageAt: null
+    lastMessageAt: null,
+    recipient: IUserChat,
+    status: string,
     chats: IChat[]
   }
 
   export interface IUserChat {
-    id: string;
     username: string;
-    name: string;
-    avatar?: string;
+    displayName?: string;
     isOnline?: boolean;
   }

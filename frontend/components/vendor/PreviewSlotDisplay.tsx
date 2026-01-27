@@ -1301,6 +1301,7 @@ const PreviewSlotDisplay = ({
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h3 className="text-base font-medium mb-2">Plat Nomor/Short Note</h3>
           <input
+            required
             type="text"
             value={notes}
             onChange={(e) => {

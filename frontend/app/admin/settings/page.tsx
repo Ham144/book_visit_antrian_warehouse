@@ -2,7 +2,11 @@
 import { WarehouseApi } from "@/api/warehouse.api";
 import { WarehouseSetting } from "@/types/warehouse";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { LucideCalendarClock, MousePointerClick } from "lucide-react";
+import {
+  CheckCircle,
+  LucideCalendarClock,
+  MousePointerClick,
+} from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -40,7 +44,7 @@ const AdminSettings = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || "Gagal memperbarui setting"
+        error?.response?.data?.message || "Gagal memperbarui setting",
       );
     },
   });
@@ -84,18 +88,9 @@ const AdminSettings = () => {
         ...formData,
       };
 
-      await updateWarehouseSetting(dataToSend);
-
-      // Update status sukses
-      setSaveStatus({
-        type: "success",
-        message: "Pengaturan berhasil disimpan!",
+      await updateWarehouseSetting(dataToSend).then(() => {
+        window.location.reload();
       });
-
-      // Auto-hide success message setelah 3 detik
-      setTimeout(() => {
-        setSaveStatus({ type: null, message: "" });
-      }, 3000);
     } catch (error) {
       console.error("Error updating settings:", error);
       setSaveStatus({
@@ -424,18 +419,7 @@ const AdminSettings = () => {
                     </>
                   ) : (
                     <>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <CheckCircle />
                       <span>Simpan Perubahan</span>
                     </>
                   )}

@@ -18,12 +18,9 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import {
-  calculateTimeProgress,
-  DAYS,
-  FormatTimeIndonesian,
-  timeRemainingAutoUnloading,
-} from "@/lib/constant";
+import { DAYS, FormatTimeIndonesian } from "@/lib/constant";
+import { useProgressBarUnloading } from "@/hooks/useProgressBarUnloading";
+import { useGoToUnloadingBar } from "@/hooks/useGoToUnloadingBar";
 
 interface DraggableBookingCardProps {
   booking: Booking;
@@ -56,6 +53,7 @@ const DraggableBookingCard = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({
     id: booking.id!,
     disabled: !draggable,
@@ -70,8 +68,16 @@ const DraggableBookingCard = ({
     },
   });
 
+  //hooks
+  const { progress } =
+    booking.status == BookingStatus.UNLOADING &&
+    useProgressBarUnloading(booking, 1000);
+  const { remainingTime: remainingTimeGotoUnloading } =
+    booking.status == BookingStatus.IN_PROGRESS &&
+    useGoToUnloadingBar(booking, 1000);
+
   // Tambahkan juga sebagai drop target
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef } = useDroppable({
     id: `booking-${booking.id}`,
     data: {
       type: "booking-card",
@@ -124,7 +130,7 @@ const DraggableBookingCard = ({
          rounded-md border  p-2 min-w-[180px]
         transition-all duration-150 w-full relative text-xs
         ${isDragging ? "opacity-30 shadow-lg scale-95" : ""}
-        ${isOver ? "ring-2 ring-blue-300 ring-inset bg-blue-50" : ""}
+        ${isOver ? "border-4 bg-blue-200 border-dashed border-blue-500" : ""}
         hover:shadow-sm hover:border-gray-300
       `}
     >
@@ -140,13 +146,24 @@ const DraggableBookingCard = ({
             <div className="flex items-center gap-1 truncate">
               {StatusIcon()}
               <span className="font-medium text-gray-700 truncate">
-                {booking.code || booking.id.slice(0, 6)}
+                {booking.code && booking.code.slice(0, 15)}
               </span>
             </div>
             {booking.status === BookingStatus.IN_PROGRESS && (
               <div className="flex items-center gap-1">
-                <span className={`font-medium text-gray-600 whitespace-nowrap ${timeRemainingAutoUnloading(booking).includes("+") && ' animate-bounce text-red-500'}`}>
-                  {timeRemainingAutoUnloading(booking).includes("+") ? "Telah Berlalu " : "Menuju "}{timeRemainingAutoUnloading(booking)}
+                <span
+                  className={`font-medium whitespace-nowrap ${
+                    remainingTimeGotoUnloading &&
+                    remainingTimeGotoUnloading.includes("+")
+                      ? "animate-bounce text-red-500"
+                      : "text-gray-600"
+                  }`}
+                >
+                  {remainingTimeGotoUnloading &&
+                  remainingTimeGotoUnloading.includes("+")
+                    ? "Telah Berlalu "
+                    : "Menuju "}
+                  {remainingTimeGotoUnloading}
                 </span>
               </div>
             )}
@@ -154,15 +171,9 @@ const DraggableBookingCard = ({
 
           {/* Driver & Vehicle in one line */}
           <div className="flex items-center gap-2 text-gray-500 mb-1">
-            <span className="truncate">
-              <User className="w-4 h-4" />{" "}
-              {booking.driverUsername?.slice(0, 10) || "N/A"}
-            </span>
-            <span className="mx-1">•</span>
-            <span className="truncate">
-              <Truck className="w-4 h-4" />{" "}
-              {booking.Vehicle?.vehicleType || "-"}
-            </span>
+            <User className="w-4 h-4" />
+            {booking.driverUsername?.slice(0, 10) || "N/A"}
+            <Truck className="w-4 h-4" /> {booking.Vehicle?.vehicleType || "-"}
           </div>
 
           {/* Time Info - Minimal */}
@@ -185,6 +196,7 @@ const DraggableBookingCard = ({
                   </span>
                 </div>
               )}
+
               {/* Arrival Time */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
@@ -236,22 +248,23 @@ const DraggableBookingCard = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onActualArrived()
+                      onActualArrived();
                     }}
                     title="Batalkan booking ini"
                     className="p-1.5 rounded-md hover:bg-teal-50 hover:text-teal-600 transition-colors group"
                     type="button"
                   >
-                    {
-                      booking.actualArrivalTime ? (
-                        <TimerReset className="w-3.5 h-3.5" />
-                      ) : <CheckCircle className="w-3.5 h-3.5" />
-                    }
+                    {booking.actualArrivalTime ? (
+                      <TimerReset className="w-3.5 h-3.5" />
+                    ) : (
+                      <CheckCircle className="w-3.5 h-3.5" />
+                    )}
                     <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                      {booking.actualArrivalTime ? "Kembalikan status Belum Datang" : "Konfirmasi Telah Tiba"}
+                      {booking.actualArrivalTime
+                        ? "Kembalikan status Belum Datang"
+                        : "Konfirmasi Telah Tiba"}
                     </span>
                   </button>
-
                   {/* Duration dengan info */}
                   <div className="relative group">
                     <div className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium flex items-center gap-1">
@@ -291,12 +304,14 @@ const DraggableBookingCard = ({
 
       {/* Progress Bar - Super Slim */}
       {booking.status === BookingStatus.UNLOADING && (
-        <div className="mt-1.5">
-          <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+        <div className="mt-1.5 ">
+          <div
+            className={`flex justify-between text-[10px] text-gray-400 mb-0.5 ${progress > 99 && "text-red-400"}`}
+          >
             <span>
               Start Time {FormatTimeIndonesian(booking.actualStartTime)}
             </span>
-            <span>{booking.Vehicle.durasiBongkar}m</span>
+            <span>durasi {booking.Vehicle.durasiBongkar}m</span>
             <span>
               Est. Finish{" "}
               {booking.actualStartTime
@@ -304,8 +319,8 @@ const DraggableBookingCard = ({
                     new Date(
                       // Bungkus string ini ke dalam new Date() dulu
                       new Date(booking.actualStartTime).getTime() +
-                        booking.Vehicle.durasiBongkar * 60000
-                    )
+                        booking.Vehicle.durasiBongkar * 60000,
+                    ),
                   )
                 : "-"}
             </span>
@@ -314,7 +329,7 @@ const DraggableBookingCard = ({
             <div
               className="h-full bg-blue-400 rounded-full"
               style={{
-                width: `${calculateTimeProgress(booking)}%`,
+                width: `${progress}%`,
               }}
             />
           </div>

@@ -1,12 +1,15 @@
 "use client";
 import { AuthApi } from "@/api/auth";
+import { BASE_URL } from "@/lib/constant";
 import { UserApp, UserInfo } from "@/types/auth";
 import { createContext, useContext, useState, useEffect } from "react";
+import { io, Socket } from "socket.io-client";
 
 interface UserContextType {
   userInfo: UserInfo | null;
   setUserInfo: (userInfo: UserInfo | null) => void;
   loadingUser: boolean;
+  socket: Socket | null
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -14,19 +17,15 @@ const UserContext = createContext<UserContextType | null>(null);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loadingUser, setloadingUser] = useState(true);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     async function fetchUser() {
       try {
         const res = await AuthApi.getUserInfo();
         setUserInfo(res as UserInfo);
-      } catch (err: any) {
-        // Silent fail jika 403/401 (user belum login)
-        if (err?.response?.status === 403 || err?.response?.status === 401) {
-          setUserInfo(null);
-        } else {
-          setUserInfo(null);
-        }
+      } catch {
+        setUserInfo(null);
       } finally {
         setloadingUser(false);
       }
@@ -34,17 +33,47 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, []);
 
+  // SOCKET LIFECYCLE 
+  useEffect(() => {
+    if (!userInfo) {
+      setSocket(null);
+      return;
+    }
+
+    const socketInstance = io(BASE_URL, {
+      auth: {
+        username: userInfo.username,
+      },
+    });
+
+    setSocket(socketInstance);
+
+    return () => {
+      socketInstance.disconnect();
+      setSocket(null);
+    };
+  }, [userInfo]);
+
   return (
-    <UserContext.Provider value={{ userInfo, setUserInfo, loadingUser }}>
+    <UserContext.Provider
+      value={{
+        userInfo,
+        setUserInfo,
+        loadingUser,
+        socket,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
 }
 
+
 export function useUserInfo(): {
   userInfo: UserInfo | UserApp | null;
   loadingUser: boolean;
   setUserInfo: (userInfo: UserInfo | UserApp | null) => void;
+  socket: Socket | null
 } {
   const context = useContext(UserContext);
   if (!context) {
@@ -54,5 +83,6 @@ export function useUserInfo(): {
     userInfo: UserInfo | UserApp | null;
     loadingUser: boolean;
     setUserInfo: (userInfo: UserInfo | UserApp | null) => void;
+    socket: Socket | null
   };
 }

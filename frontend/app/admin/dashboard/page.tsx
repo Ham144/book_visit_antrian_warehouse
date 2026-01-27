@@ -56,7 +56,7 @@ interface DashboardState {
     arrivalTime: string;
     estimatedFinishTime: string;
     status: "WAITING" | "ASSIGNED" | "ARRIVED";
-    dock: IDock,
+    dock: IDock;
     isOverdue: boolean;
     waitingMinutes: number;
   }>;
@@ -120,15 +120,16 @@ interface DashboardState {
 }
 
 const DashboardAdmin = () => {
-
-  const {userInfo} = useUserInfo()
+  const { userInfo } = useUserInfo();
 
   //main
-  const {data: dashboardState, isLoading} = useQuery({
+  const { data: dashboardState, isLoading } = useQuery({
     queryKey: ["dashboard"],
-    queryFn: async() =>await BookingApi.adminWarehouseDashboard(),
-    enabled: userInfo?.role == ROLE.USER_ORGANIZATION || userInfo?.role == ROLE.ADMIN_ORGANIZATION,
-  })
+    queryFn: async () => await BookingApi.adminWarehouseDashboard(),
+    enabled:
+      userInfo?.role == ROLE.USER_ORGANIZATION ||
+      userInfo?.role == ROLE.ADMIN_ORGANIZATION,
+  });
 
   const formatRelativeTime = (dateString: string) => {
     try {
@@ -173,7 +174,7 @@ const DashboardAdmin = () => {
           ? "critical"
           : ("warning" as const),
     },
-   
+
     {
       metric: "Persentase Utilisasi Warehouse anda",
       value: `${dashboardState?.summaryMetrics.dockUtilizationPercent}%`,
@@ -184,7 +185,7 @@ const DashboardAdmin = () => {
           : ("normal" as const),
       tooltip: `Dock Utilization dihitung berdasarkan beban operasional tertinggi pada setiap dock, lalu dirata-ratakan ke seluruh dock.
 
-Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finished/canceled = 0%)`
+Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finished/canceled = 0%)`,
     },
     {
       metric: "Waktu Rata-Rata UNLOADING",
@@ -197,23 +198,39 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
     },
   ];
 
-  if(isLoading){
-    return <div className="flex container justify-center items-center w-full min-h-screen">
-      <span className="loading loading-ring loading-lg"></span>
-    </div>
+  if (isLoading) {
+    return (
+      <div className="flex container justify-center items-center w-full min-h-screen">
+        <span className="loading loading-ring loading-lg"></span>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 overflow-y-auto max-h-96">
       <div role="alert" className="alert alert-error w-full bg-red-200 ">
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <span>Page ini sedang dalam pengembangan, data tidak benar.</span>
-        </div>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="stroke-current shrink-0 h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <span>
+          Page ini sedang dalam pengembangan, Beritahu IT jika ada kesalahan.
+        </span>
+      </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Today Admin Dashboard 
+            Today Admin Dashboard
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Real-time dashboard for warehouse operations management
@@ -262,7 +279,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
         {/* Dock Status Overview */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-5 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Dock Status Overview
               </h2>
@@ -347,16 +364,20 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
             </div>
             <div className="p-5">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {dashboardState?.kpiData?.queueLengthTimeline && <SparklineChart
-                  data={dashboardState?.kpiData?.queueLengthTimeline}
-                  title="Queue Length Trend"
-                  color="blue"
-                />}
-                {dashboardState?.kpiData.avgWaitingTime && <SparklineChart
-                  data={dashboardState?.kpiData.avgWaitingTime}
-                  title="Avg Waiting Time"
-                  color="orange"
-                />}
+                {dashboardState?.kpiData?.queueLengthTimeline && (
+                  <SparklineChart
+                    data={dashboardState?.kpiData?.queueLengthTimeline}
+                    title="Queue Length Trend"
+                    color="blue"
+                  />
+                )}
+                {dashboardState?.kpiData.avgWaitingTime && (
+                  <SparklineChart
+                    data={dashboardState?.kpiData.avgWaitingTime}
+                    title="Avg Waiting Time"
+                    color="orange"
+                  />
+                )}
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                     Dock Throughput
@@ -369,18 +390,18 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                           className="flex items-center justify-between"
                         >
                           <span className="text-sm text-gray-600 dark:text-gray-300">
-                            {dock.dock}
+                            {dock.name}
                           </span>
                           <div className="flex items-center">
                             <span className="font-medium text-gray-900 dark:text-white mr-2">
-                              {dock.completed}
+                              tes
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               bookings
                             </span>
                           </div>
                         </div>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
@@ -406,8 +427,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                 </span>
               </div>
               <button
-                onClick={() => {
-                }}
+                onClick={() => {}}
                 className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 Mark all as read

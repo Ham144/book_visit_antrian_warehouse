@@ -22,7 +22,6 @@ import { useUserInfo } from '../UserContext';
 import axiosInstance from '@/lib/axios';
 import { IRoom, IChat, IUserChat } from '@/types/chat.type';
 import { BASE_URL } from '@/lib/constant';
-import { toast } from 'sonner';
 
 // Inisialisasi socket
 const socket = io(BASE_URL, {
@@ -154,7 +153,10 @@ function ChatBubble() {
 
   // Hitung total unread messages
   useEffect(() => {
-    const totalUnread = rooms.reduce((sum, room) => sum + (room.unreadCount || 0), 0);
+    const totalUnread = rooms.reduce(
+      (sum, room) => sum + (room.status !== 'unread' ? 0 : 1),
+      0
+    );
     setUnreadCount(totalUnread);
   }, [rooms]);
 
@@ -246,14 +248,14 @@ function ChatBubble() {
               </button>
               <div className="relative">
                 icon
-                {selectedRoom.isOnline && (
+                {selectedRoom.recipient.isOnline && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                 )}
               </div>
               <div>
-                <h3 className="text-white font-semibold">{selectedRoom.name}</h3>
+                <h3 className="text-white font-semibold">{selectedRoom.recipient.username}</h3>
                 <p className="text-teal-100 text-sm">
-                  {selectedRoom.isOnline ? 'Online' : 'Offline'}
+                  {selectedRoom.recipient.isOnline ? 'Online' : 'Offline'}
                 </p>
               </div>
             </>
@@ -327,44 +329,23 @@ function ChatBubble() {
                 </div>
                  : rooms.map(room => (
                   <button
-                    key={room.id}
+                    key={room.roomId}
                     onClick={() => handleRoomSelect(room)}
                     className="flex items-center space-x-3 w-full p-3 hover:bg-gray-50 rounded-xl transition-colors group"
                   >
-                    <div className="relative">
-                      {room.avatar ? (
-                        <img
-                          src={room.avatar}
-                          alt={room.name}
-                          className="w-12 h-12 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
-                          <MessageCircle className="w-6 h-6 text-teal-600" />
-                        </div>
-                      )}
-                      {room.isOnline && (
-                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
-                      )}
-                    </div>
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex justify-between items-start">
                         <h5 className="font-semibold text-gray-900 truncate">{room.recipientId}</h5>
-                        {room.lastMessageTime && (
+                        {room.chats[0].message && (
                           <span className="text-xs text-gray-500 whitespace-nowrap">
-                            {formatMessageTime(room.lastMessageTime)}
+                            {formatMessageTime(room.lastMessageAt)}
                           </span>
                         )}
                       </div>
                       <div className="flex justify-between items-center">
                         <p className="text-sm text-gray-500 truncate">
-                          {room.lastMessage || 'Belum ada pesan'}
+                          {room.chats[0].message || 'Belum ada pesan'}
                         </p>
-                        {room.unreadCount > 0 && (
-                          <span className="bg-teal-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1.5">
-                            {room.unreadCount > 9 ? '9+' : room.unreadCount}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </button>
@@ -389,7 +370,7 @@ function ChatBubble() {
                     </div>
                     <div className="text-center">
                       <p className="text-lg font-semibold text-gray-700">Belum ada pesan</p>
-                      <p className="text-sm">Mulai percakapan dengan {selectedRoom.name}</p>
+                      <p className="text-sm">Mulai percakapan dengan {selectedRoom.recipientId}</p>
                     </div>
                   </div>
                 ) : (
@@ -397,7 +378,7 @@ function ChatBubble() {
                     <div className="text-center">
                       <div className="inline-block px-4 py-2 bg-gradient-to-r from-teal-50 to-teal-50 rounded-full">
                         <span className="text-sm text-gray-600 font-medium">
-                          Percakapan dengan {selectedRoom.name}
+                          Percakapan dengan {selectedRoom.recipientId}
                         </span>
                       </div>
                     </div>
@@ -417,7 +398,7 @@ function ChatBubble() {
                             >
                               {!isUserMessage && (
                                 <p className="text-xs font-semibold text-teal-600 mb-1">
-                                  {selectedRoom.name}
+                                  {selectedRoom.recipientId}
                                 </p>
                               )}
                               <p className="text-sm leading-relaxed">{message.message}</p>

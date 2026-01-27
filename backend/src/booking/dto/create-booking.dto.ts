@@ -33,7 +33,7 @@ export class CreateBookingDto {
   @IsDate()
   @IsOptional()
   actualFinishTime?: Date;
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   notes?: string;
   @IsOptional()

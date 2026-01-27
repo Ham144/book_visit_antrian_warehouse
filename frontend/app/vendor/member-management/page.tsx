@@ -27,7 +27,7 @@ interface MemberManagementFilter {
 const MemberManagementPage = () => {
   const { userInfo } = useUserInfo();
 
-  if (userInfo.homeWarehouse) redirect("/admin/member-management");
+  if (userInfo?.homeWarehouse) redirect("/admin/member-management");
 
   const initialUserAPP: UserApp = {
     username: "",

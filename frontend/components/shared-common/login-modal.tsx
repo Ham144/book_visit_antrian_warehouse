@@ -174,7 +174,7 @@ const LoginModal = () => {
         </form>
       </div>
     </div>
-    <Toaster key={"login"} />
+    <Toaster key={"login"}  position='top-center'/>
   </dialog>
   )
 }

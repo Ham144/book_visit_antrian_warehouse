@@ -38,15 +38,13 @@ const MyWarehousePage = () => {
     isActive: true,
   });
 
-  const warehouseId = userInfo?.homeWarehouse?.id;
-
   const { data: myWarehouse, isLoading } = useQuery({
-    queryKey: ["my-warehouse", warehouseId],
+    queryKey: ["my-warehouse", userInfo, filter],
     queryFn: async () => {
-      if (!warehouseId) return null;
-      return await WarehouseApi.getWarehouse(warehouseId);
+      if (!filter.warehouseId) return null;
+      return await WarehouseApi.getWarehouse(filter);
     },
-    enabled: !!warehouseId,
+    enabled: !!userInfo?.homeWarehouse.id,
   });
 
   const handleClose = () => {
@@ -77,9 +75,9 @@ const MyWarehousePage = () => {
 
   const updateMutation = useMutation({
     mutationFn: async (data: Warehouse) => {
-      if (!warehouseId) throw new Error("Warehouse ID tidak ditemukan");
+      if (!filter.warehouseId) throw new Error("Warehouse ID tidak ditemukan");
       return await WarehouseApi.updateWarehouse({
-        id: warehouseId,
+        id: filter.warehouseId,
         ...data,
       });
     },
@@ -209,6 +207,7 @@ const MyWarehousePage = () => {
                   <table className="table table-zebra w-full">
                     <thead>
                       <tr>
+                        <th>Code</th>
                         <th>Vehicle</th>
                         <th>Dock</th>
                         <th>Arrival Time</th>
@@ -218,6 +217,13 @@ const MyWarehousePage = () => {
                     <tbody>
                       {bookings.map((booking: any, index: number) => (
                         <tr key={index}>
+                          <td>
+                            <div>
+                              <p className="font-medium">
+                                {booking?.code || booking.code}
+                              </p>
+                            </div>
+                          </td>
                           <td>
                             <div>
                               <p className="font-medium">
@@ -231,7 +237,7 @@ const MyWarehousePage = () => {
                           <td>
                             {booking.arrivalTime
                               ? new Date(booking.arrivalTime).toLocaleString(
-                                  "id-ID"
+                                  "id-ID",
                                 )
                               : "N/A"}
                           </td>
@@ -241,10 +247,10 @@ const MyWarehousePage = () => {
                                 booking.status === "finished"
                                   ? "badge-success"
                                   : booking.status === "in_progress"
-                                  ? "badge-warning"
-                                  : booking.status === "waiting"
-                                  ? "badge-info"
-                                  : "badge-error"
+                                    ? "badge-warning"
+                                    : booking.status === "waiting"
+                                      ? "badge-info"
+                                      : "badge-error"
                               }`}
                             >
                               {booking.status || "N/A"}
@@ -264,7 +270,7 @@ const MyWarehousePage = () => {
       </main>
       <WarehouseModalForm
         createMutation={createMutation}
-        editingId={warehouseId || null}
+        editingId={filter.warehouseId || null}
         formData={formData}
         handleClose={handleClose}
         handleSubmit={handleSubmit}

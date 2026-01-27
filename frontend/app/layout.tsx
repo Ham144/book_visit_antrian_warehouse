@@ -7,7 +7,7 @@ import Navigation from "@/components/shared-common/navigation";
 import ChatBubble from "@/components/shared-common/ChatBubble";
 
 export const metadata: Metadata = {
-  title: "CSI Queue Realtime",
+  title: "Catur Queue Realtime",
   icons: {
     icon: "/csi-logo.png",
     shortcut: "/csi-logo.png",
@@ -27,7 +27,7 @@ export default function RootLayout({
           <UserProvider>
             <Navigation />
             <ToasterProvider>{children}</ToasterProvider>
-            <ChatBubble />
+            {/* <ChatBubble /> */}
           </UserProvider>
         </QueryClientProviderWrapper>
       </body>

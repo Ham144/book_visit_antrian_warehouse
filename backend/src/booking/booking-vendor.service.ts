@@ -115,17 +115,15 @@ export class BookingforVendorService {
         `Waktu terkait overlap booking ${overlapDockedHour.code}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
       );
     }
-    const time = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Jakarta',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(new Date(arrivalTime));
     
-    const randomAlphabet = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
-    const identifyer = randomAlphabet[Math.floor(Math.random() * randomAlphabet.length)];
-    console.log(identifyer)
-    const code = `${driverUsername.slice(0, 7)}-${vehicle.brand.slice(0, 7)}-${identifyer[0]}`;
+    const year = arrival.getFullYear().toString().slice(-2);
+    const month = (arrival.getMonth() + 1).toString().padStart(2, '0');
+    const day = arrival.getDate().toString().padStart(2, '0');
+    const hours = arrival.getHours().toString().padStart(2, '0');
+    const minutes = arrival.getMinutes().toString().padStart(2, '0');
+    const seconds = arrival.getSeconds().toString().padStart(2, '0');
+    
+    const code = `${createBookingDto.notes.slice(0, 7)}-${vehicle.brand.slice(0, 7)}-${year}${month}${day}${hours}${minutes}${seconds}`;
     
     
     await this.prismaService.booking.create({
@@ -157,7 +155,10 @@ export class BookingforVendorService {
       },
     });
 
-    return HttpStatus.ACCEPTED;
+    return {
+      success: true,
+      warehouseId: warehouseId
+    };
   }
 
   async findOne(id: string) {
@@ -193,7 +194,7 @@ export class BookingforVendorService {
       );
     }
 
-    await this.prismaService.booking.update({
+    const warehouse = await this.prismaService.booking.update({
       where: {
         id,
       },
@@ -202,7 +203,10 @@ export class BookingforVendorService {
         canceledReason: canceledReason + "by " + userinfo.username,
       },
     });
-    return HttpStatus.ACCEPTED;
+    return {
+      success: true,
+      warehouseId: warehouse.id
+    };
   }
 
   async getStatsForDriver() {

@@ -212,7 +212,7 @@ model Chat {
   senderId  String   // refer ke User (tidak perlu relasi Prisma kalau sudah kompleks)
   message   String
   status    String   //read, unread
-
+  
   createdAt DateTime @default(now())
 
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)

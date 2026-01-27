@@ -41,7 +41,7 @@ export default function VehilcleModalForm({
   const { data: drivers } = useQuery({
     queryKey: ["vehicles", searchKeyDriver],
     queryFn: () =>
-      AuthApi.getAllAccount({
+      AuthApi.getAllAccountForMemberManagement({
         page: 1,
         searchKey: searchKeyDriver,
       }),
@@ -63,7 +63,7 @@ export default function VehilcleModalForm({
     // Check if already exists
     // Normalize currentDrivers menjadi array username string
     const usernames = currentDrivers.map((d: UserInfo | string) =>
-      typeof d === "string" ? d : d.username
+      typeof d === "string" ? d : d.username,
     );
 
     // Cek apakah sudah ada
@@ -312,7 +312,7 @@ export default function VehilcleModalForm({
                       const isSelected = formData.driverNames?.some((d) =>
                         typeof d === "string"
                           ? d === driver.username
-                          : d === driver.username
+                          : d === driver.username,
                       );
                       return (
                         <button
@@ -374,7 +374,7 @@ export default function VehilcleModalForm({
                   <div className="flex flex-wrap gap-2">
                     {drivers.slice(0, 5).map((driver: UserApp) => {
                       const isSelected = formData.driverNames?.some(
-                        (d) => d === driver.username
+                        (d) => d === driver.username,
                       );
                       return (
                         <button

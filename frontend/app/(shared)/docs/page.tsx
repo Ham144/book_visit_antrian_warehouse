@@ -1,18 +1,14 @@
-import { getMarkdownData } from '@/lib/getMarkdownData';
+import { getMarkdownData } from "@/lib/getMarkdownData";
 
-interface PrivacyPolicyProps {
-  contentHtml: string;
-}
+export default async function DocsPage() {
+  const contentHtml = await getMarkdownData("public/README.md");
 
-const DocksPage: React.FC<PrivacyPolicyProps> = async() => {
-  const contentHtml = await getMarkdownData('public/README.md');
-    
   return (
-    <div className="p-8 bg-gray-100 container">
-      <div className="prose prose-lg" dangerouslySetInnerHTML={{ __html: contentHtml }} />
+    <div className="container p-8 bg-gray-100">
+      <div
+        className="prose prose-lg"
+        dangerouslySetInnerHTML={{ __html: contentHtml }}
+      />
     </div>
   );
-};
-
-
-export default DocksPage;
+}

@@ -37,25 +37,19 @@ import { SortableContainer } from "@/components/admin/SortableContainer";
 import { DropZoneLine } from "@/components/admin/DropConeLine";
 import FullDroppableInventory from "@/components/admin/FullDroppableInventory";
 import { IDock } from "@/types/dock.type";
+import WarehouseSettingPreview from "@/components/admin/WarehouseSettingPreview";
 
 export default function LiveQueuePage() {
-  const { userInfo } = useUserInfo();
+  const { userInfo, socket } = useUserInfo();
   const queryClient = useQueryClient();
   const [selectedDockId, setSelectedDockId] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-    null
+    null,
   );
-  const [dockPageStart, setDockPageStart] = useState<number>();
+  const [now, setNow] = useState(() => new Date());
 
-  useEffect(() => {
-    const parsed = Number(localStorage.getItem("dockPageStart"));
-  
-    const value = Number.isNaN(parsed) ? 0 : parsed;
-  
-    localStorage.setItem("dockPageStart", String(value));
-    setDockPageStart(value);
-  }, []);
-  
+  const [dockPageStart, setDockPageStart] = useState<number>();
+  const [isDekstop, setIsDesktop] = useState<boolean>();
 
   // Kategori
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
@@ -66,37 +60,14 @@ export default function LiveQueuePage() {
   const [onFloatingBooking, setOnFloatingBooking] = useState<Booking>();
   const [height, setHeight] = useState(200); // height inventory
 
-  //fundamental properties
-
-  
   // Sensor untuk drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
   );
-
-  // Fungsi untuk menghitung delayed bookings
-  const calculateDelayedBookings = (bookings: Booking[]) => {
-    const delayed = bookings.filter((booking) => {
-      if (booking.status !== "IN_PROGRESS") return false;
-      if (!booking.arrivalTime) return false;
-
-      const arrivalTime = new Date(booking.arrivalTime);
-      const now = new Date();
-      const delayInMinutes =
-        (now.getTime() - arrivalTime.getTime()) / (1000 * 60);
-
-      return delayInMinutes > booking.Warehouse?.delayTolerance;
-    });
-
-    // Untuk canceled, filter berdasarkan status
-    const canceled = bookings.filter(
-      (b: Booking) => b.status === BookingStatus.CANCELED
-    );
-  };
 
   // Handle drag events
   const handleDragStart = (event: DragStartEvent) => {
@@ -108,7 +79,7 @@ export default function LiveQueuePage() {
 
   function getRelativePosition(
     sourceIndex: number,
-    targetIndex: number
+    targetIndex: number,
   ): "BEFORE" | "AFTER" {
     if (sourceIndex === targetIndex) return "AFTER";
     return sourceIndex < targetIndex ? "AFTER" : "BEFORE";
@@ -128,32 +99,44 @@ export default function LiveQueuePage() {
     const sameDock = sourceBooking.dockId === targetData.dockId;
     //validasi
     const dock: IDock = docks.find((d: IDock) => d.id === targetData.dockId);
-    if( targetData?.dockId &&!dock?.isActive ) {
+    if (targetData?.dockId && !dock?.isActive) {
       return toast.error("Dock sedang tidak aktif");
     }
-    if(targetData?.dockId && !dock?.allowedTypes?.includes(sourceBooking.Vehicle.vehicleType)){
-      return toast.error(`Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle.vehicleType}` );
+    if (
+      targetData?.dockId &&
+      !dock?.allowedTypes?.includes(sourceBooking.Vehicle.vehicleType)
+    ) {
+      return toast.error(
+        `Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle.vehicleType}`,
+      );
     }
     /* =====================================================
-     * 1. REORDER IN_PROGRESS (dock sama)
+     * 1. REORDER: SWAP IN_PROGRESS (antar booking di dock yang sama)
      * ===================================================== */
     if (
-      targetData.type === "booking-card" &&
+      targetData?.type === "booking-card" &&
       sourceBooking.status === BookingStatus.IN_PROGRESS &&
-      targetData.booking?.status === BookingStatus.IN_PROGRESS &&
+      targetData.bookingStatus === BookingStatus.IN_PROGRESS &&
       sameDock &&
-      sourceBooking.id !== targetData.booking.id
+      dock?.bookings?.length > 1
     ) {
       const dockGroup = filteredBookings[sourceBooking.dockId!];
+      if (!dockGroup) return;
 
       const sourceIndex = dockGroup.inprogress.findIndex(
-        (b) => b.id === sourceBooking.id
+        (b) => b.id === sourceBooking.id,
       );
       const targetIndex = dockGroup.inprogress.findIndex(
-        (b) => b.id === targetData.booking.id
+        (b) => b.id === targetData.bookingId,
       );
 
-      const relativeType = getRelativePosition(sourceIndex, targetIndex);
+      if (
+        sourceIndex === -1 ||
+        targetIndex === -1 ||
+        sourceIndex === targetIndex
+      ) {
+        return;
+      }
 
       try {
         await BookingApi.dragAndDrop(sourceBooking.id!, {
@@ -161,15 +144,15 @@ export default function LiveQueuePage() {
           toStatus: "IN_PROGRESS",
           dockId: sourceBooking.dockId,
           relativePositionTarget: {
-            bookingId: targetData.booking.id!,
-            type: relativeType,
+            bookingId: targetData.bookingId!,
+            type: "SWAP",
           },
         });
         queryClient.invalidateQueries({ queryKey: ["bookings"] });
         return;
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
     }
@@ -184,7 +167,7 @@ export default function LiveQueuePage() {
 
       if (existingUnloading.length > 0) {
         return toast.error(
-          "Unloading di Gate" + dock.name + " sedang dilakukan"
+          "Unloading di Gate" + dock.name + " sedang dilakukan",
         );
       }
       try {
@@ -201,7 +184,7 @@ export default function LiveQueuePage() {
         });
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
@@ -218,7 +201,7 @@ export default function LiveQueuePage() {
     ) {
       setSelectedBookingId(sourceBooking.id!);
       setCanceledReason(
-        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`,
       );
 
       (
@@ -234,7 +217,7 @@ export default function LiveQueuePage() {
     ) {
       setSelectedBookingId(sourceBooking.id!);
       setCanceledReason(
-        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`,
       );
 
       (
@@ -261,7 +244,7 @@ export default function LiveQueuePage() {
         });
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
 
@@ -289,7 +272,7 @@ export default function LiveQueuePage() {
         });
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
 
@@ -417,7 +400,6 @@ export default function LiveQueuePage() {
   type GroupedBookingsByDock = Record<string, DockBookingGroup>;
 
   const filteredBookings = useMemo<GroupedBookingsByDock>(() => {
-    const now = Date.now();
     const delayTolerance = userInfo?.homeWarehouse?.delayTolerance || 0;
 
     const result: GroupedBookingsByDock = {};
@@ -432,7 +414,7 @@ export default function LiveQueuePage() {
       };
     });
 
-    bookings?.forEach((booking) => {
+    bookings?.forEach((booking: Booking) => {
       if (!booking.dockId) return;
 
       const dockGroup = result[booking.dockId];
@@ -466,7 +448,7 @@ export default function LiveQueuePage() {
     });
 
     return result as GroupedBookingsByDock;
-  }, [bookings, docks, filter]);
+  }, [bookings, docks, filter, now]);
 
   const { delayedBookings, canceledBookings } = useMemo(() => {
     const delayed: Booking[] = [];
@@ -491,7 +473,6 @@ export default function LiveQueuePage() {
     )?.showModal();
   };
 
-  
   // Mutation untuk konfirmasi datang
   const { mutateAsync: confirmArrival } = useMutation({
     mutationFn: async (booking: Booking) =>
@@ -508,16 +489,76 @@ export default function LiveQueuePage() {
     },
   });
 
-  // useEffect(() => {
-  //   if (bookings) {
-  //     calculateDelayedBookings(bookings);
-  //   }
-  // }, [bookings]);
+  //socket
+  useEffect(() => {
+    if (!socket || !userInfo?.homeWarehouse?.id) return;
+
+    const warehouseId = userInfo.homeWarehouse.id;
+
+    const handleConnect = () => {
+      socket.emit("join_warehouse", {
+        warehouseId,
+      });
+    };
+
+    const handleSemiDetailList = () => {
+      queryClient.invalidateQueries({
+        queryKey: ["bookings"],
+      });
+    };
+
+    if (socket.connected) {
+      socket.emit("join_warehouse", {
+        warehouseId,
+      });
+    }
+
+    socket.on("connect", handleConnect);
+    socket.on("semi-detail-list", handleSemiDetailList);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("semi-detail-list", handleSemiDetailList);
+      if (socket.connected) {
+        socket.emit("leave_warehouse", {
+          warehouseId,
+        });
+      }
+    };
+  }, [socket, queryClient, userInfo?.homeWarehouse?.id]);
+
+  //triger kategorisasi ulang filteredBookings
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 30_000); // tiap 30 detik (atau 1 menit)
+
+    return () => clearInterval(timer);
+  }, []);
+
+  //width check
+  useEffect(() => {
+    //dock page
+    const parsed = Number(localStorage.getItem("dockPageStart"));
+    const value = Number.isNaN(parsed) ? 0 : parsed;
+    localStorage.setItem("dockPageStart", String(value));
+
+    //isDekstop
+    const media = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(media.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    media.addEventListener("change", handler);
+
+    setDockPageStart(value);
+    return () => media.removeEventListener("change", handler);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex">
-        <main className="flex-1 p-6">
+      <div className="flex flex-col">
+        <WarehouseSettingPreview />
+        <main className="flex-1 ">
           <div className="space-y-6">
             {/* Queue Grid by Dock */}
             {isLoading || loadingDocks ? (
@@ -532,13 +573,20 @@ export default function LiveQueuePage() {
               </div>
             ) : (
               <div className="overflow-x-auto flex min-h-screen">
-                <button disabled={dockPageStart === 0} onClick={() => {
-                  setDockPageStart((prev) => {
-                    const value = prev - 1
-                    window.localStorage.setItem("dockPageStart", value.toString())
-                    return value
-                  });
-                }} className="btn btn-primary mr-2 disabled:bg-slate-400">
+                <button
+                  disabled={dockPageStart === 0}
+                  onClick={() => {
+                    setDockPageStart((prev) => {
+                      const value = prev - 1;
+                      window.localStorage.setItem(
+                        "dockPageStart",
+                        value.toString(),
+                      );
+                      return value;
+                    });
+                  }}
+                  className="btn btn-primary mr-2 disabled:bg-slate-400"
+                >
                   <ArrowLeft />
                 </button>
 
@@ -551,9 +599,10 @@ export default function LiveQueuePage() {
                   onDragCancel={handleDragCancel}
                 >
                   {/* MAIN */}
-                  <div className="grid gap-3 grid-cols-4 w-full">
-                    {Object.entries(filteredBookings).splice(dockPageStart, 4).map(
-                      ([dockId, bookingGroup]) => {
+                  <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 w-full ">
+                    {Object.entries(filteredBookings)
+                      .splice(dockPageStart, isDekstop ? 4 : 2)
+                      .map(([dockId, bookingGroup]) => {
                         const dock: IDock = docks.find((d) => d.id === dockId);
                         if (!dock) return null;
 
@@ -561,10 +610,13 @@ export default function LiveQueuePage() {
                         const inProgressBookings = bookingGroup.inprogress;
 
                         return (
-                          <div key={dockId} className="flex flex-col gap-y-2 border border-dashed p-1">
+                          <div
+                            key={dockId}
+                            className="flex flex-col gap-y-2 border border-dashed p-1"
+                          >
                             {/* Dock Header - Compact & Modern */}
                             <div
-                              className={`relative px-3 py-2 cursor-pointer rounded-xl transition-all duration-300
+                              className={`relative px-3 py-2 cursor-pointer rounded-xl transition-all duration-300 
     ${
       dock?.isActive
         ? "bg-gradient-to-r from-primary/90 to-primary/70 shadow-lg shadow-primary/20"
@@ -577,7 +629,7 @@ export default function LiveQueuePage() {
                                 setSelectedDockId(dock.id!);
                                 (
                                   document.getElementById(
-                                    "dock-option-modal"
+                                    "dock-option-modal",
                                   ) as HTMLDialogElement
                                 )?.showModal();
                               }}
@@ -708,6 +760,7 @@ export default function LiveQueuePage() {
                                         <DraggableBookingCard
                                           booking={booking}
                                           onDetail={() => onDetail(booking)}
+                                          droppable={false}
                                           onMarkFinished={() =>
                                             handleUpdateStatus({
                                               id: booking.id!,
@@ -786,11 +839,12 @@ export default function LiveQueuePage() {
                                               status: BookingStatus.CANCELED,
                                             })
                                           }
-                                          onActualArrived={() => confirmArrival(booking)}
-
+                                          onActualArrived={() =>
+                                            confirmArrival(booking)
+                                          }
                                         />
                                       </React.Fragment>
-                                    )
+                                    ),
                                   )}
 
                                   {/* 🔥 DROP ZONE di BAWAH booking TERAKHIR */}
@@ -810,8 +864,7 @@ export default function LiveQueuePage() {
                             </div>
                           </div>
                         );
-                      }
-                    )}
+                      })}
                   </div>
                   {/* INVENTORY SECTION - Fixed positioning dengan z-index yang tepat */}
                   <div className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-400 shadow-lg z-10">
@@ -829,18 +882,18 @@ export default function LiveQueuePage() {
                         const handleMouseMove = (moveEvent) => {
                           const delta = startY - moveEvent.clientY;
                           setHeight(
-                            Math.max(100, Math.min(600, startHeight + delta))
+                            Math.max(100, Math.min(600, startHeight + delta)),
                           );
                         };
 
                         const handleMouseUp = () => {
                           document.removeEventListener(
                             "mousemove",
-                            handleMouseMove
+                            handleMouseMove,
                           );
                           document.removeEventListener(
                             "mouseup",
-                            handleMouseUp
+                            handleMouseUp,
                           );
                         };
 
@@ -905,11 +958,23 @@ export default function LiveQueuePage() {
                   </DragOverlay>
                 </DndContext>
 
-                <button disabled={isLoading || dockPageStart + 4 >= docks.length} className="btn btn-primary ml-2 disabled:bg-slate-400" onClick={() => setDockPageStart((prev) => {
-                    const value = prev + 1
-                    window.localStorage.setItem("dockPageStart", value.toString())
-                    return value
-                  })}>
+                <button
+                  disabled={
+                    isLoading ||
+                    dockPageStart + (isDekstop ? 4 : 2) >= docks.length
+                  }
+                  className="btn btn-primary ml-2 disabled:bg-slate-400"
+                  onClick={() =>
+                    setDockPageStart((prev) => {
+                      const value = prev + 1;
+                      window.localStorage.setItem(
+                        "dockPageStart",
+                        value.toString(),
+                      );
+                      return value;
+                    })
+                  }
+                >
                   <ArrowRight />
                 </button>
               </div>
@@ -931,6 +996,7 @@ export default function LiveQueuePage() {
       <QueueDetailModal
         selectedBookingId={selectedBookingId}
         setSelectedBookingId={setSelectedBookingId}
+        setNow={setNow}
         key={"QueueDetailModalJustify"}
         id="QueueDetailModalJustify"
       />

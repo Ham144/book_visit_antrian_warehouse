@@ -168,25 +168,49 @@ export const vendorMenutItems = [
 
 const SideNav = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(true); // full
+  const [isOpen, setIsOpen] = useState(false); // full
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { userInfo } = useUserInfo();
+  const [isDesktop, setIsDesktop] = useState(false);
 
   // open when hover
   useEffect(() => {
+    // Cek apakah layar lebar (desktop)
+
+    // Hanya tambahkan event listener jika di desktop
+    if (!isDesktop) return;
+
     const handleMouseEnter = () => {
       setIsOpen(true);
     };
+
     const handleMouseLeave = () => {
       setIsOpen(false);
     };
-    sidebarRef.current?.addEventListener("mouseenter", handleMouseEnter);
-    sidebarRef.current?.addEventListener("mouseleave", handleMouseLeave);
+
+    const sidebar = sidebarRef.current;
+    if (sidebar) {
+      sidebar.addEventListener("mouseenter", handleMouseEnter);
+      sidebar.addEventListener("mouseleave", handleMouseLeave);
+    }
+
     return () => {
-      sidebarRef.current?.removeEventListener("mouseenter", handleMouseEnter);
-      sidebarRef.current?.removeEventListener("mouseleave", handleMouseLeave);
+      if (sidebar) {
+        sidebar.removeEventListener("mouseenter", handleMouseEnter);
+        sidebar.removeEventListener("mouseleave", handleMouseLeave);
+      }
     };
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(media.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    media.addEventListener("change", handler);
+
+    return () => media.removeEventListener("change", handler);
   }, []);
 
   return (
@@ -203,7 +227,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
             shadow-lg shadow-emerald-100/30
             transition-all duration-500 ease-in-out overflow-hidden
             no-scrollbar
-            ${isOpen ? "w-64" : "w-16"}
+            ${isOpen && isDesktop ? "w-64" : "w-16"}
             relative
             before:absolute before:inset-0 
             before:bg-gradient-to-r
@@ -213,7 +237,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
             <nav className="flex-1 overflow-auto px-2 max-h-screen pb-32 ">
               {adminMenuItems
                 .filter((item) =>
-                  item.roles.some((role) => userInfo?.role === role)
+                  item.roles.some((role) => userInfo?.role === role),
                 )
                 .map((item) => {
                   const Icon = item.icon;
@@ -273,7 +297,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                 })}
 
               {ITOnlyMenus.filter((item) =>
-                item.roles.some((role) => userInfo?.role === role)
+                item.roles.some((role) => userInfo?.role === role),
               ).map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
@@ -326,7 +350,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
 
               {vendorMenutItems
                 .filter((item) =>
-                  item.roles.some((role) => userInfo?.role === role)
+                  item.roles.some((role) => userInfo?.role === role),
                 )
                 .map((item) => {
                   const Icon = item.icon;

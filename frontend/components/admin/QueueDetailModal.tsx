@@ -42,12 +42,14 @@ interface QueueDetailModalProps {
   selectedBookingId: string;
   setSelectedBookingId: Dispatch<SetStateAction<string | null>>;
   id: "QueueDetailModalPreview" | "QueueDetailModalJustify";
+  setNow?: Dispatch<Date>; //untuk triger kategorisasi ulang booking delayed
 }
 
 const QueueDetailModal = ({
   setSelectedBookingId,
   selectedBookingId,
   id,
+  setNow,
 }: QueueDetailModalProps) => {
   const queryClient = useQueryClient();
 
@@ -65,22 +67,6 @@ const QueueDetailModal = ({
     enabled: !!selectedBookingId,
   });
 
-  // Update local state when booking data changes
-  useEffect(() => {
-    if (bookingData) {
-      setSelectedBooking(bookingData);
-      setIsFormModified(false);
-    }
-  }, [bookingData]);
-
-  // Reset when modal closes or bookingId changes
-  useEffect(() => {
-    if (!selectedBookingId) {
-      setSelectedBooking(null);
-      setIsFormModified(false);
-    }
-  }, [selectedBookingId]);
-
   // Handle form data updates from PreviewSlotDisplay
   const handleUpdateFormData = (data: Partial<Booking>) => {
     setSelectedBooking((prev) => {
@@ -89,7 +75,7 @@ const QueueDetailModal = ({
 
       // Check if form was modified
       const isModified = Object.keys(data).some(
-        (key) => prev[key as keyof Booking] !== data[key as keyof Booking]
+        (key) => prev[key as keyof Booking] !== data[key as keyof Booking],
       );
 
       if (isModified) {
@@ -110,9 +96,9 @@ const QueueDetailModal = ({
       // Only send necessary data for the justify API
       const justifyData = {
         arrivalTime: selectedBooking.arrivalTime,
+        estimatedFinishTime: selectedBooking.estimatedFinishTime,
         notes: selectedBooking.notes,
-        // Include other fields required by the justifyBooking API
-        ...selectedBooking,
+        dockId: selectedBooking.dockId,
       };
 
       return await BookingApi.justifyBooking(selectedBookingId, justifyData);
@@ -130,6 +116,7 @@ const QueueDetailModal = ({
       setSelectedBookingId(null);
       setSelectedBooking(null);
       setIsFormModified(false);
+      setNow(new Date());
     },
     onError: (error: any) => {
       console.error("Justify booking error:", error);
@@ -167,6 +154,22 @@ const QueueDetailModal = ({
     }
   };
 
+  // Update local state when booking data changes
+  useEffect(() => {
+    if (bookingData) {
+      setSelectedBooking(bookingData);
+      setIsFormModified(false);
+    }
+  }, [bookingData]);
+
+  // Reset when modal closes or bookingId changes
+  useEffect(() => {
+    if (!selectedBookingId) {
+      setSelectedBooking(null);
+      setIsFormModified(false);
+    }
+  }, [selectedBookingId]);
+
   if (isLoading && selectedBookingId) {
     return (
       <dialog id={id} className="modal">
@@ -199,7 +202,7 @@ const QueueDetailModal = ({
               )}
               <span
                 className={`text-xs px-2 py-0.5 rounded ${getStatusBadgeColor(
-                  selectedBooking?.status
+                  selectedBooking?.status,
                 )}`}
               >
                 {getStatusLabel(selectedBooking?.status)}
@@ -264,7 +267,7 @@ const QueueDetailModal = ({
                         {
                           day: "2-digit",
                           month: "short",
-                        }
+                        },
                       )}
                     </div>
                     <div className="text-[10px]">
@@ -273,7 +276,7 @@ const QueueDetailModal = ({
                         {
                           hour: "2-digit",
                           minute: "2-digit",
-                        }
+                        },
                       )}
                     </div>
                   </>

@@ -33,7 +33,8 @@ const OrganizationFormModal = ({
 
   const { data: filteredUsers } = useQuery({
     queryKey: ["accounts", accountsFilter],
-    queryFn: async () => await AuthApi.getAllAccount(accountsFilter),
+    queryFn: async () =>
+      await AuthApi.getAllAccountForMemberManagement(accountsFilter),
     enabled: accountsFilter.searchKey !== "",
   });
 
@@ -86,7 +87,7 @@ const OrganizationFormModal = ({
               onClick={() =>
                 (
                   document.getElementById(
-                    "OrganizationFormModal"
+                    "OrganizationFormModal",
                   ) as HTMLDialogElement
                 ).close()
               }
@@ -317,7 +318,7 @@ const OrganizationFormModal = ({
               onClick={() =>
                 (
                   document.getElementById(
-                    "OrganizationFormModal"
+                    "OrganizationFormModal",
                   ) as HTMLDialogElement
                 ).close()
               }

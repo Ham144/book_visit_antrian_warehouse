@@ -42,7 +42,6 @@ export class ChatService {
           excludeExtraneousValues: true,
         });
       }
-      
 
   async getHistory(roomId: string, lastMessageLimit: number) {
     const messages = await this.prismaService.chat.findMany({

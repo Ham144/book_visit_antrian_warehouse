@@ -21,7 +21,6 @@ export default function GatesPage() {
     warehouseId: userInfo?.homeWarehouse?.id,
     warehouse: userInfo?.homeWarehouse,
     photos: [],
-    dockType: undefined,
     allowedTypes: [],
     vacants: ((): Vacant[] => {
       const days = Object.values(Days);
@@ -131,7 +130,7 @@ export default function GatesPage() {
                     setFormData(initialDock);
                     (
                       document.getElementById(
-                        "DockFormModal"
+                        "DockFormModal",
                       ) as HTMLDialogElement
                     ).showModal();
                   }}
@@ -220,7 +219,7 @@ export default function GatesPage() {
                                     setSelectedDockId(dock.id);
                                     (
                                       document.getElementById(
-                                        "confirmation1"
+                                        "confirmation1",
                                       ) as HTMLDialogElement
                                     ).showModal();
                                   }}

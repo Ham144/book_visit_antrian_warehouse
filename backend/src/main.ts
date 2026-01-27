@@ -33,7 +33,7 @@ async function bootstrap() {
     origin:
       process.env.NODE_ENV === 'production'
         ? [process.env.FRONTEND_URL_PROD]
-        : ['http://localhost:3000', 'http://192.168.169.12:3000'],
+        : ['http://localhost:3000', process.env.FRONTEND_URL_DEV],
     credentials: true,
   });
 

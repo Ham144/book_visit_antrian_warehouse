@@ -188,7 +188,7 @@ const MemberManagementPage = () => {
               ) : (
                 <div className="overflow-x-auto max-h-[50vh] overflow-auto">
                   <table className="table w-full relative">
-                    <thead className="bg-leaf-green-50 border-b border-leaf-green-100 fixed w-full">
+                    <thead >
                       <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Nama Warehouse
