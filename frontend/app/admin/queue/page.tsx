@@ -95,39 +95,60 @@ export default function LiveQueuePage() {
     const sourceBooking: Booking = active.data.current?.booking;
     const targetData = over.data.current;
 
-    if (!sourceBooking || !targetData) return;
-    const sameDock = sourceBooking.dockId === targetData.dockId;
-    //validasi
-    const dock: IDock = docks.find((d: IDock) => d.id === targetData.dockId);
-    if (targetData?.dockId && !dock?.isActive) {
+    if (!sourceBooking) return;
+    if (!targetData) return;
+
+    const targetBookingId =
+      (targetData as any)?.bookingId ??
+      (targetData as any)?.booking?.id ??
+      (typeof over.id === "string" && String(over.id).startsWith("booking-")
+        ? String(over.id).slice(7)
+        : over.id);
+    const targetDockId =
+      (targetData as any)?.dockId ??
+      (targetData as any)?.booking?.dockId ??
+      (targetData as any)?.sourceDockId;
+    const targetType = (targetData as any)?.type;
+    const targetBookingStatus =
+      (targetData as any)?.bookingStatus ?? (targetData as any)?.booking?.status;
+
+    const sameDock = sourceBooking.dockId === targetDockId;
+    const dock: IDock | undefined = docks.find(
+      (d: IDock) => d.id === targetDockId,
+    );
+    if (targetDockId && dock && !dock.isActive) {
       return toast.error("Dock sedang tidak aktif");
     }
     if (
-      targetData?.dockId &&
-      !dock?.allowedTypes?.includes(sourceBooking.Vehicle.vehicleType)
+      targetDockId &&
+      dock?.allowedTypes &&
+      !dock.allowedTypes.includes(sourceBooking.Vehicle?.vehicleType)
     ) {
       return toast.error(
-        `Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle.vehicleType}`,
+        `Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle?.vehicleType}`,
       );
     }
     /* =====================================================
      * 1. REORDER: SWAP IN_PROGRESS (antar booking di dock yang sama)
      * ===================================================== */
-    if (
-      targetData?.type === "booking-card" &&
+    const dockGroupForSwap = sourceBooking.dockId
+      ? filteredBookings[sourceBooking.dockId]
+      : null;
+    const canSwap =
+      targetType === "booking-card" &&
       sourceBooking.status === BookingStatus.IN_PROGRESS &&
-      targetData.bookingStatus === BookingStatus.IN_PROGRESS &&
+      targetBookingStatus === BookingStatus.IN_PROGRESS &&
       sameDock &&
-      dock?.bookings?.length > 1
-    ) {
-      const dockGroup = filteredBookings[sourceBooking.dockId!];
-      if (!dockGroup) return;
+      dockGroupForSwap != null &&
+      dockGroupForSwap.inprogress.length > 1;
+    if (canSwap) {
+      const dockGroup = dockGroupForSwap;
 
       const sourceIndex = dockGroup.inprogress.findIndex(
         (b) => b.id === sourceBooking.id,
       );
       const targetIndex = dockGroup.inprogress.findIndex(
-        (b) => b.id === targetData.bookingId,
+        (b) => b.id === targetBookingId,
       );
 
       if (
@@ -144,7 +165,7 @@ export default function LiveQueuePage() {
           toStatus: "IN_PROGRESS",
           dockId: sourceBooking.dockId,
           relativePositionTarget: {
-            bookingId: targetData.bookingId!,
+            bookingId: String(targetBookingId),
             type: "SWAP",
           },
         });
@@ -160,26 +181,24 @@ export default function LiveQueuePage() {
     /* =====================================================
      * 2. KE UNLOADING (IN_PROGRESS | DELAYED | CANCELED)
      * ===================================================== */
-    if (targetData.bookingStatus === BookingStatus.UNLOADING) {
-      const targetData = over.data.current;
-
-      const existingUnloading = filteredBookings[targetData.dockId!].unloading;
+    if (targetBookingStatus === BookingStatus.UNLOADING) {
+      const existingUnloading =
+        targetDockId && filteredBookings[targetDockId]
+          ? filteredBookings[targetDockId].unloading
+          : [];
 
       if (existingUnloading.length > 0) {
         return toast.error(
-          "Unloading di Gate" + dock.name + " sedang dilakukan",
+          "Unloading di Gate" + (dock?.name ?? "") + " sedang dilakukan",
         );
       }
       try {
         await BookingApi.dragAndDrop(sourceBooking.id!, {
           action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
           toStatus: "UNLOADING",
-          dockId: targetData.dockId || sourceBooking.dockId,
-          relativePositionTarget: targetData.bookingId
-            ? {
-                bookingId: targetData.bookingId,
-                type: "AFTER",
-              }
+          dockId: targetDockId || sourceBooking.dockId,
+          relativePositionTarget: targetBookingId
+            ? { bookingId: String(targetBookingId), type: "AFTER" }
             : { bookingId: "LAST", type: "AFTER" },
         });
       } catch (error: any) {
@@ -195,8 +214,8 @@ export default function LiveQueuePage() {
      * 3. KE CANCELED (inventory) - support both old and new drop area ID
      * ===================================================== */
     if (
-      targetData.type === "inventory" &&
-      targetData.bookingStatus === BookingStatus.CANCELED &&
+      targetType === "inventory" &&
+      targetBookingStatus === BookingStatus.CANCELED &&
       sourceBooking.status !== BookingStatus.CANCELED
     ) {
       setSelectedBookingId(sourceBooking.id!);
@@ -229,17 +248,14 @@ export default function LiveQueuePage() {
     /* =====================================================
      * 4. KE IN_PROGRESS (DELAYED | CANCELED | UNLOADING)
      * ===================================================== */
-    if (targetData.bookingStatus === BookingStatus.IN_PROGRESS) {
+    if (targetBookingStatus === BookingStatus.IN_PROGRESS) {
       try {
         await BookingApi.dragAndDrop(sourceBooking.id!, {
           action: sameDock ? "MOVE_WITHIN_DOCK" : "MOVE_OUTSIDE_DOCK",
           toStatus: "IN_PROGRESS",
-          dockId: targetData.dockId || sourceBooking.dockId,
-          relativePositionTarget: targetData.bookingId
-            ? {
-                bookingId: targetData.bookingId,
-                type: "AFTER",
-              }
+          dockId: targetDockId || sourceBooking.dockId,
+          relativePositionTarget: targetBookingId
+            ? { bookingId: String(targetBookingId), type: "AFTER" }
             : { bookingId: "LAST", type: "AFTER" },
         });
       } catch (error: any) {
@@ -256,15 +272,15 @@ export default function LiveQueuePage() {
      * 5. PINDAH DOCK (IN_PROGRESS → dock lain)
      * ===================================================== */
     if (
-      targetData.type === "dock-section" &&
+      targetType === "dock-section" &&
       sourceBooking.status === BookingStatus.IN_PROGRESS &&
-      sourceBooking.dockId !== targetData.dockId
+      sourceBooking.dockId !== targetDockId
     ) {
       try {
         await BookingApi.dragAndDrop(sourceBooking.id!, {
           action: "MOVE_OUTSIDE_DOCK",
           toStatus: "IN_PROGRESS",
-          dockId: targetData.dockId,
+          dockId: targetDockId!,
           relativePositionTarget: {
             bookingId: "LAST",
             type: "AFTER",
@@ -682,29 +698,6 @@ export default function LiveQueuePage() {
                                   </div>
                                 </div>
                               </div>
-
-                              {/* Hover Tooltip for More Types */}
-                              {dock?.allowedTypes?.length > 2 && (
-                                <div
-                                  className="absolute bottom-0  mt-1 w-48 bg-gray-800 text-white 
-                   text-xs rounded-lg p-2 shadow-xl  opacity-0 
-                   group-hover:opacity-100 pointer-events-none transition-opacity "
-                                >
-                                  <div className="font-semibold mb-1">
-                                    Jenis Kendaraan:
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {dock.allowedTypes.map((type) => (
-                                      <span
-                                        key={type}
-                                        className="px-1.5 py-0.5 bg-gray-700 rounded"
-                                      >
-                                        {type}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
                             </div>
 
                             {/* ============================= */}
@@ -799,7 +792,7 @@ export default function LiveQueuePage() {
                               ) : (
                                 <div className="space-y-1 max-h-96 flex  flex-col overflow-auto">
                                   {/* 🔥 DROP ZONE di ATAS booking PERTAMA */}
-                                  <DropZoneLine
+                                  {/* <DropZoneLine
                                     id={`drop-before-first-${dockId}`}
                                     bookingStatus={BookingStatus.IN_PROGRESS}
                                     dockId={dockId}
@@ -809,7 +802,7 @@ export default function LiveQueuePage() {
                                       BookingStatus.CANCELED,
                                     ]}
                                     className="mb-2"
-                                  />
+                                  /> */}
 
                                   {inProgressBookings.map(
                                     (booking: Booking) => (
@@ -822,7 +815,6 @@ export default function LiveQueuePage() {
                                             BookingStatus.IN_PROGRESS
                                           }
                                           dockId={dockId}
-                                          className="h-1 my-1"
                                           acceptFrom={[
                                             BookingStatus.IN_PROGRESS,
                                             BookingStatus.DELAYED,
@@ -847,7 +839,7 @@ export default function LiveQueuePage() {
                                     ),
                                   )}
 
-                                  {/* 🔥 DROP ZONE di BAWAH booking TERAKHIR */}
+                                  {/* 🔥 DROP ZONE 'LAST' */}
                                   <DropZoneLine
                                     id={`drop-after-last-${dockId}`}
                                     bookingStatus={BookingStatus.IN_PROGRESS}
@@ -857,7 +849,6 @@ export default function LiveQueuePage() {
                                       BookingStatus.DELAYED,
                                       BookingStatus.CANCELED,
                                     ]}
-                                    className="mt-2"
                                   />
                                 </div>
                               )}

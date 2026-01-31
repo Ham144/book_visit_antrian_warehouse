@@ -9,6 +9,7 @@ import {
   Query,
   Req,
   Res,
+  Put,
 } from '@nestjs/common';
 import { MyOrganizationService } from './my-organization.service';
 import { CreateMyOrganizationDto } from './dto/create-my-organization.dto';
@@ -62,6 +63,24 @@ export class MyOrganizationController {
   @Get('my-organizations')
   getMyOrganization(@Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.getMyOrganizations(userInfo);
+  }
+
+  @Authorization('ADMIN_ORGANIZATION')
+  @Get('my-organization-settings')
+  getMyOrganizationSettings(@Auth() userInfo: TokenPayload) {
+    return this.myOrganizationService.getMyOrganizationSettings(userInfo);
+  }
+
+  @Authorization('ADMIN_ORGANIZATION')
+  @Put('my-organization-settings')
+  updateMyOrganizationSettings(
+    @Auth() userInfo: TokenPayload,
+    @Body() updateMyOrganizationDto: UpdateMyOrganizationDto,
+  ) {
+    return this.myOrganizationService.updateMyOrganizationSettings(
+      userInfo,
+      updateMyOrganizationDto,
+    );
   }
 
   @Authorization('ADMIN_ORGANIZATION')

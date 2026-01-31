@@ -372,22 +372,6 @@ export default function BookingPage() {
     }
   }, [isBookCompleted, router]);
 
-  // Components
-  const SearchInput = ({ value, onChange, placeholder }: any) => (
-    <Suspense>
-      <label className="relative">
-        <input
-          type="text"
-          placeholder={placeholder}
-          className="input w-full max-w-xs border px-2 rounded-md pr-10"
-          value={value}
-          onChange={onChange}
-        />
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-      </label>
-    </Suspense>
-  );
-
   const StepProgress = () => (
     <Suspense>
       <div className="mb-3">
@@ -470,7 +454,7 @@ export default function BookingPage() {
               Pilih gudang tempat Anda ingin melakukan kunjungan
             </p>
           </div>
-          <SearchInput
+          <input
             value={filterWarehouse.searchKey}
             onChange={(e: any) =>
               setFilterWarehouse((prev) => ({
@@ -593,7 +577,7 @@ export default function BookingPage() {
             <h2 className="text-2xl font-semibold mb-2">Pilih Driver</h2>
             <p className="text-gray-600">Pilih driver untuk booking ini</p>
           </div>
-          <SearchInput
+          <input
             value={filterDriver.searchKey}
             onChange={(e: any) =>
               setFilterDriver((prev) => ({
@@ -679,7 +663,7 @@ export default function BookingPage() {
               </p>
             </div>
           </div>
-          <SearchInput
+          <input
             value={filterVehicles.searchKey}
             onChange={(e: any) =>
               setFilterVehicles((prev) => ({

@@ -44,6 +44,13 @@ export class VehicleService {
           {
             brand: {
               contains: searchKey,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: searchKey,
+              mode: 'insensitive',
             },
           },
         ];
@@ -52,10 +59,11 @@ export class VehicleService {
       const vehicles = await this.prismaService.vehicle.findMany({
         where,
         orderBy: {
-          createdAt: 'asc',
+          bookings: {
+            _count: 'asc',
+          },
         },
         skip: (page - 1) * 10,
-        take: 10,
       });
 
       return vehicles.map((vehicle) =>

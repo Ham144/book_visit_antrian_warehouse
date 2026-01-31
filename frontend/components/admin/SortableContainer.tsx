@@ -21,7 +21,7 @@ export const SortableContainer = ({
   bookingStatus,
   dockId,
   bookingId,
-  className = "",
+  className = "h-4",
   acceptFrom = [],
   isEmptyZone = false,
 }: SortableContainerProps) => {
@@ -49,7 +49,7 @@ export const SortableContainer = ({
         ${isEmptyZone ? "min-h-[80px]" : ""}
         ${
           isOver || isInventoryEmptyZone
-            ? "bg-rose-100 border-2 border-primary border-dashed"
+            ? "bg-teal-100 border-2 border-primary border-dashed py-12 "
             : "border-dashed"
         }
         ${
@@ -58,11 +58,14 @@ export const SortableContainer = ({
             : ""
         }
         ${
-          isOver && !isEmptyZone && type !== "booking-card"
+          isOver &&
+          !isEmptyZone &&
+          bookingStatus != BookingStatus.UNLOADING &&
+          type !== "booking-card"
             ? "ring-2 ring-primary ring-inset bg-primary/10"
             : ""
         }
-        transition-all duration-150 relative flex flex-col  justify-center border border-dashed px-2
+        transition-all duration-300 relative flex flex-col  justify-center border border-dashed px-2
       `}
     >
       {children}
@@ -70,7 +73,7 @@ export const SortableContainer = ({
       {/* Visual feedback khusus untuk empty zone */}
       {isEmptyZone && (
         <div className="badge badge-ghost text-primary border border-dashed mx-auto text-center justify-center items-center mt-2">
-          Kosong - Drop di sini
+          Kosong
         </div>
       )}
     </div>

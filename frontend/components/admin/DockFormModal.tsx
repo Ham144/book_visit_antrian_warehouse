@@ -8,8 +8,6 @@ import {
   XCircle,
   Activity,
   MapPin,
-  Image,
-  Upload,
   Calendar,
 } from "lucide-react";
 import { Toaster } from "sonner";
@@ -148,109 +146,59 @@ const DockFormModal = ({
                 </select>
               </div>
 
-              {/* Photos */}
-              <div className="form-control md:col-span-2">
-                <label className="label py-2">
-                  <span className="label-text font-medium text-gray-700 flex items-center">
-                    <Image className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Foto Gate
-                  </span>
-                </label>
-
-                {/* Photo URL Input */}
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    className="input input-bordered flex-1 bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                    placeholder="Masukkan URL foto"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handlePhotoAdd(e.currentTarget.value);
-                        e.currentTarget.value = "";
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      const input = e.currentTarget
-                        .previousElementSibling as HTMLInputElement;
-                      if (input?.value) {
-                        handlePhotoAdd(input.value);
-                        input.value = "";
-                      }
-                    }}
-                    className="btn btn-outline border px-2  hover:bg-gray-50"
-                  >
-                    <Upload className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Selected Photos Preview */}
-                {formData?.photos && formData.photos.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {formData.photos.map((photo, index) => (
-                      <div
-                        key={index}
-                        className="relative group aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200"
-                      >
-                        <img
-                          src={photo}
-                          alt={`Gate photo ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23ddd' width='200' height='200'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage not found%3C/text%3E%3C/svg%3E";
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handlePhotoRemove(index)}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Hapus foto"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {(!formData?.photos || formData.photos.length === 0) && (
-                  <div className="text-center py-8 border-2 border-dashed border px-2  rounded-lg bg-gray-50">
-                    <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">
-                      Belum ada foto. Masukkan URL foto di atas.
-                    </p>
-                  </div>
-                )}
-              </div>
-
               {/* Priority */}
               <div className="form-control">
                 <label className="label py-2">
                   <span className="label-text font-medium text-gray-700 flex items-center">
                     <Star className="w-4 h-4 mr-2 text-leaf-green-500" />
-                    Prioritas
+                    Prioritas (untuk di dahulukan)
                   </span>
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  className="input input-bordered w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  placeholder="1 (tertinggi) - 10 (terendah)"
-                  value={formData?.priority || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      priority: e.target.value
-                        ? Number(e.target.value)
-                        : undefined,
-                    })
-                  }
-                />
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center space-x-1 mb-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            priority:
+                              formData?.priority === star ? undefined : star,
+                          })
+                        }
+                        className="p-1 transition-all hover:scale-110 focus:outline-none"
+                        title={`Prioritas ${star}`}
+                      >
+                        <Star
+                          className={`w-7 h-7 ${
+                            formData?.priority && star <= formData.priority
+                              ? "text-yellow-500 fill-yellow-500"
+                              : "text-gray-300"
+                          } transition-colors`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex justify-between w-full text-xs text-gray-500 mt-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                      <span
+                        key={num}
+                        className={`w-7 text-center ${
+                          formData?.priority === num
+                            ? "font-bold text-leaf-green-600"
+                            : ""
+                        }`}
+                      >
+                        {num}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 text-sm text-gray-500">
+                  Klik bintang untuk memilih prioritas (1 = tertinggi, 10 =
+                  terendah)
+                </div>
               </div>
 
               {/* Allowed Vehicle Types */}
@@ -298,22 +246,24 @@ const DockFormModal = ({
 
                   {showVehicleTypes && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                      {vehicleTypes.map((type) => (
-                        <button
-                          type="button"
-                          onClick={() => toggleVehicleType(type)}
-                          className={`w-full px-4 py-3 text-left hover:bg-leaf-green-50 border-b border-gray-100 last:border-b-0 transition-colors ${
-                            formData.allowedTypes?.includes(type)
-                              ? "bg-leaf-green-50"
-                              : ""
-                          }`}
-                          key={type}
-                        >
-                          <div className="font-medium text-gray-800">
-                            {type}
-                          </div>
-                        </button>
-                      ))}
+                      {vehicleTypes
+                        .filter((type) => !formData.allowedTypes.includes(type))
+                        .map((type) => (
+                          <button
+                            type="button"
+                            onClick={() => toggleVehicleType(type)}
+                            className={`w-full px-4 py-3 text-left hover:bg-leaf-green-50 border-b border-gray-100 last:border-b-0 transition-colors ${
+                              formData.allowedTypes?.includes(type)
+                                ? "bg-leaf-green-50"
+                                : ""
+                            }`}
+                            key={type}
+                          >
+                            <div className="font-medium text-gray-800">
+                              {type}
+                            </div>
+                          </button>
+                        ))}
                     </div>
                   )}
                 </div>

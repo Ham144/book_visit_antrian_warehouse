@@ -85,7 +85,7 @@ const MemberManagementPage = () => {
     },
     onError: (er: any) => {
       toast.error(
-        er?.response?.data?.message || "gagal mengupdate data member"
+        er?.response?.data?.message || "gagal mengupdate data member",
       );
     },
   });
@@ -132,7 +132,7 @@ const MemberManagementPage = () => {
                     setFormData(initialUserAPP);
                     (
                       document.getElementById(
-                        "UserEditModalForm"
+                        "UserEditModalForm",
                       ) as HTMLDialogElement
                     )?.showModal();
                   }}
@@ -144,7 +144,7 @@ const MemberManagementPage = () => {
             </div>
 
             {/* Filters and Search */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200  mb-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
@@ -176,7 +176,7 @@ const MemberManagementPage = () => {
                     </p>
                   </div>
                 </div>
-              ) : accounts?.lengfoth === 0 ? (
+              ) : accounts?.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                   <User className="w-16 h-16 text-gray-300 mb-4" />
                   <p className="text-gray-500 text-sm max-w-md">
@@ -186,12 +186,12 @@ const MemberManagementPage = () => {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto max-h-[50vh] overflow-auto">
-                  <table className="table w-full relative">
-                    <thead >
-                      <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
+                <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+                  <table className="table w-full">
+                    <thead className="sticky top-0 z-10 backdrop-blur">
+                      <tr className="border-b border-leaf-green-100">
                         <th className="font-semibold text-gray-700 py-4 px-4">
-                          Nama Warehouse
+                          Username
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
                           Deskripsi
@@ -247,7 +247,7 @@ const MemberManagementPage = () => {
                                 </span>
                               ) : (
                                 <span className="text-gray-400 text-sm">
-                                  bagian vendor
+                                  vendor {account.vendorName}
                                 </span>
                               )}
                             </td>
@@ -299,7 +299,7 @@ const MemberManagementPage = () => {
                                     setSelectedUser(account);
                                     (
                                       document.getElementById(
-                                        "delete-app-user"
+                                        "delete-app-user",
                                       ) as HTMLDialogElement
                                     )?.showModal();
                                   }}

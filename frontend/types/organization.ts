@@ -20,3 +20,12 @@ export interface Organization {
   accounts?: UserInfo[];
   isEditing?: boolean;
 }
+
+export interface MyOrganizationSettingsDto {
+  name: string;
+  AD_HOST?: string;
+  AD_PORT?: string;
+  AD_DOMAIN?: string;
+  AD_BASE_DN?: string;
+  disabledFeatures: string[];
+}

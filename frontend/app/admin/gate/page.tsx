@@ -151,6 +151,9 @@ export default function GatesPage() {
                           Allow Types
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
+                          Prioritas
+                        </th>
+                        <th className="font-semibold text-gray-700 py-4 px-4">
                           Status
                         </th>
                         <th className="font-semibold text-gray-700 py-4 px-4">
@@ -187,6 +190,24 @@ export default function GatesPage() {
                                       {type}
                                     </span>
                                   ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-sm">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              {dock?.allowedTypes && dock.priority > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {Array.from({ length: dock.priority }).map(
+                                    (_, index) => (
+                                      <span
+                                        key={index}
+                                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                                      >
+                                        <Star className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
+                                      </span>
+                                    ),
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-400 text-sm">-</span>

@@ -14,6 +14,7 @@ import {
   Notebook,
   CheckCircle2,
   TimerReset,
+  Repeat,
 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -58,8 +59,10 @@ const DraggableBookingCard = ({
     id: booking.id!,
     disabled: !draggable,
     data: {
-      type: "booking-card", // PASTIKAN ADA TYPE INI
+      type: "booking-card",
       booking,
+      bookingId: booking.id,
+      dockId: booking.dockId,
       bookingStatus: booking.status,
       sourceType: "booking-card",
       sourceStatus: booking.status,
@@ -121,28 +124,41 @@ const DraggableBookingCard = ({
     <div
       ref={combinedRef}
       style={style}
+      {...listeners}
+      {...attributes}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       className={`
         ${
-          booking.actualArrivalTime
+          booking.actualArrivalTime && !isOver
             ? "border-4 border-white border-dashed bg-teal-100"
             : "bg-white"
         }
-         rounded-md border  p-2 min-w-[180px]
-        transition-all duration-150 w-full relative text-xs
+         rounded-md border p-2 min-w-[180px]
+        transition-all duration-150 cursor-grab w-full relative text-xs
         ${isDragging ? "opacity-30 shadow-lg scale-95" : ""}
-        ${isOver ? "border-4 bg-blue-200 border-dashed border-blue-500" : ""}
+        ${isOver ? "border-4  bg-blue-200 border-dashed border-teal-500" : ""}
         hover:shadow-sm hover:border-gray-300
       `}
     >
       {/* HEADER - SUPER COMPACT */}
       <div
         onClick={onDetail}
-        className="flex justify-between items-start gap-1 cursor-pointer"
+        className="flex justify-between items-start gap-1"
       >
         {/* Left Content */}
         <div className="flex-1 min-w-0">
           {/* Status & Code in one line */}
-          <div className="flex items-center justify-between gap-1 mb-1">
+          <div className="flex items-center justify-between gap-1 mb-1 relative">
+            {/* overlay */}
+            {isOver &&
+              booking.status === BookingStatus.IN_PROGRESS &&
+              !isDragging && (
+                <div className="badge badge-sm bg-primary text-white absolute inset-2 ">
+                  <Repeat />
+                  Swap
+                </div>
+              )}
             <div className="flex items-center gap-1 truncate">
               {StatusIcon()}
               <span className="font-medium text-gray-700 truncate">
@@ -177,7 +193,9 @@ const DraggableBookingCard = ({
           </div>
 
           {/* Time Info - Minimal */}
-          {booking.status === BookingStatus.IN_PROGRESS && (
+          {(booking.status === BookingStatus.IN_PROGRESS ||
+            booking.status == BookingStatus.DELAYED ||
+            booking.status == BookingStatus.CANCELED) && (
             <div className="space-y-0.5 mt-1.5 border-t pt-1.5">
               {/* Actual Arrival Time */}
               {booking.actualArrivalTime && (
@@ -228,78 +246,67 @@ const DraggableBookingCard = ({
               )}
 
               {/* Duration dengan native title attribute */}
-              {booking.Vehicle?.durasiBongkar && (
-                <div className="flex flex-1 ">
-                  {/* Cancel dengan native tooltip */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCancel();
-                    }}
-                    title="Batalkan booking ini"
-                    className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600 transition-colors group"
-                    type="button"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                      Batalkan
-                    </span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onActualArrived();
-                    }}
-                    title="Batalkan booking ini"
-                    className="p-1.5 rounded-md hover:bg-teal-50 hover:text-teal-600 transition-colors group"
-                    type="button"
-                  >
-                    {booking.actualArrivalTime ? (
-                      <TimerReset className="w-3.5 h-3.5" />
-                    ) : (
-                      <CheckCircle className="w-3.5 h-3.5" />
-                    )}
-                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                      {booking.actualArrivalTime
-                        ? "Kembalikan status Belum Datang"
-                        : "Konfirmasi Telah Tiba"}
-                    </span>
-                  </button>
-                  {/* Duration dengan info */}
+              <div className="flex flex-1 ">
+                {booking.status !== BookingStatus.DELAYED &&
+                  booking.status != BookingStatus.CANCELED && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCancel();
+                        }}
+                        title="Batalkan booking ini"
+                        className="p-1.5 rounded-md hover:bg-red-50 hover:text-red-600 transition-colors group"
+                        type="button"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          Batalkan
+                        </span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onActualArrived();
+                        }}
+                        title="Batalkan booking ini"
+                        className="p-1.5 rounded-md hover:bg-teal-50 hover:text-teal-600 transition-colors group"
+                        type="button"
+                      >
+                        {booking.actualArrivalTime ? (
+                          <TimerReset className="w-3.5 h-3.5" />
+                        ) : (
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        )}
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          {booking.actualArrivalTime
+                            ? "Kembalikan status Belum Datang"
+                            : "Konfirmasi Telah Tiba"}
+                        </span>
+                      </button>
+                    </>
+                  )}
+                {/* Duration dengan info */}
+                <div className="relative group">
+                  <div className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{booking.Vehicle.durasiBongkar}m</span>
+                  </div>
+                </div>
+
+                {/* note untuk plat */}
+                {booking.notes && (
                   <div className="relative group">
-                    <div className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{booking.Vehicle.durasiBongkar}m</span>
+                    <div className="px-2 py-1 bg-blue-50 text-green-700 rounded-full text-xs font-medium flex items-center gap-1">
+                      <Notebook className="w-3 h-3" />
+                      <span className="w-20 truncate">{booking.notes}</span>
                     </div>
                   </div>
-
-                  {/* note untuk plat */}
-                  {booking.notes && (
-                    <div className="relative group">
-                      <div className="px-2 py-1 bg-blue-50 text-green-700 rounded-full text-xs font-medium flex items-center gap-1">
-                        <Notebook className="w-3 h-3" />
-                        <span className="w-20 truncate">{booking.notes}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
-
-        {/* Drag Handle - Smaller */}
-        {draggable && (
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 ml-1"
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-          >
-            <GripVertical size={14} />
-          </div>
-        )}
       </div>
 
       {/* Progress Bar - Super Slim */}

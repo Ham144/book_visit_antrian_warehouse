@@ -55,22 +55,22 @@ const DockOptionModal = ({
     }
   }, [dockData]);
 
-  const router = useRouter()
+  const router = useRouter();
   // Handler for adding busy time
   const handleAddBusyTime = () => {
-    router.push("/admin/busy-times")
+    router.push("/admin/busy-times");
   };
 
   // Handler for editing opening hours
   const handleEditOpeningHours = () => {
-    router.push("/admin/gate")
+    router.push("/admin/gate");
     // Implement your logic here
   };
 
   // Handler for closing modal
   const handleClose = () => {
     const modal = document.getElementById(
-      "dock-option-modal"
+      "dock-option-modal",
     ) as HTMLDialogElement;
     modal?.close();
   };
@@ -118,6 +118,7 @@ const DockOptionModal = ({
                   </span>
                 </div>
               </div>
+
               <button
                 onClick={() =>
                   setDockOnEdit((prev) => ({
@@ -136,6 +137,23 @@ const DockOptionModal = ({
                   `Set to ${dockOnEdit.isActive ? "Inactive" : "Active"}`
                 )}
               </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Jenis Status</p>
+
+                <div className="font-semibold mb-1">Jenis Kendaraan:</div>
+                <div className="flex flex-wrap gap-1 z-20">
+                  {dockOnEdit.allowedTypes.map((type) => (
+                    <span
+                      key={type}
+                      className="px-1.5 py-0.5 badge badge-lg text-black rounded z-20"
+                    >
+                      {type}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -174,7 +192,7 @@ const DockOptionModal = ({
       <form method="dialog" className="modal-backdrop">
         <button>close</button>
       </form>
-      <Toaster  />
+      <Toaster />
     </dialog>
   );
 };

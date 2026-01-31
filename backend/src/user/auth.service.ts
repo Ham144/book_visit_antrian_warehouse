@@ -30,6 +30,7 @@ export class AuthService {
         },
       });
 
+
     if (!organizationSetting) {
       throw new BadRequestException('Organization Setting tidak ditemukan.');
     }
@@ -97,7 +98,6 @@ export class AuthService {
     if (user) {
       //bagian pemeriksaan field yg berubah
       let warehouseId = user.homeWarehouseId;
-
       if (
         String(userLDAP['physicalDeliveryOfficeName']).toUpperCase() !==
         user?.homeWarehouse?.name

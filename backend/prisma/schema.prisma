@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/* ----------------------------
+|  note: JANGAN PAKAI ENUM     |
+------------------------------*/
+
 model Subscription {
   id             String           @id @default(uuid())
   start          DateTime
@@ -19,24 +23,28 @@ model Organization {
   name           String        @id @unique
   subscriptionId String?       @unique
   subscription   Subscription?
-  AD_HOST        String?
-  AD_PORT        String?
-  AD_DOMAIN      String?
-  AD_BASE_DN     String?
   warehouses     Warehouse[]
   docks          Dock[]
   vehicles       Vehicle[]
   bookings       Booking[]
   accounts       User[]
   vendors Vendor[]
+  //settings
+  AD_HOST        String?
+  AD_PORT        String?
+  AD_DOMAIN      String?
+  AD_BASE_DN     String?
+  disabledFeatures  String[] @default(["chat", "gps"]) 
 }
 
 model Globalsetting {
-  settingName String   @id @default(uuid())
+  settingName String   @id @default("default")
   inUse       Boolean  @default(true)
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  //settings
+  activeAuthentication String[] @default(["APP", "AD"])
 }
 
 model Warehouse {
@@ -176,17 +184,14 @@ model User {
   // homeWarehouse = staff biasa (nullable)
   homeWarehouseId String?
   homeWarehouse   Warehouse? @relation("UserHomeWarehouse", fields: [homeWarehouseId], references: [id])
-
   accountType String @default("AD")
 
   //many-to-many 
   warehouseAccess Warehouse[]
   createdBooking Booking[] @relation("bookingCreatedBy")
   bookingAsDriver Booking[] @relation("bookingDriver") 
-  
   vendorName String?
   vendor Vendor? @relation(fields: [vendorName], references: [name])
-  
   organizations Organization[]
 }
 
@@ -211,7 +216,7 @@ model Chat {
   roomId    String
   senderId  String   // refer ke User (tidak perlu relasi Prisma kalau sudah kompleks)
   message   String
-  status    String   //read, unread
+  status    String   //read, delivered
   
   createdAt DateTime @default(now())
 
@@ -219,3 +224,5 @@ model Chat {
 
   @@index([roomId, createdAt])
 }
+
+

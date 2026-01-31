@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React from "react";
 import {
   Clock,
   Truck,
@@ -10,7 +11,7 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
 // Components
@@ -24,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
 import { useUserInfo } from "@/components/UserContext";
 import { ROLE } from "@/types/shared.type";
+import { Booking } from "@/types/booking.type";
 
 // Types
 interface DashboardState {
@@ -48,19 +50,7 @@ interface DashboardState {
     isOverdue: boolean;
     colorStatus: "green" | "yellow" | "red";
   }>;
-
-  queueSnapshot: Array<{
-    bookingId: string;
-    code: string;
-    vendorName: string;
-    arrivalTime: string;
-    estimatedFinishTime: string;
-    status: "WAITING" | "ASSIGNED" | "ARRIVED";
-    dock: IDock;
-    isOverdue: boolean;
-    waitingMinutes: number;
-  }>;
-
+  queueSnapshot: Partial<Booking>;
   kpiData: {
     queueLengthTimeline: Array<{ time: string; value: number }>;
     avgWaitingTime: Array<{ time: string; minutes: number }>;
@@ -184,7 +174,6 @@ const DashboardAdmin = () => {
           ? "warning"
           : ("normal" as const),
       tooltip: `Dock Utilization dihitung berdasarkan beban operasional tertinggi pada setiap dock, lalu dirata-ratakan ke seluruh dock.
-
 Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finished/canceled = 0%)`,
     },
     {
@@ -208,7 +197,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 overflow-y-auto max-h-96">
-      <div role="alert" className="alert alert-error w-full bg-red-200 ">
+      <div role="alert" className="alert alert-error w-full bg-red-200">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="stroke-current shrink-0 h-6 w-6"
@@ -222,9 +211,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
             d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <span>
-          Page ini sedang dalam pengembangan, Beritahu IT jika ada kesalahan.
-        </span>
+        <span>Page ini sedang dalam pengembangan, akan segera tiba.</span>
       </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
@@ -262,7 +249,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
       </div>
       {/* Top Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-        {summaryCards.map((card, index) => (
+        {summaryCards?.map((card, index) => (
           <SummaryCard
             key={index}
             metric={card.metric}
@@ -334,14 +321,15 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                     Arrival Time
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
+                    Duration
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {dashboardState?.queueSnapshot.map((booking) => (
-                  <QueueTableRow key={booking.bookingId} booking={booking} />
-                ))}
+                {dashboardState?.queueSnapshot?.length > 0 &&
+                  dashboardState?.queueSnapshot.map((booking) => (
+                    <QueueTableRow key={booking.bookingId} booking={booking} />
+                  ))}
               </tbody>
             </table>
           </div>

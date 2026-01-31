@@ -1,10 +1,16 @@
 
 
+export enum ChatStatus {
+    READ = "READ",
+    DELIVERED = "DELIVERED",
+  }
+  
 export interface IChat {
     id: string;
     roomId: string;
     senderId: string;
     message: string;
+    status: string;
     createdAt: Date;
   }
   

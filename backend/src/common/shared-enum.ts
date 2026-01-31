@@ -123,3 +123,9 @@ export type DragAndDropPayload =
         bookingId: string;
       };
     };
+
+export enum ChatStatus {
+    READ = "READ",
+    DELIVERED = "DELIVERED",
+}
+  

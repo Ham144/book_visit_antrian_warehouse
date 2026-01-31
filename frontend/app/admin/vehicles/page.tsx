@@ -126,7 +126,7 @@ export default function VehiclesPage() {
                   setFormData(initialFormData);
                   (
                     document.getElementById(
-                      "vehicle-modal"
+                      "vehicle-modal",
                     ) as HTMLDialogElement
                   ).showModal();
                 }}
@@ -137,7 +137,7 @@ export default function VehiclesPage() {
             </div>
           </div>
           {/* Filters and Search */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200  mb-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -158,9 +158,8 @@ export default function VehiclesPage() {
               </div>
             </div>
           </div>
-
           {/* Table */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg border border-gray-200">
             {vehicles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                 <Car className="w-16 h-16 text-gray-300 mb-4" />
@@ -171,15 +170,18 @@ export default function VehiclesPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
                 <table className="table w-full">
-                  <thead>
-                    <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
+                  <thead className="sticky top-0 z-10 backdrop-blur">
+                    <tr className="border-b border-leaf-green-100">
                       <th className="font-semibold text-gray-700 py-4 px-4">
                         Brand
                       </th>
                       <th className="font-semibold text-gray-700 py-4 px-4">
                         Vehicle Type
+                      </th>
+                      <th className="font-semibold text-gray-700 py-4 px-4">
+                        Vehicle Desc
                       </th>
                       <th className="font-semibold text-gray-700 py-4 px-4">
                         Durasi Bongkar
@@ -217,6 +219,9 @@ export default function VehiclesPage() {
                           <td className="px-4 py-3 text-gray-700">
                             {vehicle.vehicleType || "-"}
                           </td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {vehicle.description || "-"}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center space-x-1 text-gray-700">
                               <Clock className="w-4 h-4 text-gray-400" />
@@ -248,7 +253,7 @@ export default function VehiclesPage() {
                                 </span>
                               )}
                             </div>
-                          </td>{" "}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="space-y-2">
                               <span
@@ -267,7 +272,7 @@ export default function VehiclesPage() {
                               <button
                                 onClick={() => {
                                   const names = vehicle.drivers.map(
-                                    (driver) => driver.username
+                                    (driver) => driver.username,
                                   );
                                   const rest: IVehicle = {
                                     ...vehicle,
@@ -276,7 +281,7 @@ export default function VehiclesPage() {
                                   setFormData(rest);
                                   (
                                     document.getElementById(
-                                      "vehicle-modal"
+                                      "vehicle-modal",
                                     ) as HTMLDialogElement
                                   ).showModal();
                                 }}
@@ -290,7 +295,7 @@ export default function VehiclesPage() {
                                   setSelectedVehicleId(vehicle.id);
                                   (
                                     document.getElementById(
-                                      "detele-vehicle"
+                                      "detele-vehicle",
                                     ) as HTMLDialogElement
                                   ).showModal();
                                 }}

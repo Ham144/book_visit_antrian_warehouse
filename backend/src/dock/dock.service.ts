@@ -91,7 +91,7 @@ export class DockService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        priority: 'desc',
       },
     });
 
@@ -116,7 +116,7 @@ export class DockService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        priority: 'desc',
       },
     });
 
@@ -180,26 +180,33 @@ export class DockService {
       throw new NotFoundException(`Dock dengan id ${id} tidak ditemukan`);
     }
 
-    if(existingDock.isActive == false) {
-      const now = new Date()
-      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    if (existingDock.isActive == false) {
+      const now = new Date();
+      const from = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+      );
       const bookings = await this.prismaService.booking.findMany({
         where: {
           dockId: id,
           status: {
-            in: [
-              BookingStatus.IN_PROGRESS,
-              BookingStatus.UNLOADING,
-            ]
+            in: [BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING],
           },
           arrivalTime: {
             gte: from,
-          }
-        }
-      })
-      if(bookings.length) {
-        const bookingCodes = bookings.map(booking => booking.code).join(', ')
-        throw new BadRequestException("Ada booking yang sedang berlangsung di dock ini hari ini : "  + bookingCodes)
+          },
+        },
+      });
+      if (bookings.length) {
+        const bookingCodes = bookings.map((booking) => booking.code).join(', ');
+        throw new BadRequestException(
+          'Ada booking yang sedang berlangsung di dock ini hari ini : ' +
+            bookingCodes,
+        );
       }
     }
 

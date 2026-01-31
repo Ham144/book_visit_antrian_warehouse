@@ -83,10 +83,18 @@ export class UserService {
     });
   }
 
+  /** Escape karakter _, %, \ agar di Prisma/PostgreSQL ILIKE dianggap literal (bukan wildcard) */
+  private escapeForContains(value: string): string {
+    return value
+      .replace(/\\/g, '\\\\')
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_');
+  }
+
   //untuk admin_organization
   async getAllAccountForMemberManagement(
     page: number,
-    searchKey: string,
+    searchKey: string | string[] | undefined,
     userInfo: TokenPayload,
   ) {
     const where: Prisma.UserWhereInput = {
@@ -97,9 +105,16 @@ export class UserService {
       },
     };
 
-    if (searchKey) {
+    const key =
+      typeof searchKey === 'string'
+        ? searchKey
+        : Array.isArray(searchKey)
+          ? searchKey[0]
+          : '';
+    const trimmed = key?.trim();
+    if (trimmed) {
       where.username = {
-        contains: searchKey,
+        contains: this.escapeForContains(trimmed),
         mode: 'insensitive',
       };
     }
@@ -115,8 +130,6 @@ export class UserService {
           select: { name: true },
         },
       },
-      skip: (page - 1) * 10,
-      take: 10,
     });
 
     return accounts.map((account) =>
@@ -135,6 +148,7 @@ export class UserService {
       ? {
           username: {
             contains: searchKey,
+            mode: 'insensitive',
           },
         }
       : {};
@@ -183,7 +197,7 @@ export class UserService {
       excludeExtraneousValues: true,
     });
   }
-  
+
   async deleteAppUser(username: string) {
     await this.prismaService.user.delete({
       where: {

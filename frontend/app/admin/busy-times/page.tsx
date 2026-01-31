@@ -52,7 +52,7 @@ export default function BusyTimesPage() {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data.message || "Gagal menambahkan busy time"
+        error?.response?.data.message || "Gagal menambahkan busy time",
       );
     },
   });
@@ -70,7 +70,7 @@ export default function BusyTimesPage() {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data.message || "Gagal memperbarui busy time"
+        error?.response?.data.message || "Gagal memperbarui busy time",
       );
     },
   });
@@ -88,7 +88,7 @@ export default function BusyTimesPage() {
       toast.error(error?.response?.data.message || "Gagal menghapus busy time");
     },
   });
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="flex">
@@ -109,7 +109,7 @@ export default function BusyTimesPage() {
                   setFormData(initialBusyTime);
                   (
                     document.getElementById(
-                      "BusyTimeFormModal"
+                      "BusyTimeFormModal",
                     ) as HTMLDialogElement
                   ).showModal();
                 }}
@@ -122,7 +122,7 @@ export default function BusyTimesPage() {
             </div>
 
             {/* Busy Times List */}
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[80vh] overflow-y-auto">
               {busyTimes?.length > 0 ? (
                 busyTimes.map((bt: IDockBusyTime) => (
                   <div
@@ -145,12 +145,12 @@ export default function BusyTimesPage() {
                                   bt.recurring === "DAILY"
                                     ? "bg-blue-100 text-blue-800"
                                     : bt.recurring === "WEEKLY"
-                                    ? "bg-purple-100 text-purple-800"
-                                    : bt.recurring === "MONTHLY"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : bt.recurring === "ONCE"
-                                    ? "bg-gray-100 text-gray-800"
-                                    : "bg-teal-100 text-teal-800"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : bt.recurring === "MONTHLY"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : bt.recurring === "ONCE"
+                                          ? "bg-gray-100 text-gray-800"
+                                          : "bg-teal-100 text-teal-800"
                                 }`}
                               >
                                 {bt.recurring === "DAILY" && "Harian"}
@@ -225,7 +225,7 @@ export default function BusyTimesPage() {
                             setFormData(bt);
                             (
                               document.getElementById(
-                                "BusyTimeFormModal"
+                                "BusyTimeFormModal",
                               ) as HTMLDialogElement
                             ).showModal();
                           }}
@@ -239,7 +239,7 @@ export default function BusyTimesPage() {
                             setSelectedBusyTimeId(bt.id);
                             (
                               document.getElementById(
-                                "confirmation-delete"
+                                "confirmation-delete",
                               ) as HTMLDialogElement
                             )?.showModal();
                           }}
@@ -271,7 +271,7 @@ export default function BusyTimesPage() {
                         setFormData(initialBusyTime);
                         (
                           document.getElementById(
-                            "BusyTimeFormModal"
+                            "BusyTimeFormModal",
                           ) as HTMLDialogElement
                         ).showModal();
                       }}

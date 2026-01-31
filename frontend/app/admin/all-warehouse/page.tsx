@@ -11,8 +11,6 @@ import {
   MapPin,
   Users,
   Search,
-  ArrowLeft,
-  ArrowRight,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -115,7 +113,7 @@ export default function AllWarehousePage() {
         location: warehouse.location || "",
         description: warehouse.description || "",
         userWarehouseAccesses: warehouse.userWarehouseAccesses.map(
-          (u: any) => u.username
+          (u: any) => u.username,
         ),
         isActive: warehouse.isActive ?? true,
       });
@@ -156,7 +154,7 @@ export default function AllWarehousePage() {
   const handleDelete = (id: string) => {
     if (
       window.confirm(
-        "Apakah Anda yakin ingin menghapus warehouse ini? Tindakan ini tidak dapat dibatalkan."
+        "Apakah Anda yakin ingin menghapus warehouse ini? Tindakan ini tidak dapat dibatalkan.",
       )
     ) {
       deleteMutation.mutate(id);
@@ -193,7 +191,6 @@ export default function AllWarehousePage() {
         <main className="flex-1 pb-12 flex-col">
           <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-              {/* Header */}
               <div className="mb-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -215,14 +212,14 @@ export default function AllWarehousePage() {
               </div>
 
               {/* Filters and Search */}
-              <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+              <div className="bg-white rounded-lg border border-gray-200  mb-6">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Cari nama warehouse atau deskripsi..."
+                        placeholder="Cari brand.."
                         className="input input-bordered w-full pl-10 bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100"
                         value={filter.searchKey}
                         onChange={(e) =>
@@ -258,10 +255,10 @@ export default function AllWarehousePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
                     <table className="table w-full">
-                      <thead>
-                        <tr className="bg-leaf-green-50 border-b border-leaf-green-100">
+                      <thead className="sticky top-0 z-10 backdrop-blur">
+                        <tr className="border-b border-leaf-green-100">
                           <th className="font-semibold text-gray-700 py-4 px-4">
                             Nama Warehouse
                           </th>

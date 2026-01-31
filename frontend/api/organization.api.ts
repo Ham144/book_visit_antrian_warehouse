@@ -11,15 +11,20 @@ export const OrganizationApi = {
     const res = await axiosInstance.get("/api/organization/my-organizations");
     return res?.data;
   },
-
   getDetailOrganization: async (name: string) => {
     if (!name) return [];
     const res = await axiosInstance.get(`/api/organization/detail/${name}`);
     return res?.data;
   },
-
   updateOrganization: async (name: string, body: Organization) => {
     const res = await axiosInstance.patch(`/api/organization/${name}`, body);
+    return res?.data;
+  },
+  updateOrganizationSettings: async (body: Organization) => {
+    const res = await axiosInstance.put(
+      `/api/organization/my-organization-settings`,
+      body,
+    );
     return res?.data;
   },
   switchOrganization: async (name: string) => {
@@ -36,6 +41,12 @@ export const OrganizationApi = {
       params,
     });
     return res?.data;
+  },
+  getMyOrganizationSettings: async () => {
+    const res = await axiosInstance.get(
+      "/api/organization/my-organization-settings",
+    );
+    return res.data;
   },
   deleteOrganization: async (name: string) => {
     const res = await axiosInstance.delete(`/api/organization/${name}`);

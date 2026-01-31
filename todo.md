@@ -67,13 +67,19 @@ start 12/11/2025
 [x] fix: code tidak cukup hanya {driver}-{vendor}, nanti kalau banyak akan duplikat
 [x] driver menu realtime monitoring
 [x] perbaikin tampilan supir yang lebih jelas
-[] bisa ubah driver setelah booking
-[] mod: race condition booking
-
 [x] add: warehouse setting untuk ruling berbeda tiap warehouse
 [] add: My Warehouse belum tau buat apa
 [] add: dashboard driver & vendor admin dengan endpoint sudah ada stats/...
 [] add: ganti driver
+[] mod: race condition booking
+
+# Meeting 28-01-2026
+
+[] add: tampilkan vendor nya
+[] add: perlu konfirmasi booking
+[] add: limit kubikasi
+[] add: ganti driver
+[] add: input po
 
 //update antrian booking
 [x] add: perlu jenis VehicleType ada yang bisa masuk dan ada yang tidak bisa

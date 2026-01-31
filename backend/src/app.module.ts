@@ -14,6 +14,7 @@ import { MyOrganizationModule } from './my-organization/my-organization.module';
 import { VendorModule } from './vendor/vendor.module';
 import { RedisIoAdapterModule } from './RedisIoAdapter/redis-io-adapter.module';
 import { ChatModule } from './chat/chat.module';
+import { GlobalSettingModule } from './global-setting/global-setting.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ChatModule } from './chat/chat.module';
     VendorModule,
     RedisIoAdapterModule,
     ChatModule,
+    GlobalSettingModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

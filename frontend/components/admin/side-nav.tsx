@@ -18,8 +18,10 @@ import {
   Building2,
   PenTool,
   Crown,
+  MessageCircle,
+  MapPin,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useUserInfo } from "../UserContext";
 import { ROLE } from "@/types/shared.type";
 
@@ -166,52 +168,31 @@ export const vendorMenutItems = [
   },
 ];
 
+export const nonSidebarFeatures = [
+  {
+    id: "chat",
+    label: "Chat/Messenger",
+    icon: MessageCircle,
+  },
+  {
+    id: "gps",
+    label: "GPS tracking supir",
+    icon: MapPin,
+  },
+];
+
+export const allMenuAndFeatures = [
+  ...nonSidebarFeatures,
+  ...adminMenuItems,
+  ...ITOnlyMenus,
+  ...vendorMenutItems,
+];
+
 const SideNav = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false); // full
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const { userInfo } = useUserInfo();
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  // open when hover
-  useEffect(() => {
-    // Cek apakah layar lebar (desktop)
-
-    // Hanya tambahkan event listener jika di desktop
-    if (!isDesktop) return;
-
-    const handleMouseEnter = () => {
-      setIsOpen(true);
-    };
-
-    const handleMouseLeave = () => {
-      setIsOpen(false);
-    };
-
-    const sidebar = sidebarRef.current;
-    if (sidebar) {
-      sidebar.addEventListener("mouseenter", handleMouseEnter);
-      sidebar.addEventListener("mouseleave", handleMouseLeave);
-    }
-
-    return () => {
-      if (sidebar) {
-        sidebar.removeEventListener("mouseenter", handleMouseEnter);
-        sidebar.removeEventListener("mouseleave", handleMouseLeave);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 768px)");
-    setIsDesktop(media.matches);
-
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    media.addEventListener("change", handler);
-
-    return () => media.removeEventListener("change", handler);
-  }, []);
 
   return (
     <div className="max-h-screen  flex flex-col w-full">
@@ -225,16 +206,14 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
             bg-gradient-to-b from-emerald-50/90 to-white/90
             backdrop-blur-lg border-r border-emerald-100/50
             shadow-lg shadow-emerald-100/30
-            transition-all duration-500 ease-in-out overflow-hidden
-            no-scrollbar
-            ${isOpen && isDesktop ? "w-64" : "w-16"}
-            relative
+            transition-all duration-500 ease-in-out
+             no-scrollbar w-16
             before:absolute before:inset-0 
             before:bg-gradient-to-r
-           `}
+          `}
           >
             {/* Navigation */}
-            <nav className="flex-1 overflow-auto px-2 max-h-screen pb-32 ">
+            <nav className="flex-1 no-scrollbar overflow-auto px-2 max-h-screen pb-32 ">
               {adminMenuItems
                 .filter((item) =>
                   item.roles.some((role) => userInfo?.role === role),
@@ -247,6 +226,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                     <Link
                       key={item.id}
                       href={item.href}
+                      title={item.label}
                       className={`
                       group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                       transition-all duration-300 relative overflow-hidden
@@ -255,7 +235,6 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                           ? "bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-md shadow-emerald-200"
                           : "text-emerald-700 hover:bg-emerald-50/80 hover:shadow-sm"
                       }
-                      ${isOpen ? "justify-start" : "justify-center"}
                     `}
                     >
                       {/* Active indicator */}
@@ -276,22 +255,6 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                       >
                         <Icon size={20} className="flex-shrink-0" />
                       </div>
-
-                      {isOpen && (
-                        <span
-                          className={`
-                        truncate ml-3 text-sm font-medium transition-all duration-300
-                        ${active ? "text-white" : "text-emerald-700"}
-                      `}
-                        >
-                          {item.label}
-                        </span>
-                      )}
-
-                      {/* Hover glow effect */}
-                      {!active && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      )}
                     </Link>
                   );
                 })}
@@ -306,6 +269,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                   <Link
                     key={item.id}
                     href={item.href}
+                    title={item.label}
                     className={`
                       group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                       transition-all duration-300 relative overflow-hidden
@@ -314,7 +278,6 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                           ? "bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-md shadow-blue-200"
                           : "text-blue-700 hover:bg-blue-50/80 hover:shadow-sm"
                       }
-                      ${isOpen ? "justify-start" : "justify-center"}
                     `}
                   >
                     {active && (
@@ -333,17 +296,6 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                     >
                       <Icon size={20} className="flex-shrink-0" />
                     </div>
-
-                    {isOpen && (
-                      <span
-                        className={`
-                        truncate ml-3 text-sm font-medium transition-all duration-300
-                        ${active ? "text-white" : "text-blue-700"}
-                      `}
-                      >
-                        {item.label}
-                      </span>
-                    )}
                   </Link>
                 );
               })}
@@ -360,6 +312,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                     <Link
                       key={item.id}
                       href={item.href}
+                      title={item.label}
                       className={`
                     group flex items-center px-3 py-3 rounded-xl mx-1 my-1
                     transition-all duration-300 relative overflow-hidden
@@ -368,7 +321,6 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                         ? "bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md shadow-amber-200"
                         : "text-amber-700 hover:bg-amber-50/80 hover:shadow-sm"
                     }
-                    ${isOpen ? "justify-start" : "justify-center"}
                   `}
                     >
                       {active && (
@@ -387,17 +339,6 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                       >
                         <Icon size={20} className="flex-shrink-0" />
                       </div>
-
-                      {isOpen && (
-                        <span
-                          className={`
-                      truncate ml-3 text-sm font-medium transition-all duration-300
-                      ${active ? "text-white" : "text-amber-700"}
-                    `}
-                        >
-                          {item.label}
-                        </span>
-                      )}
                     </Link>
                   );
                 })}

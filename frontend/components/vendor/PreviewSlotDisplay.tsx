@@ -6,10 +6,11 @@ import { BookingApi } from "@/api/booking.api";
 import { DockApi } from "@/api/dock.api";
 import { Vacant } from "@/types/vacant.type";
 import { IDockBusyTime } from "@/types/busyTime.type";
-import { Days } from "@/types/shared.type";
+import { Days, ROLE } from "@/types/shared.type";
 import { IDock } from "@/types/dock.type";
 import { normalizeDate } from "@/lib/constant";
 import { Calendar, Clock } from "lucide-react";
+import { useUserInfo } from "../UserContext";
 
 interface PreviewSlotDisplayProps {
   formData: Booking;
@@ -25,6 +26,12 @@ const PreviewSlotDisplay = ({
   currentBookingId,
 }: PreviewSlotDisplayProps) => {
   const isReadOnly = mode === "preview";
+  const [isAdminMode, setIsAdminMode] = useState(false);
+
+  const { userInfo } = useUserInfo();
+  const isAdmin =
+    userInfo?.role == ROLE.USER_ORGANIZATION ||
+    userInfo?.role == ROLE.ADMIN_ORGANIZATION;
 
   // States
   const [visualStartTime, setVisualStartTime] = useState<string | null>(null);
@@ -120,7 +127,7 @@ const PreviewSlotDisplay = ({
     return filteredDockBookings.filter(
       (b: any) =>
         b?.arrivalTime &&
-        formatDateToString(new Date(b.arrivalTime)) === dateString
+        formatDateToString(new Date(b.arrivalTime)) === dateString,
     );
   };
 
@@ -130,14 +137,14 @@ const PreviewSlotDisplay = ({
   const dockBookings = useMemo(
     () =>
       allBookings?.filter(
-        (b: any) => b.dockId === formData.dockId && b.status !== "CANCELED"
+        (b: any) => b.dockId === formData.dockId && b.status !== "CANCELED",
       ) || [],
-    [allBookings, formData?.dockId]
+    [allBookings, formData?.dockId],
   );
 
   const filteredDockBookings = useMemo(
     () => dockBookings.filter((b: any) => b.id !== currentBookingId),
-    [dockBookings, currentBookingId]
+    [dockBookings, currentBookingId],
   );
 
   const weekDays = useMemo(() => {
@@ -157,7 +164,7 @@ const PreviewSlotDisplay = ({
       const dayEnum = mapDayIndexToEnum(date.getDay());
       const dateString = formatDateToString(date);
       const dayVacants = dockDetail.vacants.filter(
-        (v: Vacant) => v.day === dayEnum
+        (v: Vacant) => v.day === dayEnum,
       );
 
       schedulesByDay[dateString] = dayVacants
@@ -205,7 +212,7 @@ const PreviewSlotDisplay = ({
   const checkTimeCollisions = (
     startTime: number,
     durationHours: number,
-    events: any[]
+    events: any[],
   ): boolean => {
     const endTime = startTime + durationHours;
     for (const event of events) {
@@ -269,10 +276,9 @@ const PreviewSlotDisplay = ({
     // ===============================
     // 4. AUTO EFFICIENT (ANCHOR SEARCH)
     // ===============================
-    if (formData.Warehouse.isAutoEfficientActive) {
+    if (formData.Warehouse.isAutoEfficientActive && !isAdminMode) {
       const applicableBusyTimes = getApplicableBusyTimesForDate(date);
       const dateBookings = getDateBookingsForDate(date);
-
       type EventBoundary = { start: number; end: number };
 
       const eventBoundaries: EventBoundary[] = [
@@ -289,7 +295,7 @@ const PreviewSlotDisplay = ({
           };
         }),
       ].filter(
-        (ev) => ev.end > scheduleStartHour && ev.start < scheduleEndHour
+        (ev) => ev.end > scheduleStartHour && ev.start < scheduleEndHour,
       );
 
       const now = new Date();
@@ -299,16 +305,15 @@ const PreviewSlotDisplay = ({
         date.getFullYear() === now.getFullYear();
 
       let minimumAllowedHour = scheduleStartHour;
-      
+
       if (isToday) {
         minimumAllowedHour = Math.max(
           scheduleStartHour,
-          now.getHours() + now.getMinutes() / 60 + 0.01
-        );//0.01 = 1 menit majuin dikit biar ga kebingungan adminnya karena booking langsung jatuh ke delayed
+          now.getHours() + now.getMinutes() / 60 + 0.01,
+        ); //0.01 = 1 menit majuin dikit biar ga kebingungan adminnya karena booking langsung jatuh ke delayed
       }
 
       const candidateStarts: number[] = [minimumAllowedHour];
-
 
       eventBoundaries
         .sort((a, b) => a.start - b.start)
@@ -321,7 +326,7 @@ const PreviewSlotDisplay = ({
       const validStarts = candidateStarts.filter((start) => {
         const end = start + durationHours;
         const collide = eventBoundaries.some(
-          (ev) => start < ev.end && end > ev.start
+          (ev) => start < ev.end && end > ev.start,
         );
         return !collide && end <= scheduleEndHour;
       });
@@ -395,7 +400,7 @@ const PreviewSlotDisplay = ({
             new Date(b.estimatedFinishTime).getHours() +
             new Date(b.estimatedFinishTime).getMinutes() / 60,
         })),
-      ]
+      ],
     );
 
     if (hasCollision) {
@@ -420,7 +425,7 @@ const PreviewSlotDisplay = ({
       `${finishDateTime.getHours().toString().padStart(2, "0")}:${finishDateTime
         .getMinutes()
         .toString()
-        .padStart(2, "0")}`
+        .padStart(2, "0")}`,
     );
 
     onUpdateFormData({
@@ -428,7 +433,7 @@ const PreviewSlotDisplay = ({
       estimatedFinishTime: finishDateTime,
     });
 
-    if (formData.Warehouse.isAutoEfficientActive) {
+    if (formData.Warehouse.isAutoEfficientActive && !isAdminMode) {
       toast.success("auto efficient active");
     }
   };
@@ -444,7 +449,7 @@ const PreviewSlotDisplay = ({
       const weekStart = new Date(currentWeekStart);
       weekStart.setDate(currentWeekStart.getDate() + i * 7);
       return weekStart;
-    }
+    },
   );
 
   // UI Components
@@ -478,8 +483,8 @@ const PreviewSlotDisplay = ({
                 isSelected
                   ? "border-primary bg-primary text-white"
                   : isReadOnly
-                  ? "border-gray-200 bg-gray-100 opacity-50"
-                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                    ? "border-gray-200 bg-gray-100 opacity-50"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
               }`}
             >
               <span className="text-xs opacity-80">
@@ -501,7 +506,7 @@ const PreviewSlotDisplay = ({
     const endHour = 22; // atau 21, 23 sesuai kebutuhan
     const hours = Array.from(
       { length: endHour - startHour + 1 },
-      (_, i) => startHour + i
+      (_, i) => startHour + i,
     );
 
     const getBarPosition = (timeHour: number): number => {
@@ -530,7 +535,7 @@ const PreviewSlotDisplay = ({
       return filteredDockBookings.filter(
         (b: any) =>
           b?.arrivalTime &&
-          formatDateToString(new Date(b.arrivalTime)) === dateString
+          formatDateToString(new Date(b.arrivalTime)) === dateString,
       );
     };
 
@@ -547,7 +552,7 @@ const PreviewSlotDisplay = ({
     };
 
     const [currentTime, setCurrentTime] = useState<number | null>(
-      getCurrentTimePosition
+      getCurrentTimePosition,
     );
 
     // TAMBAHKAN: useEffect untuk update real-time
@@ -638,10 +643,10 @@ const PreviewSlotDisplay = ({
                       today
                         ? "bg-red-100 text-red-700 border border-red-300"
                         : isDateSelected
-                        ? "bg-primary text-white"
-                        : isReadOnly
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          ? "bg-primary text-white"
+                          : isReadOnly
+                            ? "bg-gray-100 text-gray-400"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     <span className="font-semibold">{dayShort}</span>
@@ -811,8 +816,8 @@ const PreviewSlotDisplay = ({
                                 isReadOnly
                                   ? "bg-gray-300 cursor-not-allowed opacity-50"
                                   : isDateSelected
-                                  ? "bg-green-100 hover:bg-green-200 border border-green-300 cursor-pointer"
-                                  : "bg-gray-200 cursor-not-allowed opacity-60"
+                                    ? "bg-green-100 hover:bg-green-200 border border-green-300 cursor-pointer"
+                                    : "bg-gray-200 cursor-not-allowed opacity-60"
                               }`}
                               style={{
                                 left: `${startPercent}%`,
@@ -820,10 +825,10 @@ const PreviewSlotDisplay = ({
                               }}
                               title={`${schedule.startTime.slice(
                                 0,
-                                5
+                                5,
                               )}-${schedule.endTime.slice(
                                 0,
-                                5
+                                5,
                               )}\nKlik untuk memilih waktu`}
                             >
                               {/* Schedule time label inside bar */}
@@ -839,7 +844,7 @@ const PreviewSlotDisplay = ({
                             {events.map((event, idx) => {
                               const eventStart = Math.max(
                                 event.start,
-                                startHourNum
+                                startHourNum,
                               );
                               const eventEnd = Math.min(event.end, endHourNum);
                               const left = getBarPosition(eventStart);
@@ -959,21 +964,22 @@ const PreviewSlotDisplay = ({
                                   className="absolute h-full rounded-lg border-2 border-blue-500 bg-blue-400/30 shadow-sm z-30 pointer-events-none"
                                   style={{
                                     left: `${getBarPosition(
-                                      parseTimeToHours(visualStartTime) || 0
+                                      parseTimeToHours(visualStartTime) || 0,
                                     )}%`,
                                     width: `${Math.max(
                                       2,
                                       getBarPosition(
-                                        parseTimeToHours(visualEndTime) || 0
+                                        parseTimeToHours(visualEndTime) || 0,
                                       ) -
                                         getBarPosition(
-                                          parseTimeToHours(visualStartTime) || 0
-                                        )
+                                          parseTimeToHours(visualStartTime) ||
+                                            0,
+                                        ),
                                     )}%`,
                                   }}
                                   title={`Waktu terpilih: ${visualStartTime.slice(
                                     0,
-                                    5
+                                    5,
                                   )}-${visualEndTime.slice(0, 5)}`}
                                 >
                                   {/* Time label */}
@@ -1024,7 +1030,7 @@ const PreviewSlotDisplay = ({
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 hour12: false,
-                              }
+                              },
                             )}
                             -
                             {new Date(b.estimatedFinishTime).toLocaleTimeString(
@@ -1033,7 +1039,7 @@ const PreviewSlotDisplay = ({
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 hour12: false,
-                              }
+                              },
                             )}
                           </span>
                         </div>
@@ -1146,14 +1152,14 @@ const PreviewSlotDisplay = ({
             `${arrivalDate.getHours().toString().padStart(2, "0")}:${arrivalDate
               .getMinutes()
               .toString()
-              .padStart(2, "0")}:00`
+              .padStart(2, "0")}:00`,
           );
           const finishDate = new Date(formData.estimatedFinishTime);
           setVisualEndTime(
             `${finishDate.getHours().toString().padStart(2, "0")}:${finishDate
               .getMinutes()
               .toString()
-              .padStart(2, "0")}:00`
+              .padStart(2, "0")}:00`,
           );
         }
         setCount((prev) => prev++);
@@ -1245,7 +1251,7 @@ const PreviewSlotDisplay = ({
                 (dock: IDock) =>
                   !formData.Vehicle?.vehicleType ||
                   !dock.allowedTypes ||
-                  dock.allowedTypes.includes(formData.Vehicle.vehicleType)
+                  dock.allowedTypes.includes(formData.Vehicle.vehicleType),
               )
               .map((dock: IDock) => (
                 <option key={dock.id} value={dock.id}>
@@ -1259,16 +1265,18 @@ const PreviewSlotDisplay = ({
 
       {/* Time Slot Section */}
       <div className="bg-white rounded-lg shadow-sm pb-12">
-        <h3 className="text-base font-medium mb-3 flex items-center">
-          <div className="mr-3">
-            {isReadOnly ? "Waktu Kunjungan" : "Pilih Waktu Kunjungan"}
-          </div>
-          {!isReadOnly && (
-            <div className="text-xs text-gray-600">
-              Klik area hijau untuk memilih waktu.
+        <div className="flex justify-between">
+          <h3 className="text-base font-medium mb-3 flex items-center">
+            <div className="mr-3">
+              {isReadOnly ? "Waktu Kunjungan" : "Pilih Waktu Kunjungan"}
             </div>
-          )}
-        </h3>
+            {!isReadOnly && (
+              <div className="text-xs text-gray-600">
+                Klik area hijau untuk memilih waktu.
+              </div>
+            )}
+          </h3>
+        </div>
         <ol className="list-disc list-inside mb-3 text-xs">
           <li>
             Admin Gudang Mungkin Akan Menyesuaikan Ulang Sampai Anda Dilokasi
@@ -1278,19 +1286,38 @@ const PreviewSlotDisplay = ({
             Terdapat interval Minimal Queue yang menjaga jarak antar kunjungan.
           </li>
           <li>
-          booking dengan status CANCELED, FINISHED tidak ditampilkan karena memang boleh di ambil alih 
-          </li><li>
-          Di drag and drop atau justify, status yang sudah telat menurut toleransi juga akan di ambil alih, tampilan booking seperti tertimpa kemungkinan karena alasan ini
+            booking dengan status CANCELED, FINISHED tidak ditampilkan karena
+            memang boleh di ambil alih
+          </li>
+          <li>
+            Di drag and drop atau justify, status yang sudah telat menurut
+            toleransi juga akan di ambil alih, tampilan booking seperti tertimpa
+            kemungkinan karena alasan ini
           </li>
         </ol>
 
-        <div className="mb-3">
+        <div className="flex gap-x-3 items-center">
           <p className="text-sm">
             Durasi Bongkar:{" "}
             <span className="font-medium text-primary">
               {formData?.Vehicle?.durasiBongkar || 0} menit
             </span>
           </p>
+          {isAdmin && (
+            <label
+              htmlFor="isAdminMode"
+              className="border cursor-pointer p-1 text-xs mr-3 rounded-md bg-slate-100"
+            >
+              <input
+                type="checkbox"
+                id="isAdminMode"
+                checked={isAdminMode}
+                className="checkbox  "
+                onChange={() => setIsAdminMode(!isAdminMode)}
+              />
+              Admin Mode
+            </label>
+          )}
         </div>
 
         <TimeSlotGrid />

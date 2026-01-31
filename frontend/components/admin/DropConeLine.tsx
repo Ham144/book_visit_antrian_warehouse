@@ -34,7 +34,9 @@ export const DropZoneLine = ({
         ${className}
         h-2 transition-all duration-150
         ${
-          isOver ? "bg-primary/30 border-y border-primary" : "hover:bg-gray-100"
+          isOver
+            ? "bg-teal-100 border-2 border-primary border-dashed py-12 "
+            : "hover:bg-gray-100"
         }
       `}
       title="Drop di sini untuk mengubah urutan"

@@ -456,7 +456,10 @@ export class BookingWarehouseService {
     };
 
     // CASE A: LAST - Ambil booking terakhir atau mulai dari schedule start
-    if (relativePositionTarget.bookingId === 'LAST') {
+    if (
+      relativePositionTarget.bookingId.startsWith('drop-after-last') ||
+      relativePositionTarget.bookingId.startsWith('inprogress-empty')
+    ) {
       if (existingQueue.length === 0) {
         //kondisi tidak ada booking
         const now = new Date();
@@ -526,8 +529,6 @@ export class BookingWarehouseService {
     }
     // CASE B: BEFORE/AFTER/SWAP booking tertentu
     else {
-      console.log('=== CASE B: BEFORE|AFTER|SWAP ===');
-
       const targetBooking = await this.prismaService.booking.findUnique({
         where: { id: relativePositionTarget.bookingId },
         include: { Vehicle: true },
@@ -592,9 +593,6 @@ export class BookingWarehouseService {
 
       // BEFORE/AFTER LOGIC
       if (relativePositionTarget.type === 'BEFORE') {
-        throw new BadRequestException(
-          'Emang sengaja, jatuh ke before after logix berhasil',
-        );
         insertIndex = targetIndex;
 
         if (targetIndex === 0) {
@@ -845,6 +843,15 @@ export class BookingWarehouseService {
         // Bungkus dengan new Date() agar tipenya bukan 'number'
         gte: new Date(new Date(date).setHours(0, 0, 0, 0)),
         lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+      };
+    }
+
+    if (userInfo.role == ROLE.ADMIN_VENDOR) {
+      where.driver = {
+        vendorName: {
+          equals: userInfo.vendorName,
+          mode: 'insensitive',
+        },
       };
     }
 
@@ -1456,57 +1463,7 @@ export class BookingWarehouseService {
       };
     });
     // Prepare queue snapshot (top 5 waiting bookings)
-    const waitingBookings = bookings
-      .filter((b) => ['WAITING', 'ASSIGNED'].includes(b.status))
-      .sort((a, b) => a.arrivalTime.getTime() - b.arrivalTime.getTime())
-      .slice(0, 5);
-
-    const queueSnapshot = waitingBookings.map((booking) => {
-      const waitingMs = now.getTime() - booking.arrivalTime.getTime();
-      const waitingMinutes = Math.round(waitingMs / (1000 * 60));
-      const isOverdue = booking.estimatedFinishTime
-        ? now.getTime() > booking.estimatedFinishTime.getTime()
-        : false;
-
-      // Convert dock to ResponseDockDto format
-      const dockDto: ResponseDockDto = booking.Dock
-        ? {
-            id: booking.Dock.id,
-            name: booking.Dock.name,
-            warehouseId: booking.Dock.warehouseId,
-            photos: booking.Dock.photos,
-            allowedTypes: booking.Dock.allowedTypes,
-            isActive: booking.Dock.isActive,
-            priority: booking.Dock.priority,
-            organizationName: booking.Dock.organizationName,
-            // Tambahkan properti lain yang diperlukan
-          }
-        : {
-            id: '',
-            name: 'Unassigned',
-            warehouseId: '',
-            photos: [],
-            allowedTypes: [],
-            isActive: false,
-            priority: 0,
-            organizationName: '',
-          };
-
-      return {
-        bookingId: booking.id,
-        code: booking.code,
-        vendorName:
-          booking.driver?.vendor?.name ||
-          booking.driver?.displayName ||
-          'Unknown',
-        arrivalTime: booking.arrivalTime.toISOString(),
-        estimatedFinishTime: booking.estimatedFinishTime?.toISOString(),
-        status: booking.status as 'WAITING' | 'ASSIGNED' | 'ARRIVED',
-        dock: dockDto,
-        isOverdue,
-        waitingMinutes,
-      };
-    });
+    const queueSnapshot = [];
 
     // Generate KPI data
     const kpiData = this.generateKPIData(bookings, docks, now);
@@ -1528,7 +1485,6 @@ export class BookingWarehouseService {
         lastUpdated: now.toISOString(),
       },
       dockStatuses,
-      queueSnapshot,
       kpiData,
       busyTimeData,
       alerts,

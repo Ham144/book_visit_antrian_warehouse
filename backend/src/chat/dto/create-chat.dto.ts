@@ -1,6 +1,6 @@
 import { IsString } from "class-validator";
 
-export class ChatRequestDto {
+export class CreateChatDto {
   @IsString()
   senderId: string;
 
@@ -10,3 +10,4 @@ export class ChatRequestDto {
   @IsString()
   message: string;
 }
+

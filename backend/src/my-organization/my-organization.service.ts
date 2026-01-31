@@ -16,6 +16,7 @@ import {
   SubscriptionPlan,
 } from 'src/common/shared-enum';
 import { BaseProps } from 'src/common/shared-interface';
+import { ResponseMyOrganizationSettingsDto } from './dto/response-my-organization-settings.dto';
 
 @Injectable()
 export class MyOrganizationService {
@@ -356,5 +357,46 @@ export class MyOrganizationService {
     });
 
     return response;
+  }
+
+  async getMyOrganizationSettings(userInfo: TokenPayload) {
+    const org = await this.prismaService.organization.findFirst({
+      where: {
+        accounts: {
+          some: {
+            username: userInfo.username,
+          },
+        },
+      },
+    });
+    return plainToInstance(ResponseMyOrganizationSettingsDto, org, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  async updateMyOrganizationSettings(
+    userinfo: TokenPayload,
+    body: UpdateMyOrganizationDto,
+  ) {
+    const { name, subscription, accounts,  ...rest } = body;
+
+
+    await this.prismaService.organization.update({
+      where: {
+        accounts: {
+          some: {
+            username: userinfo.username,
+          },
+        },
+        name,
+      },
+      data: {
+        ...rest,
+      },
+    });
+
+    return {
+      message: 'Berhasil memperbarui setting organisasi',
+    };
   }
 }

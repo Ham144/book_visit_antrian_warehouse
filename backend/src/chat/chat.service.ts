@@ -3,15 +3,16 @@ import { plainToInstance } from "class-transformer";
 import  * as hash from "crypto";
 import { PrismaService } from "src/common/prisma.service";
 import { ChatResponseDto } from "src/dock/dto/chat-response.dto";
-import { ChatRequestDto } from "src/user/dto/chat-request.dto";
 import { TokenPayload } from "src/user/dto/token-payload.dto";
+import { CreateChatDto } from "./dto/create-chat.dto";
+import { ChatStatus } from "src/common/shared-enum";
 
 @Injectable()
 export class ChatService {
     constructor(private readonly prismaService: PrismaService) {}
     
     async sendMessage(
-        dto: ChatRequestDto,
+        dto: CreateChatDto,
       ): Promise<ChatResponseDto> {
         const isreceiverValid = await this.prismaService.user.findFirst({
           where: { username: dto.receiverId },
@@ -24,6 +25,7 @@ export class ChatService {
         const message = await this.prismaService.chat.create({
           data: {
             senderId: dto.senderId,
+            status: ChatStatus.DELIVERED,
             message: dto.message,
             room: {
               connectOrCreate: {
@@ -138,5 +140,4 @@ export class ChatService {
       .update(sortedUsers.join(':'))
       .digest('hex');
   }
-  
 }
