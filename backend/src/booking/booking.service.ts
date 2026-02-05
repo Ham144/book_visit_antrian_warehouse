@@ -18,7 +18,6 @@ import { BookingFilter } from 'src/common/shared-interface';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ResponseReportsBookingDto } from './dto/response-reports-boking.dto';
 import { ResponseDashboardBookingDto } from './dto/response-dashboard-booking.dto';
-import { ResponseDockDto } from 'src/dock/dto/response-dock.dto';
 
 @Injectable()
 export class BookingWarehouseService {
@@ -392,10 +391,13 @@ export class BookingWarehouseService {
       where: {
         dockId: targetDockId,
         id: { not: booking.id },
-
         // ❌ IGNORE
         status: {
-          notIn: [BookingStatus.CANCELED, BookingStatus.FINISHED],
+          notIn: [
+            BookingStatus.CANCELED,
+            BookingStatus.FINISHED,
+            BookingStatus.PENDING,
+          ],
         },
 
         OR: [
@@ -824,7 +826,7 @@ export class BookingWarehouseService {
   }
 
   async findAll(filter: BookingFilter, userInfo: TokenPayload) {
-    const { page, searchKey, weekStart, weekEnd, date } = filter;
+    const { page, searchKey, status, weekStart, weekEnd, date } = filter;
 
     const where: Prisma.BookingWhereInput = {
       organizationName: userInfo.organizationName,
@@ -844,6 +846,10 @@ export class BookingWarehouseService {
         gte: new Date(new Date(date).setHours(0, 0, 0, 0)),
         lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
       };
+    }
+
+    if (status && status != 'all') {
+      where.status = status;
     }
 
     if (userInfo.role == ROLE.ADMIN_VENDOR) {
@@ -951,7 +957,7 @@ export class BookingWarehouseService {
     //CANCELED tetap dikeluarkan karena itu perlu tampil di live queue!
     if (!showAllStatus) {
       where.status = {
-        notIn: [BookingStatus.FINISHED],
+        notIn: [BookingStatus.FINISHED, BookingStatus.PENDING],
       };
     }
 
@@ -1363,6 +1369,7 @@ export class BookingWarehouseService {
       [BookingStatus.IN_PROGRESS]: 0.8,
       [BookingStatus.FINISHED]: 0,
       [BookingStatus.CANCELED]: 0,
+      [BookingStatus.PENDING]: 0,
     };
 
     const getDockWeight = (bookings: Booking[]): number => {

@@ -9,6 +9,7 @@ export interface BookingFilter {
   page?: number;
   vendorName?: string | null; //untuk admin vendor
   date?: string | null;
-  weekStart?: string | null; //PreviewSlotDisplay
-  weekEnd?: string | null; //PreviewSlotDisplay
+  status?: string;
+  weekStart?: string; //jangan dihapus, emang begini
+  weekEnd?: string; //jangan dihapus, emang begini
 }

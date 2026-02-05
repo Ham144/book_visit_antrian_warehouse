@@ -2,7 +2,7 @@
 import { OrganizationApi } from "@/api/organization.api";
 import { allMenuAndFeatures } from "@/components/admin/side-nav";
 import { useUserInfo } from "@/components/UserContext";
-import { MyOrganizationSettingsDto } from "@/types/organization";
+import { MyOrganizationSettings } from "@/types/organization";
 import { ROLE } from "@/types/shared.type";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CheckCircle } from "lucide-react";
@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const OrganizationSettingsPage = () => {
-  const [settingsData, setSettingsData] = useState<MyOrganizationSettingsDto>();
+  const [settingsData, setSettingsData] = useState<MyOrganizationSettings>();
   const { userInfo } = useUserInfo();
   const { data: myOrganizationSettings, isLoading } = useQuery({
     queryKey: ["oraganization-settings"],
@@ -32,10 +32,8 @@ const OrganizationSettingsPage = () => {
       toast.success(res?.message);
     },
     onError: (er: any) => {
-      toast.error(
-        er.response?.data?.message || "Gagal memperbarui setting",
-      )
-    }
+      toast.error(er.response?.data?.message || "Gagal memperbarui setting");
+    },
   });
 
   useEffect(() => {
@@ -226,6 +224,39 @@ const OrganizationSettingsPage = () => {
                       Base Distinguished Name untuk pencarian
                     </p>
                   </div>
+                  {/* isConfirmBookRequired */}
+                  <div className="space-y-3">
+                    <label
+                      htmlFor="AD_BASE_DN"
+                      className="block text-sm font-semibold text-teal-900"
+                    >
+                      isConfirmBookRequired
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="isConfirmBookRequired"
+                        name="isConfirmBookRequired"
+                        checked={settingsData?.isConfirmBookRequired || false}
+                        onChange={(e) =>
+                          setSettingsData({
+                            ...settingsData,
+                            isConfirmBookRequired: e.target.checked,
+                          })
+                        }
+                        className="mr-2"
+                      />
+                      <label
+                        htmlFor="isConfirmBookRequired"
+                        className="select-none cursor-pointer"
+                      >
+                        Konfirmasi Kedatangan saat Membuat Pemesanan?
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Base Distinguished Name untuk pencarian
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -266,13 +297,13 @@ const OrganizationSettingsPage = () => {
                         type="checkbox"
                         id={`feature-${feature.id}`}
                         checked={settingsData?.disabledFeatures?.includes(
-                          feature.id,
+                          feature.id
                         )}
                         onChange={(e) => {
                           const newFeatures = e.target.checked
                             ? [...settingsData.disabledFeatures, feature.id]
                             : settingsData.disabledFeatures.filter(
-                                (f) => f !== feature.id,
+                                (f) => f !== feature.id
                               );
                           setSettingsData({
                             ...settingsData,

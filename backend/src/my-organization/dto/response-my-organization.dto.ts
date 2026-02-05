@@ -19,6 +19,8 @@ export class ResponseMyOrganizationDto {
   @Expose({ groups: ['detail'] })
   AD_BASE_DN?: string;
   @Expose({ groups: ['detail'] })
+  isConfirmBookRequired?: boolean;
+  @Expose({ groups: ['detail'] })
   warehouses?: Warehouse[];
   @Expose({ groups: ['detail'] })
   accounts?: LoginResponseDto[];

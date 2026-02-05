@@ -15,6 +15,7 @@ import { useUserInfo } from "@/components/UserContext";
 import WarehouseModalForm from "@/components/admin/warehouseModalForm";
 import { Warehouse } from "@/types/warehouse";
 import { BookingFilter } from "@/types/booking.type";
+import { BookingApi } from "@/api/booking.api";
 
 const MyWarehousePage = () => {
   const { userInfo } = useUserInfo();
@@ -45,6 +46,14 @@ const MyWarehousePage = () => {
       return await WarehouseApi.getWarehouse(filter);
     },
     enabled: !!userInfo?.homeWarehouse.id,
+  });
+
+  const { data: bookings } = useQuery({
+    queryKey: ["bookings"],
+    queryFn: async () => {
+      return await BookingApi.getAllBookingsList(filter);
+    },
+    enabled: !!userInfo,
   });
 
   const handleClose = () => {
@@ -112,42 +121,12 @@ const MyWarehousePage = () => {
     );
   }
 
-  if (!myWarehouse) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-500">Warehouse tidak ditemukan</p>
-        </div>
-      </div>
-    );
-  }
-
-  const bookings = myWarehouse.bookings || [];
-
   return (
     <div className="flex ">
       <main className="flex-1 p-6">
         <div className="min-h-screen bg-gray-50 ">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    My warehouse Record
-                  </h1>
-                  <p className="text-gray-600">
-                    Kelola data terkait warehouse saat ini
-                  </p>
-                </div>
-                <button
-                  onClick={handleOpenEdit}
-                  className="btn btn-primary px-3"
-                >
-                  <Edit size={16} className="mr-2" /> Edit Warehouse
-                </button>
-              </div>
-            </div>
 
             {/* Warehouse Info Card */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -156,23 +135,25 @@ const MyWarehousePage = () => {
                   <div className="p-3 bg-leaf-green-100 rounded-lg">
                     <WarehouseIcon className="w-6 h-6 text-leaf-green-600" />
                   </div>
+
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
-                      {myWarehouse.name}
+                      {myWarehouse?.name}
                     </h2>
-                    {myWarehouse.location && (
+                    {myWarehouse?.location && (
                       <p className="text-sm text-gray-500">
-                        {myWarehouse.location}
+                        {myWarehouse?.location}
                       </p>
                     )}
                   </div>
                 </div>
-                <div
-                  className={`badge ${
-                    myWarehouse.isActive ? "badge-success" : "badge-error"
-                  }`}
-                >
-                  {myWarehouse.isActive ? "Aktif" : "Tidak Aktif"}
+                <div className="flex gap-x-2">
+                  <button
+                    onClick={handleOpenEdit}
+                    className="btn btn-primary px-3"
+                  >
+                    <Edit size={16} className="mr-2" /> Edit Warehouse
+                  </button>
                 </div>
               </div>
               {myWarehouse.description && (
@@ -237,7 +218,7 @@ const MyWarehousePage = () => {
                           <td>
                             {booking.arrivalTime
                               ? new Date(booking.arrivalTime).toLocaleString(
-                                  "id-ID",
+                                  "id-ID"
                                 )
                               : "N/A"}
                           </td>
@@ -247,10 +228,10 @@ const MyWarehousePage = () => {
                                 booking.status === "finished"
                                   ? "badge-success"
                                   : booking.status === "in_progress"
-                                    ? "badge-warning"
-                                    : booking.status === "waiting"
-                                      ? "badge-info"
-                                      : "badge-error"
+                                  ? "badge-warning"
+                                  : booking.status === "waiting"
+                                  ? "badge-info"
+                                  : "badge-error"
                               }`}
                             >
                               {booking.status || "N/A"}

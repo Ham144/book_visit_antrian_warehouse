@@ -1,7 +1,7 @@
 import { Booking } from "@/types/booking.type";
 import { BookingStatus, ROLE } from "@/types/shared.type";
 import { useUserInfo } from "../UserContext";
-import { X } from "lucide-react";
+import { Timer, X } from "lucide-react";
 
 interface BookingListCardProps {
   booking: Booking;
@@ -46,6 +46,18 @@ const BookingListCard = ({
           textClass: "bg-yellow-100 text-yellow-800",
           label: "In Progress",
           icon: "🔄",
+        };
+      case BookingStatus.IN_PROGRESS:
+        return {
+          textClass: "bg-yellow-100 text-yellow-800",
+          label: "In Progress",
+          icon: "🔄",
+        };
+      case BookingStatus.UNLOADING:
+        return {
+          textClass: "bg-yellow-100 text-yellow-800",
+          label: "In Progress",
+          icon: Timer,
         };
       case BookingStatus.FINISHED:
         return {
@@ -186,19 +198,21 @@ const BookingListCard = ({
         </div>
 
         {/* Waktu Selesai */}
-        {booking.actualFinishTime && booking.status== BookingStatus.FINISHED && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-green-600">
-                <span>✓ Selesai: {formatTime(booking.actualFinishTime)}</span>
-              </div>
-        )}
+        {booking.actualFinishTime &&
+          booking.status == BookingStatus.FINISHED && (
+            <div className="mt-1 flex items-center gap-2 text-xs text-green-600">
+              <span>✓ Selesai: {formatTime(booking.actualFinishTime)}</span>
+            </div>
+          )}
 
         {/* status Batal */}
         {booking.status == BookingStatus.CANCELED && booking.canceledReason && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-green-600">
-                <span><X color="red" className="w-4 h-4" />
-                </span>
-                Alasan Pembatalan: {booking.canceledReason}
-              </div>
+          <div className="mt-1 flex items-center gap-2 text-xs text-green-600">
+            <span>
+              <X color="red" className="w-4 h-4" />
+            </span>
+            Alasan Pembatalan: {booking.canceledReason}
+          </div>
         )}
 
         {/* Tombol Action - hanya muncul untuk DRIVER_VENDOR */}

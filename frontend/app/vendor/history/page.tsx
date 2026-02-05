@@ -10,6 +10,7 @@ import DetailBookingModal from "@/components/shared-common/DetailBookingModal";
 import ConfirmationWithInput from "@/components/shared-common/ConfirmationWithInput";
 import { useUserInfo } from "@/components/UserContext";
 import BookingListCard from "@/components/shared-common/BookingListCard";
+import { BookingStatus } from "@/types/shared.type";
 
 export default function HistoryPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string>(null);
@@ -20,6 +21,7 @@ export default function HistoryPage() {
   const [filter, setFilter] = useState<BookingFilter>({
     searchKey: "",
     page: 1,
+    status: "all",
   });
 
   //cancel states
@@ -59,7 +61,44 @@ export default function HistoryPage() {
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold mb-2">Riwayat Pemesanan</h1>
             <p className="text-gray-600">Lihat semua pemesanan Anda</p>
+            <div className="border-b border-gray-200">
+              <div className="flex space-x-1">
+                <button
+                  key={"all"}
+                  className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-all duration-200 relative ${
+                    filter.status === "all"
+                      ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                  onClick={() => setFilter({ ...filter, status: "all" })}
+                >
+                  Semua
+                  {filter.status === "all" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></span>
+                  )}
+                </button>
+                {Object.keys(BookingStatus).map((status) => (
+                  <button
+                    key={status}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-all duration-200 relative ${
+                      filter.status === status
+                        ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                    }`}
+                    onClick={() =>
+                      setFilter({ ...filter, status: status as any })
+                    }
+                  >
+                    {status}
+                    {filter.status === status && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
           <label className="relative">
             <input
               type="text"
@@ -111,7 +150,9 @@ export default function HistoryPage() {
           >
             <ArrowLeft size={16} className="mr-1" /> Previous page
           </button>
-          <span className="text-lg font-bold  border px-5 py-2 bg-primary text-white rounded-md">{filter.page}</span>
+          <span className="text-lg font-bold  border px-5 py-2 bg-primary text-white rounded-md">
+            {filter.page}
+          </span>
           <button
             onClick={() => {
               setFilter((prev) => ({

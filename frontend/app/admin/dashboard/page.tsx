@@ -196,8 +196,8 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 overflow-y-auto max-h-96">
-      <div role="alert" className="alert alert-error w-full bg-red-200">
+    <div className="min-h-screen flex flex-col   bg-gray-50 dark:bg-gray-900 p-4 md:p-6 overflow-y-auto max-h-96">
+      <div role="alert" className="alert  alert-error w-full bg-red-200">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="stroke-current shrink-0 h-6 w-6"
@@ -388,7 +388,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                             </span>
                           </div>
                         </div>
-                      ),
+                      )
                     )}
                   </div>
                 </div>

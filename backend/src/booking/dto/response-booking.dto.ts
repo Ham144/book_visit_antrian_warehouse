@@ -46,6 +46,9 @@ export class ResponseBookingDto {
   notes?: string | null;
 
   @Expose()
+  isConfirmed?: string | null;
+
+  @Expose()
   @Type(() => ResponseVehicleDto)
   Vehicle?: ResponseVehicleDto;
 

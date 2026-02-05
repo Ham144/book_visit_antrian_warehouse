@@ -25,7 +25,7 @@ export interface Booking {
   Warehouse?: Warehouse | null;
   Dock?: IDock | null | null;
   driver?: UserInfo | UserApp;
-
+  isConfirmed?: boolean;
   createdAt?: Date;
   organizationName?: string;
 }
@@ -36,6 +36,15 @@ export interface BookingFilter {
   page?: number;
   vendorName?: string | null; //untuk admin vendor
   date?: string | null;
+  status?:
+    | "all"
+    | BookingStatus.CANCELED
+    | BookingStatus.DELAYED
+    | BookingStatus.FINISHED
+    | BookingStatus.IN_PROGRESS
+    | BookingStatus.UNLOADING;
+  weekStart?: string; //jangan dihapus, emang begini
+  weekEnd?: string; //jangan dihapus, emang begini
 }
 
 export interface UpdateBookingStatus {

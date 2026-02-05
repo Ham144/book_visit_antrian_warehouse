@@ -19,13 +19,15 @@ export interface Organization {
   bookings?: Booking[];
   accounts?: UserInfo[];
   isEditing?: boolean;
+  isConfirmBookRequired?: Boolean;
 }
 
-export interface MyOrganizationSettingsDto {
+export interface MyOrganizationSettings {
   name: string;
   AD_HOST?: string;
   AD_PORT?: string;
   AD_DOMAIN?: string;
   AD_BASE_DN?: string;
   disabledFeatures: string[];
+  isConfirmBookRequired?: boolean;
 }

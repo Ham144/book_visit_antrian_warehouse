@@ -11,6 +11,7 @@ import { IDock } from "@/types/dock.type";
 import { normalizeDate } from "@/lib/constant";
 import { Calendar, Clock } from "lucide-react";
 import { useUserInfo } from "../UserContext";
+import { OrganizationApi } from "@/api/organization.api";
 
 interface PreviewSlotDisplayProps {
   formData: Booking;
@@ -39,6 +40,15 @@ const PreviewSlotDisplay = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>();
   const [selectedWeek, setSelectedWeek] = useState<Date | null>();
   const [notes, setNotes] = useState(formData?.notes || "");
+
+  const { data: myOrganization } = useQuery({
+    queryKey: ["oraganization-settings"],
+    queryFn: async () => {
+      const data = await OrganizationApi.getMyOrganizationSettings();
+      return data;
+    },
+    enabled: !!selectedWeek,
+  });
 
   // Queries
   const { data: availableDocks } = useQuery({
@@ -127,7 +137,7 @@ const PreviewSlotDisplay = ({
     return filteredDockBookings.filter(
       (b: any) =>
         b?.arrivalTime &&
-        formatDateToString(new Date(b.arrivalTime)) === dateString,
+        formatDateToString(new Date(b.arrivalTime)) === dateString
     );
   };
 
@@ -137,14 +147,14 @@ const PreviewSlotDisplay = ({
   const dockBookings = useMemo(
     () =>
       allBookings?.filter(
-        (b: any) => b.dockId === formData.dockId && b.status !== "CANCELED",
+        (b: any) => b.dockId === formData.dockId && b.status !== "CANCELED"
       ) || [],
-    [allBookings, formData?.dockId],
+    [allBookings, formData?.dockId]
   );
 
   const filteredDockBookings = useMemo(
     () => dockBookings.filter((b: any) => b.id !== currentBookingId),
-    [dockBookings, currentBookingId],
+    [dockBookings, currentBookingId]
   );
 
   const weekDays = useMemo(() => {
@@ -164,7 +174,7 @@ const PreviewSlotDisplay = ({
       const dayEnum = mapDayIndexToEnum(date.getDay());
       const dateString = formatDateToString(date);
       const dayVacants = dockDetail.vacants.filter(
-        (v: Vacant) => v.day === dayEnum,
+        (v: Vacant) => v.day === dayEnum
       );
 
       schedulesByDay[dateString] = dayVacants
@@ -212,7 +222,7 @@ const PreviewSlotDisplay = ({
   const checkTimeCollisions = (
     startTime: number,
     durationHours: number,
-    events: any[],
+    events: any[]
   ): boolean => {
     const endTime = startTime + durationHours;
     for (const event of events) {
@@ -295,7 +305,7 @@ const PreviewSlotDisplay = ({
           };
         }),
       ].filter(
-        (ev) => ev.end > scheduleStartHour && ev.start < scheduleEndHour,
+        (ev) => ev.end > scheduleStartHour && ev.start < scheduleEndHour
       );
 
       const now = new Date();
@@ -309,7 +319,7 @@ const PreviewSlotDisplay = ({
       if (isToday) {
         minimumAllowedHour = Math.max(
           scheduleStartHour,
-          now.getHours() + now.getMinutes() / 60 + 0.01,
+          now.getHours() + now.getMinutes() / 60 + 0.01
         ); //0.01 = 1 menit majuin dikit biar ga kebingungan adminnya karena booking langsung jatuh ke delayed
       }
 
@@ -326,7 +336,7 @@ const PreviewSlotDisplay = ({
       const validStarts = candidateStarts.filter((start) => {
         const end = start + durationHours;
         const collide = eventBoundaries.some(
-          (ev) => start < ev.end && end > ev.start,
+          (ev) => start < ev.end && end > ev.start
         );
         return !collide && end <= scheduleEndHour;
       });
@@ -400,7 +410,7 @@ const PreviewSlotDisplay = ({
             new Date(b.estimatedFinishTime).getHours() +
             new Date(b.estimatedFinishTime).getMinutes() / 60,
         })),
-      ],
+      ]
     );
 
     if (hasCollision) {
@@ -425,7 +435,7 @@ const PreviewSlotDisplay = ({
       `${finishDateTime.getHours().toString().padStart(2, "0")}:${finishDateTime
         .getMinutes()
         .toString()
-        .padStart(2, "0")}`,
+        .padStart(2, "0")}`
     );
 
     onUpdateFormData({
@@ -449,7 +459,7 @@ const PreviewSlotDisplay = ({
       const weekStart = new Date(currentWeekStart);
       weekStart.setDate(currentWeekStart.getDate() + i * 7);
       return weekStart;
-    },
+    }
   );
 
   // UI Components
@@ -483,8 +493,8 @@ const PreviewSlotDisplay = ({
                 isSelected
                   ? "border-primary bg-primary text-white"
                   : isReadOnly
-                    ? "border-gray-200 bg-gray-100 opacity-50"
-                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                  ? "border-gray-200 bg-gray-100 opacity-50"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
               }`}
             >
               <span className="text-xs opacity-80">
@@ -506,7 +516,7 @@ const PreviewSlotDisplay = ({
     const endHour = 22; // atau 21, 23 sesuai kebutuhan
     const hours = Array.from(
       { length: endHour - startHour + 1 },
-      (_, i) => startHour + i,
+      (_, i) => startHour + i
     );
 
     const getBarPosition = (timeHour: number): number => {
@@ -535,7 +545,7 @@ const PreviewSlotDisplay = ({
       return filteredDockBookings.filter(
         (b: any) =>
           b?.arrivalTime &&
-          formatDateToString(new Date(b.arrivalTime)) === dateString,
+          formatDateToString(new Date(b.arrivalTime)) === dateString
       );
     };
 
@@ -552,7 +562,7 @@ const PreviewSlotDisplay = ({
     };
 
     const [currentTime, setCurrentTime] = useState<number | null>(
-      getCurrentTimePosition,
+      getCurrentTimePosition
     );
 
     // TAMBAHKAN: useEffect untuk update real-time
@@ -643,10 +653,10 @@ const PreviewSlotDisplay = ({
                       today
                         ? "bg-red-100 text-red-700 border border-red-300"
                         : isDateSelected
-                          ? "bg-primary text-white"
-                          : isReadOnly
-                            ? "bg-gray-100 text-gray-400"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "bg-primary text-white"
+                        : isReadOnly
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     <span className="font-semibold">{dayShort}</span>
@@ -816,8 +826,8 @@ const PreviewSlotDisplay = ({
                                 isReadOnly
                                   ? "bg-gray-300 cursor-not-allowed opacity-50"
                                   : isDateSelected
-                                    ? "bg-green-100 hover:bg-green-200 border border-green-300 cursor-pointer"
-                                    : "bg-gray-200 cursor-not-allowed opacity-60"
+                                  ? "bg-green-100 hover:bg-green-200 border border-green-300 cursor-pointer"
+                                  : "bg-gray-200 cursor-not-allowed opacity-60"
                               }`}
                               style={{
                                 left: `${startPercent}%`,
@@ -825,10 +835,10 @@ const PreviewSlotDisplay = ({
                               }}
                               title={`${schedule.startTime.slice(
                                 0,
-                                5,
+                                5
                               )}-${schedule.endTime.slice(
                                 0,
-                                5,
+                                5
                               )}\nKlik untuk memilih waktu`}
                             >
                               {/* Schedule time label inside bar */}
@@ -844,7 +854,7 @@ const PreviewSlotDisplay = ({
                             {events.map((event, idx) => {
                               const eventStart = Math.max(
                                 event.start,
-                                startHourNum,
+                                startHourNum
                               );
                               const eventEnd = Math.min(event.end, endHourNum);
                               const left = getBarPosition(eventStart);
@@ -964,22 +974,21 @@ const PreviewSlotDisplay = ({
                                   className="absolute h-full rounded-lg border-2 border-blue-500 bg-blue-400/30 shadow-sm z-30 pointer-events-none"
                                   style={{
                                     left: `${getBarPosition(
-                                      parseTimeToHours(visualStartTime) || 0,
+                                      parseTimeToHours(visualStartTime) || 0
                                     )}%`,
                                     width: `${Math.max(
                                       2,
                                       getBarPosition(
-                                        parseTimeToHours(visualEndTime) || 0,
+                                        parseTimeToHours(visualEndTime) || 0
                                       ) -
                                         getBarPosition(
-                                          parseTimeToHours(visualStartTime) ||
-                                            0,
-                                        ),
+                                          parseTimeToHours(visualStartTime) || 0
+                                        )
                                     )}%`,
                                   }}
                                   title={`Waktu terpilih: ${visualStartTime.slice(
                                     0,
-                                    5,
+                                    5
                                   )}-${visualEndTime.slice(0, 5)}`}
                                 >
                                   {/* Time label */}
@@ -1030,7 +1039,7 @@ const PreviewSlotDisplay = ({
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 hour12: false,
-                              },
+                              }
                             )}
                             -
                             {new Date(b.estimatedFinishTime).toLocaleTimeString(
@@ -1039,7 +1048,7 @@ const PreviewSlotDisplay = ({
                                 hour: "2-digit",
                                 minute: "2-digit",
                                 hour12: false,
-                              },
+                              }
                             )}
                           </span>
                         </div>
@@ -1152,14 +1161,14 @@ const PreviewSlotDisplay = ({
             `${arrivalDate.getHours().toString().padStart(2, "0")}:${arrivalDate
               .getMinutes()
               .toString()
-              .padStart(2, "0")}:00`,
+              .padStart(2, "0")}:00`
           );
           const finishDate = new Date(formData.estimatedFinishTime);
           setVisualEndTime(
             `${finishDate.getHours().toString().padStart(2, "0")}:${finishDate
               .getMinutes()
               .toString()
-              .padStart(2, "0")}:00`,
+              .padStart(2, "0")}:00`
           );
         }
         setCount((prev) => prev++);
@@ -1251,7 +1260,7 @@ const PreviewSlotDisplay = ({
                 (dock: IDock) =>
                   !formData.Vehicle?.vehicleType ||
                   !dock.allowedTypes ||
-                  dock.allowedTypes.includes(formData.Vehicle.vehicleType),
+                  dock.allowedTypes.includes(formData.Vehicle.vehicleType)
               )
               .map((dock: IDock) => (
                 <option key={dock.id} value={dock.id}>
@@ -1278,6 +1287,11 @@ const PreviewSlotDisplay = ({
           </h3>
         </div>
         <ol className="list-disc list-inside mb-3 text-xs">
+          {myOrganization?.isConfirmBookRequired && (
+            <li>
+              Booking anda akan kami tinjau terlebih dahulu sebelum di setujui
+            </li>
+          )}
           <li>
             Admin Gudang Mungkin Akan Menyesuaikan Ulang Sampai Anda Dilokasi
             (Telah Tiba).

@@ -378,8 +378,7 @@ export class MyOrganizationService {
     userinfo: TokenPayload,
     body: UpdateMyOrganizationDto,
   ) {
-    const { name, subscription, accounts,  ...rest } = body;
-
+    const { name, subscription, accounts, ...rest } = body;
 
     await this.prismaService.organization.update({
       where: {

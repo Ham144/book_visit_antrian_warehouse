@@ -13,10 +13,14 @@ export const BookingApi = {
   },
   getAllBookingsList: async (filter: BookingFilter): Promise<Booking[]> => {
     const params = new URLSearchParams();
-    if (filter?.searchKey) params.set("searchKey", filter.searchKey);
-    if (filter.warehouseId) params.set("warehouseId", filter.warehouseId);
-    if (filter.page) params.set("page", filter.page.toString());
-    if (filter.date) params.set("date", filter.date);
+    if (filter.page !== undefined) params.set("page", filter.page.toString());
+    if (filter.searchKey !== undefined)
+      params.set("searchKey", filter.searchKey);
+    if (filter.status !== undefined) params.set("status", filter.status);
+    if (filter.weekStart !== undefined)
+      params.set("weekStart", filter.weekStart);
+    if (filter.weekEnd !== undefined) params.set("weekEnd", filter.weekEnd);
+    if (filter.date !== undefined) params.set("date", filter.date);
 
     const res = await axiosInstance.get("/api/booking/list", { params });
     return res.data;
@@ -104,7 +108,7 @@ export const BookingApi = {
   //ini untuk admin/dashboards
   adminWarehouseDashboard: async () => {
     const res = await axiosInstance.get(
-      "/api/booking/admin-warehouse-dashboard",
+      "/api/booking/admin-warehouse-dashboard"
     );
     return res.data;
   },

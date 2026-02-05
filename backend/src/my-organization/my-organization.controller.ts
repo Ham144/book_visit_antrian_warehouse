@@ -65,7 +65,7 @@ export class MyOrganizationController {
     return this.myOrganizationService.getMyOrganizations(userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION')
+  @Authorization()
   @Get('my-organization-settings')
   getMyOrganizationSettings(@Auth() userInfo: TokenPayload) {
     return this.myOrganizationService.getMyOrganizationSettings(userInfo);

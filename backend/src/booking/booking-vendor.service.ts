@@ -94,7 +94,13 @@ export class BookingforVendorService {
       where: {
         dockId: dockId,
         // id: { not: createBookingDto.id },//untuk update
-        status: { notIn: [BookingStatus.CANCELED, BookingStatus.FINISHED, BookingStatus.UNLOADING] },
+        status: {
+          notIn: [
+            BookingStatus.CANCELED,
+            BookingStatus.FINISHED,
+            BookingStatus.UNLOADING,
+          ],
+        },
         AND: [
           {
             arrivalTime: {
@@ -115,20 +121,30 @@ export class BookingforVendorService {
         `Waktu terkait overlap booking ${overlapDockedHour.code}, antara ${overlapDockedHour.arrivalTime} sampai ${estimatedFinishTime}`,
       );
     }
-    
+
     const year = arrival.getFullYear().toString().slice(-2);
     const month = (arrival.getMonth() + 1).toString().padStart(2, '0');
     const day = arrival.getDate().toString().padStart(2, '0');
     const hours = arrival.getHours().toString().padStart(2, '0');
     const minutes = arrival.getMinutes().toString().padStart(2, '0');
     const seconds = arrival.getSeconds().toString().padStart(2, '0');
-    
+
     const code = `${createBookingDto.notes.slice(0, 7)}-${vehicle.brand.slice(0, 7)}-${year}${month}${day}${hours}${minutes}${seconds}`;
-    
-    
+
+    //penentuan status awal
+    const organizationSettings =
+      await this.prismaService.organization.findFirst({
+        where: {
+          name: userInfo.organizationName,
+        },
+      });
+    const initialStatus = organizationSettings.isConfirmBookRequired
+      ? BookingStatus.PENDING
+      : BookingStatus.IN_PROGRESS;
+
     await this.prismaService.booking.create({
       data: {
-        status: 'IN_PROGRESS',
+        status: initialStatus,
         arrivalTime: arrivalTime,
         estimatedFinishTime: estimatedFinishTime,
         code: code,
@@ -157,7 +173,7 @@ export class BookingforVendorService {
 
     return {
       success: true,
-      warehouseId: warehouseId
+      warehouseId: warehouseId,
     };
   }
 
@@ -180,7 +196,11 @@ export class BookingforVendorService {
     });
   }
 
-  async cancelBook(id: string, userinfo: TokenPayload, body: { canceledReason: string }) {
+  async cancelBook(
+    id: string,
+    userinfo: TokenPayload,
+    body: { canceledReason: string },
+  ) {
     const { canceledReason } = body;
     const isMine = await this.prismaService.booking.findFirst({
       where: {
@@ -200,12 +220,12 @@ export class BookingforVendorService {
       },
       data: {
         status: 'CANCELED',
-        canceledReason: canceledReason + "by " + userinfo.username,
+        canceledReason: canceledReason + 'by ' + userinfo.username,
       },
     });
     return {
       success: true,
-      warehouseId: warehouse.id
+      warehouseId: warehouse.id,
     };
   }
 

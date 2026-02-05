@@ -13,4 +13,6 @@ export class ResponseMyOrganizationSettingsDto {
   AD_BASE_DN?: string;
   @Expose()
   disabledFeatures: string[];
+  @Expose()
+  isConfirmBookRequired: boolean;
 }

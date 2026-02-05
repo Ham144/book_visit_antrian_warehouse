@@ -25,6 +25,7 @@ export enum Days {
 
 //Booking.status
 export enum BookingStatus {
+  PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS', //ini yang sudah book
   UNLOADING = 'UNLOADING', //ini sangat unique tidak boleh ada 2 dalam 1 dock
   FINISHED = 'FINISHED', //ini yang sudah selesai
@@ -37,6 +38,7 @@ export enum ROLE {
   ADMIN_VENDOR = 'ADMIN_VENDOR',
   ADMIN_ORGANIZATION = 'ADMIN_ORGANIZATION',
   USER_ORGANIZATION = 'USER_ORGANIZATION',
+  ADMIN_GUDANG = 'ADMIN_GUDANG',
 }
 
 //User.accountType
@@ -125,7 +127,6 @@ export type DragAndDropPayload =
     };
 
 export enum ChatStatus {
-    READ = "READ",
-    DELIVERED = "DELIVERED",
+  READ = 'READ',
+  DELIVERED = 'DELIVERED',
 }
-  
