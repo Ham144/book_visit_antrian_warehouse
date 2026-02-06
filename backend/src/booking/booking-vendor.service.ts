@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { PrismaService } from 'src/common/prisma.service';
 import { plainToInstance } from 'class-transformer';

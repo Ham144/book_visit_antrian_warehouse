@@ -23,14 +23,20 @@ export class BookingController {
   constructor(
     private readonly bookingWarehouseService: BookingWarehouseService,
     private readonly bookingForVendorService: BookingforVendorService,
-    private readonly gateway: BookingGateway
+    private readonly gateway: BookingGateway,
   ) {}
 
   @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Post()
-  async create(@Body() createBookingDto: CreateBookingDto, @Auth() userInfo: any) {
-    const response = await this.bookingForVendorService.create(createBookingDto, userInfo);
-    if(response.success && response.warehouseId){
+  async create(
+    @Body() createBookingDto: CreateBookingDto,
+    @Auth() userInfo: any,
+  ) {
+    const response = await this.bookingForVendorService.create(
+      createBookingDto,
+      userInfo,
+    );
+    if (response.success && response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
   }
@@ -38,7 +44,10 @@ export class BookingController {
   @Authorization()
   @Get('/list')
   async findAll(@Query() filter, @Auth() userInfo: any) {
-    const response = await this.bookingWarehouseService.findAll(filter, userInfo);
+    const response = await this.bookingWarehouseService.findAll(
+      filter,
+      userInfo,
+    );
     return response;
   }
 
@@ -57,8 +66,11 @@ export class BookingController {
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Put('/justify/:id')
   async justify(@Param('id') id: string, @Body() body) {
-    const response = await this.bookingWarehouseService.justifyBooking(id, body);
-    if(response.warehouseId){
+    const response = await this.bookingWarehouseService.justifyBooking(
+      id,
+      body,
+    );
+    if (response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
     return response;
@@ -67,18 +79,24 @@ export class BookingController {
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Put('/drag-and-drop/:id')
   async dragAndDrop(@Param('id') id: string, @Body() body) {
-    const response = await  this.bookingWarehouseService.dragAndDrop(id, body);
-    if(response.warehouseId){
+    const response = await this.bookingWarehouseService.dragAndDrop(id, body);
+    if (response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
-    return response
+    return response;
   }
 
   @Authorization()
   @Patch('/updateStatus/:id')
-  async updateStatus(@Param('id') id: string, @Body() payload: UpdateBookingDto) {
-    const response = await this.bookingWarehouseService.updateBookingStatus(id, payload);
-    if(response.warehouseId){
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() payload: UpdateBookingDto,
+  ) {
+    const response = await this.bookingWarehouseService.updateBookingStatus(
+      id,
+      payload,
+    );
+    if (response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
   }
@@ -86,12 +104,16 @@ export class BookingController {
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Delete('/cancel/:id')
   async cancelBook(@Param('id') id: string, @Auth() userInfo, @Body() body) {
-    const response = await this.bookingForVendorService.cancelBook(id,  userInfo, body);
-    if(response.success && response.warehouseId){
-      console.log("emit justify")
+    const response = await this.bookingForVendorService.cancelBook(
+      id,
+      userInfo,
+      body,
+    );
+    if (response.success && response.warehouseId) {
+      console.log('emit justify');
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
-    return response
+    return response;
   }
 
   @Authorization('DRIVER_VENDOR', 'ADMIN_ORGANIZATION')
@@ -127,11 +149,7 @@ export class BookingController {
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Get('/admin-warehouse-dashboard')
-  adminDashboard(
-    @Auth() userinfo: TokenPayload,
-  ) {
-    return this.bookingWarehouseService.adminDashboard(
-      userinfo,
-    );
+  adminDashboard(@Auth() userinfo: TokenPayload) {
+    return this.bookingWarehouseService.adminDashboard(userinfo);
   }
 }

@@ -21,14 +21,17 @@ export const BookingApi = {
       params.set("weekStart", filter.weekStart);
     if (filter.weekEnd !== undefined) params.set("weekEnd", filter.weekEnd);
     if (filter.date !== undefined) params.set("date", filter.date);
+    if (filter.isForBooking)
+      params.set("isForBooking", filter.isForBooking.toString());
 
     const res = await axiosInstance.get("/api/booking/list", { params });
     return res.data;
   },
   semiDetailList: async (filter: BookingFilter) => {
     const params = new URLSearchParams();
-    if (filter.warehouseId) params.set("warehouseId", filter.warehouseId);
     if (filter.date) params.set("date", filter.date);
+    if (filter.isForBooking)
+      params.set("isForBooking", filter.isForBooking.toString());
 
     const res = await axiosInstance.get("/api/booking/semi-detail-list", {
       params,

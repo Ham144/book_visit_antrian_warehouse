@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Booking } from "@/types/booking.type";
 import { BookingApi } from "@/api/booking.api";
@@ -16,7 +16,7 @@ import { OrganizationApi } from "@/api/organization.api";
 interface PreviewSlotDisplayProps {
   formData: Booking;
   onUpdateFormData: (updates: Partial<Booking>) => void;
-  mode?: "preview" | "create" | "justify";
+  mode?: "create" | "justify";
   currentBookingId?: string;
 }
 
@@ -26,10 +26,9 @@ const PreviewSlotDisplay = ({
   mode = "create",
   currentBookingId,
 }: PreviewSlotDisplayProps) => {
-  const isReadOnly = mode === "preview";
   const [isAdminMode, setIsAdminMode] = useState(false);
 
-  const { userInfo } = useUserInfo();
+  const { userInfo, socket } = useUserInfo();
   const isAdmin =
     userInfo?.role == ROLE.USER_ORGANIZATION ||
     userInfo?.role == ROLE.ADMIN_ORGANIZATION;
@@ -40,6 +39,8 @@ const PreviewSlotDisplay = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>();
   const [selectedWeek, setSelectedWeek] = useState<Date | null>();
   const [notes, setNotes] = useState(formData?.notes || "");
+
+  const queryClient = useQueryClient();
 
   const { data: myOrganization } = useQuery({
     queryKey: ["oraganization-settings"],
@@ -54,7 +55,7 @@ const PreviewSlotDisplay = ({
   const { data: availableDocks } = useQuery({
     queryKey: ["docks", formData?.warehouseId],
     queryFn: () => DockApi.getDocksByWarehouseId(formData.warehouseId!),
-    enabled: !!formData?.warehouseId && !isReadOnly && mode === "justify",
+    enabled: !!formData?.warehouseId && mode === "justify",
   });
 
   const { data: dockDetail, isLoading: loadingDock } = useQuery({
@@ -69,9 +70,9 @@ const PreviewSlotDisplay = ({
       BookingApi.semiDetailList({
         warehouseId: formData.warehouseId,
         page: 1,
+        isForBooking: mode === "create" ? true : false,
       }),
     enabled: !!formData?.warehouseId,
-    refetchInterval: 5000, // tiap 5 detik
   });
 
   // Helper functions
@@ -234,7 +235,7 @@ const PreviewSlotDisplay = ({
   };
 
   const handleClickOnTrack = (date: Date, clickedTimeDecimal: number) => {
-    if (isReadOnly || !formData.Vehicle?.durasiBongkar) return;
+    if (!formData.Vehicle?.durasiBongkar) return;
 
     // ===============================
     // 1. VALIDASI TANGGAL
@@ -462,6 +463,44 @@ const PreviewSlotDisplay = ({
     }
   );
 
+  //socket
+  useEffect(() => {
+    if (!socket || !userInfo?.homeWarehouse?.id) return;
+
+    const warehouseId = userInfo.homeWarehouse.id;
+
+    const handleConnect = () => {
+      socket.emit("join_warehouse", {
+        warehouseId,
+      });
+    };
+
+    const handleSemiDetailList = () => {
+      queryClient.invalidateQueries({
+        queryKey: ["bookings", formData?.warehouseId],
+      });
+    };
+
+    if (socket.connected) {
+      socket.emit("join_warehouse", {
+        warehouseId,
+      });
+    }
+
+    socket.on("connect", handleConnect);
+    socket.on("semi-detail-list", handleSemiDetailList);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("semi-detail-list", handleSemiDetailList);
+      if (socket.connected) {
+        socket.emit("leave_warehouse", {
+          warehouseId,
+        });
+      }
+    };
+  }, [socket, queryClient, userInfo?.homeWarehouse?.id]);
+
   // UI Components
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center py-12">
@@ -472,9 +511,7 @@ const PreviewSlotDisplay = ({
   const WeekSelector = () => (
     <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
       <h3 className="text-base font-medium mb-3">
-        {isReadOnly
-          ? "Minggu Booking"
-          : `Minggu yang dapat dipilih (${maximumWeekSelection} minggu ke depan)`}
+        Minggu yang dapat dipilih ({maximumWeekSelection} minggu ke depan)
       </h3>
       <div className="flex overflow-x-auto gap-2 pb-2 -mx-2 px-2">
         {availableWeeks.map((weekStart, i) => {
@@ -487,13 +524,10 @@ const PreviewSlotDisplay = ({
           return (
             <button
               key={i}
-              onClick={() => !isReadOnly && handleWeekSelect(weekStart)}
-              disabled={isReadOnly}
+              onClick={() => handleWeekSelect(weekStart)}
               className={`flex-shrink-0 flex flex-col p-3 rounded-lg border transition-all min-w-[120px] ${
                 isSelected
                   ? "border-primary bg-primary text-white"
-                  : isReadOnly
-                  ? "border-gray-200 bg-gray-100 opacity-50"
                   : "border-gray-200 bg-gray-50 hover:border-gray-300"
               }`}
             >
@@ -564,16 +598,6 @@ const PreviewSlotDisplay = ({
     const [currentTime, setCurrentTime] = useState<number | null>(
       getCurrentTimePosition
     );
-
-    // TAMBAHKAN: useEffect untuk update real-time
-    useEffect(() => {
-      // Update waktu setiap menit
-      const interval = setInterval(() => {
-        setCurrentTime(getCurrentTimePosition());
-      }, 60000); // Update setiap 1 menit
-
-      return () => clearInterval(interval);
-    }, []);
 
     // TAMBAHKAN: Fungsi untuk cek apakah hari ini
     const isToday = (date: Date): boolean => {
@@ -654,8 +678,6 @@ const PreviewSlotDisplay = ({
                         ? "bg-red-100 text-red-700 border border-red-300"
                         : isDateSelected
                         ? "bg-primary text-white"
-                        : isReadOnly
-                        ? "bg-gray-100 text-gray-400"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
@@ -811,7 +833,6 @@ const PreviewSlotDisplay = ({
                             {/* Available slot - clickable area */}
                             <div
                               onClick={(e) => {
-                                if (isReadOnly) return;
                                 const rect =
                                   e.currentTarget.getBoundingClientRect();
                                 const clickX = e.clientX - rect.left;
@@ -823,9 +844,7 @@ const PreviewSlotDisplay = ({
                                 handleClickOnTrack(date, clickedTime);
                               }}
                               className={`absolute h-full rounded transition-all cursor-pointer ${
-                                isReadOnly
-                                  ? "bg-gray-300 cursor-not-allowed opacity-50"
-                                  : isDateSelected
+                                isDateSelected
                                   ? "bg-green-100 hover:bg-green-200 border border-green-300 cursor-pointer"
                                   : "bg-gray-200 cursor-not-allowed opacity-60"
                               }`}
@@ -1062,7 +1081,7 @@ const PreviewSlotDisplay = ({
         </div>
 
         {/* Click instruction */}
-        {!isReadOnly && selectedDate && !visualStartTime && (
+        {selectedDate && !visualStartTime && (
           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center gap-2">
               <svg
@@ -1137,11 +1156,11 @@ const PreviewSlotDisplay = ({
                 </p>
               </div>
             </div>
-            {!isReadOnly && (
+            {
               <p className="text-xs text-blue-600 mt-2">
                 Klik area hijau lain untuk mengubah waktu
               </p>
-            )}
+            }
           </div>
         )}
       </div>
@@ -1225,12 +1244,7 @@ const PreviewSlotDisplay = ({
   ]);
 
   useEffect(() => {
-    if (
-      selectedWeek &&
-      weekDays.length > 0 &&
-      !selectedDate &&
-      mode !== "preview"
-    ) {
+    if (selectedWeek && weekDays.length > 0 && !selectedDate) {
       handleDateSelect(weekDays[0]);
     }
   }, [selectedWeek, weekDays.length, mode]);
@@ -1244,7 +1258,7 @@ const PreviewSlotDisplay = ({
   return (
     <div className="flex flex-col  h-[600px] ">
       {/* Dock Selector */}
-      {!isReadOnly && availableDocks?.length && mode === "justify" && (
+      {availableDocks?.length && mode === "justify" && (
         <div className="bg-white rounded-lg shadow-sm p-4 ">
           <label className="block text-sm font-medium mb-2">
             Pilih Dock/Gate
@@ -1276,14 +1290,10 @@ const PreviewSlotDisplay = ({
       <div className="bg-white rounded-lg shadow-sm pb-12">
         <div className="flex justify-between">
           <h3 className="text-base font-medium mb-3 flex items-center">
-            <div className="mr-3">
-              {isReadOnly ? "Waktu Kunjungan" : "Pilih Waktu Kunjungan"}
+            <div className="mr-3">Pilih Waktu Kunjungan</div>
+            <div className="text-xs text-gray-600">
+              Klik area hijau untuk memilih waktu.
             </div>
-            {!isReadOnly && (
-              <div className="text-xs text-gray-600">
-                Klik area hijau untuk memilih waktu.
-              </div>
-            )}
           </h3>
         </div>
         <ol className="list-disc list-inside mb-3 text-xs">

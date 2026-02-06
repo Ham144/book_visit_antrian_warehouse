@@ -12,4 +12,5 @@ export interface BookingFilter {
   status?: string;
   weekStart?: string; //jangan dihapus, emang begini
   weekEnd?: string; //jangan dihapus, emang begini
+  isForBooking?: string; //ini untuk layering
 }

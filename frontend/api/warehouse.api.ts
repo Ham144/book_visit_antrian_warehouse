@@ -10,7 +10,7 @@ export const WarehouseApi = {
   createWarehouse: async (data: Warehouse): Promise<Warehouse> => {
     const response = await axiosInstance.post<Warehouse>(
       "/api/warehouse",
-      data,
+      data
     );
     return response.data;
   },
@@ -18,7 +18,7 @@ export const WarehouseApi = {
   updateWarehouse: async (data: Warehouse): Promise<Warehouse> => {
     const response = await axiosInstance.patch<Warehouse>(
       `/api/warehouse/${data.id}`,
-      data,
+      data
     );
     return response.data;
   },
@@ -41,19 +41,18 @@ export const WarehouseApi = {
     const params = new URLSearchParams();
     if (filter.searchKey) params.append("searchKey", filter.searchKey);
     if (filter.page) params.append("page", filter.page.toString());
-    if (filter.warehouseId) params.append("warehouseId", filter.warehouseId);
 
     const response = await axiosInstance.get<Warehouse>(
       `/api/warehouse/detail/${filter.warehouseId}`,
       {
         params,
-      },
+      }
     );
     return response.data;
   },
   getMyAccessWarehouses: async () => {
     const response = await axiosInstance.get(
-      "/api/warehouse/my-access-warehouses",
+      "/api/warehouse/my-access-warehouses"
     );
     return response.data;
   },
@@ -62,7 +61,7 @@ export const WarehouseApi = {
       `/api/warehouse/switch-homeWarehouse`,
       {
         id,
-      },
+      }
     );
     return res.data;
   },
@@ -72,17 +71,17 @@ export const WarehouseApi = {
 
   getSettings: async (): Promise<WarehouseSetting> => {
     const response = await axiosInstance.get<WarehouseSetting>(
-      `/api/warehouse/settings`,
+      `/api/warehouse/settings`
     );
     return response.data;
   },
 
   updateSetting: async (
-    payload: WarehouseSetting,
+    payload: WarehouseSetting
   ): Promise<WarehouseSetting> => {
     const response = await axiosInstance.put<WarehouseSetting>(
       `/api/warehouse/settings`,
-      payload,
+      payload
     );
     return response.data;
   },

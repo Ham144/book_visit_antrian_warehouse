@@ -47,12 +47,6 @@ const BookingListCard = ({
           label: "In Progress",
           icon: "🔄",
         };
-      case BookingStatus.IN_PROGRESS:
-        return {
-          textClass: "bg-yellow-100 text-yellow-800",
-          label: "In Progress",
-          icon: "🔄",
-        };
       case BookingStatus.UNLOADING:
         return {
           textClass: "bg-yellow-100 text-yellow-800",
@@ -76,6 +70,12 @@ const BookingListCard = ({
           textClass: "bg-red-100 text-red-800",
           label: "Terlambat",
           icon: "⏳",
+        };
+      default:
+        return {
+          textClass: "bg-gray-100 text-gray-800",
+          label: "PENDINg",
+          icon: " 📃",
         };
     }
   };
@@ -130,7 +130,6 @@ const BookingListCard = ({
             <span
               className={`text-xs px-2 py-1 rounded-full font-medium ${statusInfo?.textClass} flex items-center gap-1`}
             >
-              <span className="text-xs">{statusInfo?.icon}</span>
               <span className="hidden sm:inline">{statusInfo?.label}</span>
               <span className="sm:hidden">{statusInfo?.label}</span>
             </span>

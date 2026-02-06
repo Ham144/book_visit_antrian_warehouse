@@ -178,15 +178,6 @@ export class WarehouseService {
             displayName: true,
           },
         },
-        bookings: {
-          include: {
-            Vehicle: {
-              select: { brand: true, vehicleType: true },
-            },
-            Dock: { select: { name: true, id: true } },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
       },
     });
     const warehouseData = {

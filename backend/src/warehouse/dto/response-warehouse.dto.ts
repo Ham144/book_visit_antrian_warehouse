@@ -32,10 +32,5 @@ export class responseWarehouseDto {
   @Type(() => LoginResponseDto)
   homeMembers?: LoginResponseDto[];
   @Expose({ groups: ['detail'] })
-  bookings?: object[];
-  @Expose({ groups: ['detail'] })
   createdAt?: Date;
-  @Expose({ groups: ['detail'] })
-  @Type(() => LoginResponseDto)
-  driver?: LoginResponseDto[];
 }

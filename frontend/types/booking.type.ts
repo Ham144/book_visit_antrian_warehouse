@@ -38,13 +38,18 @@ export interface BookingFilter {
   date?: string | null;
   status?:
     | "all"
-    | BookingStatus.CANCELED
-    | BookingStatus.DELAYED
-    | BookingStatus.FINISHED
-    | BookingStatus.IN_PROGRESS
-    | BookingStatus.UNLOADING;
+    | "PENDING"
+    | "CANCELED"
+    | "DELAYED"
+    | "FINISHED"
+    | "IN_PROGRESS"
+    | "UNLOADING";
   weekStart?: string; //jangan dihapus, emang begini
   weekEnd?: string; //jangan dihapus, emang begini
+  //other
+  isForBooking?: boolean;
+  sortBy?: "createdAt" | "updatedAt" | "bookingDate";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface UpdateBookingStatus {
@@ -52,4 +57,5 @@ export interface UpdateBookingStatus {
   status: BookingStatus;
   actualFinishTime?: Date;
   actualArrivalTime?: Date;
+  canceledReason?: string;
 }

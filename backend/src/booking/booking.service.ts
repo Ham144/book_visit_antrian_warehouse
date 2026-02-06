@@ -923,12 +923,8 @@ export class BookingWarehouseService {
   }
 
   //unutk queue
-  async semiDetailList(
-    filter: BookingFilter,
-    userInfo: TokenPayload,
-    showAllStatus = false,
-  ) {
-    const { date } = filter;
+  async semiDetailList(filter: BookingFilter, userInfo: TokenPayload) {
+    const { date, isForBooking } = filter;
 
     const where: Prisma.BookingWhereInput = {
       organizationName: userInfo.organizationName,
@@ -955,7 +951,29 @@ export class BookingWarehouseService {
     }
     //FINISHED tidak dikeluarkan karena sudah selesai!
     //CANCELED tetap dikeluarkan karena itu perlu tampil di live queue!
-    if (!showAllStatus) {
+
+    //periksa apakah layer konfirmasi
+    if (isForBooking) {
+      const organization = await this.prismaService.organization.findUnique({
+        where: {
+          name: userInfo.organizationName,
+        },
+      });
+      if (organization?.isConfirmBookRequired) {
+        where.status = {
+          in: [
+            BookingStatus.IN_PROGRESS,
+            BookingStatus.UNLOADING,
+            BookingStatus.PENDING,
+          ],
+        };
+      } else {
+        where.status = {
+          in: [BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING],
+        };
+      }
+    } else {
+      //ini admin gudang
       where.status = {
         notIn: [BookingStatus.FINISHED, BookingStatus.PENDING],
       };

@@ -6,25 +6,31 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import PreviewSlotDisplay from "../vendor/PreviewSlotDisplay";
 import { Calendar, Clock, MessageSquare } from "lucide-react";
-
+// Versi statis yang lebih cantik dengan warna dan styling yang lebih menarik
 export const getStatusBadgeColor = (status?: BookingStatus) => {
   switch (status) {
+    case BookingStatus.PENDING:
+      return "bg-blue-100 text-blue-800 border border-blue-200 shadow-sm";
     case BookingStatus.IN_PROGRESS:
-      return "badge-info";
+      return "bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm";
     case BookingStatus.UNLOADING:
-      return "badge-warning";
+      return "bg-amber-100 text-amber-800 border border-amber-200 shadow-sm";
     case BookingStatus.FINISHED:
-      return "badge-success";
+      return "bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm";
     case BookingStatus.CANCELED:
-      return "badge-error";
+      return "bg-rose-100 text-rose-800 border border-rose-200 shadow-sm";
+    case BookingStatus.DELAYED:
+      return "bg-red-100 text-red-800 border border-red-200 shadow-sm";
     default:
-      return "badge-ghost";
+      return "bg-gray-100 text-gray-800 border border-gray-200 shadow-sm";
   }
 };
 
-// Get status label
+// Get status label yang sudah diperbaiki (ada typo di kode sebelumnya)
 export const getStatusLabel = (status?: BookingStatus) => {
   switch (status) {
+    case BookingStatus.PENDING:
+      return "Pending";
     case BookingStatus.IN_PROGRESS:
       return "In Progress";
     case BookingStatus.UNLOADING:
@@ -33,22 +39,44 @@ export const getStatusLabel = (status?: BookingStatus) => {
       return "Finished";
     case BookingStatus.CANCELED:
       return "Canceled";
+    case BookingStatus.DELAYED:
+      return "Delayed";
     default:
       return "Unknown";
+  }
+};
+
+// Fungsi tambahan untuk mendapatkan ikon (opsional)
+export const getStatusIcon = (status?: BookingStatus) => {
+  switch (status) {
+    case BookingStatus.PENDING:
+      return "⏳";
+    case BookingStatus.IN_PROGRESS:
+      return "🚚";
+    case BookingStatus.UNLOADING:
+      return "📦";
+    case BookingStatus.FINISHED:
+      return "✅";
+    case BookingStatus.CANCELED:
+      return "❌";
+    case BookingStatus.DELAYED:
+      return "⚠️";
+    default:
+      return "❓";
   }
 };
 
 interface QueueDetailModalProps {
   selectedBookingId: string;
   setSelectedBookingId: Dispatch<SetStateAction<string | null>>;
-  id: "QueueDetailModalPreview" | "QueueDetailModalJustify";
+  mode: "create" | "justify"; //craete no filter
   setNow?: Dispatch<Date>; //untuk triger kategorisasi ulang booking delayed
 }
 
 const QueueDetailModal = ({
   setSelectedBookingId,
   selectedBookingId,
-  id,
+  mode,
   setNow,
 }: QueueDetailModalProps) => {
   const queryClient = useQueryClient();
@@ -75,7 +103,7 @@ const QueueDetailModal = ({
 
       // Check if form was modified
       const isModified = Object.keys(data).some(
-        (key) => prev[key as keyof Booking] !== data[key as keyof Booking],
+        (key) => prev[key as keyof Booking] !== data[key as keyof Booking]
       );
 
       if (isModified) {
@@ -110,7 +138,7 @@ const QueueDetailModal = ({
         queryKey: ["booking-detail", selectedBookingId],
       });
 
-      const modal = document.getElementById(id) as HTMLDialogElement;
+      const modal = document.getElementById(mode) as HTMLDialogElement;
       modal?.close();
 
       setSelectedBookingId(null);
@@ -126,7 +154,7 @@ const QueueDetailModal = ({
 
   // Handle modal close
   const handleClose = () => {
-    const modal = document.getElementById(id) as HTMLDialogElement;
+    const modal = document.getElementById(mode) as HTMLDialogElement;
     modal?.close();
 
     // Reset states
@@ -142,7 +170,7 @@ const QueueDetailModal = ({
       return;
     }
 
-    if (!isFormModified && id === "QueueDetailModalJustify") {
+    if (!isFormModified && mode === "justify") {
       toast.info("Tidak ada perubahan untuk diupdate");
       return;
     }
@@ -172,7 +200,7 @@ const QueueDetailModal = ({
 
   if (isLoading && selectedBookingId) {
     return (
-      <dialog id={id} className="modal">
+      <dialog id={mode} className="modal">
         <div className="modal-box max-w-6xl max-h-[90vh] flex flex-col">
           <div className="flex items-center justify-center h-64">
             <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -183,7 +211,7 @@ const QueueDetailModal = ({
   }
 
   return (
-    <dialog id={id} className="modal" onClose={handleClose}>
+    <dialog id={mode} className="modal" onClose={handleClose}>
       <div className="modal-box max-w-6xl max-h-[90vh] flex flex-col">
         {/* Ultra Compact Header */}
         <div className="flex-none border-b pb-2 mb-3">
@@ -195,17 +223,17 @@ const QueueDetailModal = ({
               </h3>
             </div>
             <div className="flex items-center gap-1">
-              {isFormModified && id === "QueueDetailModalJustify" && (
+              {isFormModified && mode === "justify" && (
                 <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded animate-pulse">
                   ⚠️ Unsaved
                 </span>
               )}
               <span
                 className={`text-xs px-2 py-0.5 rounded ${getStatusBadgeColor(
-                  selectedBooking?.status,
+                  BookingStatus[selectedBooking?.status]
                 )}`}
               >
-                {getStatusLabel(selectedBooking?.status)}
+                {getStatusLabel(BookingStatus[selectedBooking?.status])}
               </span>
             </div>
           </div>
@@ -267,7 +295,7 @@ const QueueDetailModal = ({
                         {
                           day: "2-digit",
                           month: "short",
-                        },
+                        }
                       )}
                     </div>
                     <div className="text-[10px]">
@@ -276,7 +304,7 @@ const QueueDetailModal = ({
                         {
                           hour: "2-digit",
                           minute: "2-digit",
-                        },
+                        }
                       )}
                     </div>
                   </>
@@ -321,14 +349,14 @@ const QueueDetailModal = ({
                   Jadwal Slot
                 </span>
               </div>
-              {id === "QueueDetailModalJustify" && (
+              {mode === "justify" && (
                 <span className="text-[10px] text-gray-500">✏️ Edit mode</span>
               )}
             </div>
             <PreviewSlotDisplay
               formData={selectedBooking}
               onUpdateFormData={handleUpdateFormData}
-              mode={id === "QueueDetailModalJustify" ? "justify" : "preview"}
+              mode={mode === "justify" ? "justify" : "create"}
               currentBookingId={selectedBooking?.id}
             />
           </div>
@@ -346,23 +374,21 @@ const QueueDetailModal = ({
                 Close
               </button>
 
-              {id === "QueueDetailModalJustify" && (
-                <button
-                  type="button"
-                  className="btn btn-primary text-white min-w-[200px]"
-                  onClick={handleJustifyClick}
-                  disabled={isJustifying || !isFormModified}
-                >
-                  {isJustifying ? (
-                    <>
-                      <span className="loading loading-spinner loading-xs mr-2"></span>
-                      Processing...
-                    </>
-                  ) : (
-                    "Update Booking"
-                  )}
-                </button>
-              )}
+              <button
+                type="button"
+                className="btn btn-primary text-white min-w-[200px]"
+                onClick={handleJustifyClick}
+                disabled={isJustifying || !isFormModified}
+              >
+                {isJustifying ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs mr-2"></span>
+                    Processing...
+                  </>
+                ) : (
+                  "Update Booking & Konfirmasi"
+                )}
+              </button>
             </div>
           </div>
         </div>
