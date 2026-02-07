@@ -7,12 +7,10 @@ import {
   BanIcon,
   MessageCircleWarning,
   CheckCircle,
-  GripVertical,
   Clock,
   User,
   X,
   Notebook,
-  CheckCircle2,
   TimerReset,
   Repeat,
 } from "lucide-react";
@@ -313,7 +311,9 @@ const DraggableBookingCard = ({
       {booking.status === BookingStatus.UNLOADING && (
         <div className="mt-1.5 ">
           <div
-            className={`flex justify-between text-[10px] text-gray-400 mb-0.5 ${progress > 99 && "text-red-400"}`}
+            className={`flex justify-between text-[10px] text-gray-400 mb-0.5 ${
+              progress > 99 && "text-red-400"
+            }`}
           >
             <span>
               Start Time {FormatTimeIndonesian(booking.actualStartTime)}
@@ -326,8 +326,8 @@ const DraggableBookingCard = ({
                     new Date(
                       // Bungkus string ini ke dalam new Date() dulu
                       new Date(booking.actualStartTime).getTime() +
-                        booking.Vehicle.durasiBongkar * 60000,
-                    ),
+                        booking.Vehicle.durasiBongkar * 60000
+                    )
                   )
                 : "-"}
             </span>

@@ -61,6 +61,7 @@ model Warehouse {
   userWarehouseAccesses User[]
   organizationName      String?
   organization          Organization? @relation(fields: [organizationName], references: [name])
+  vehicles Vehicle[]
   //settings & Preferences
   delayTolerance Int @default(15)
   intervalMinimalQueueu Int @default(5)
@@ -90,7 +91,9 @@ model Vehicle {
   description String?
   isActive    Boolean @default(true)
   bookings Booking[]
-
+  warehouseId String?
+  isGlobalWarehouse Boolean? @default(true)
+  
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   organizationName String
@@ -157,7 +160,7 @@ model Booking {
   driver         User    @relation("bookingDriver", fields: [driverUsername], references: [username])
   
   canceledReason String?
-
+  durasiBongkarEstimasi  Int?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   createByUsername String?

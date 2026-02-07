@@ -28,6 +28,8 @@ import QueueDetailModal, {
 } from "@/components/admin/QueueDetailModal";
 import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
 import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
+import { IDock } from "@/types/dock.type";
+import BookingRow from "@/components/shared-common/BookingRow";
 
 const MyWarehousePage = () => {
   const { userInfo, socket } = useUserInfo();
@@ -44,6 +46,10 @@ const MyWarehousePage = () => {
     searchKey: "",
     warehouseId: userInfo?.homeWarehouse?.id,
     status: "PENDING",
+    sortBy: "updatedAt",
+    isForBooking: true,
+    sortOrder: "desc",
+    dockId: "all",
   };
 
   const [filter, setFilter] = useState<BookingFilter>(bookingFilterQueueInit);
@@ -57,11 +63,8 @@ const MyWarehousePage = () => {
   });
 
   const { data: myWarehouse, isLoading } = useQuery({
-    queryKey: ["my-warehouse", userInfo, filter],
-    queryFn: async () => {
-      if (!filter.warehouseId) return null;
-      return await WarehouseApi.getWarehouse(filter);
-    },
+    queryKey: ["my-warehouse", userInfo?.homeWarehouse],
+    queryFn: WarehouseApi.getMyWarehouseDetail,
     enabled: !!userInfo?.homeWarehouse?.id,
   });
 
@@ -151,11 +154,10 @@ const MyWarehousePage = () => {
   ];
 
   const sortOptions = [
-    { value: "createdAt-desc", label: "Terbaru" },
-    { value: "createdAt-asc", label: "Terlama" },
-    { value: "bookingDate-desc", label: "Tanggal Booking (Terbaru)" },
-    { value: "bookingDate-asc", label: "Tanggal Booking (Terlama)" },
-    { value: "updatedAt-desc", label: "Update Terbaru" },
+    { value: "updatedAt-desc", label: "Terbaru Berubah" },
+    { value: "updatedAt-asc", label: "Terlama Berubah" },
+    { value: "arrivalTime-desc", label: "Tanggal Booking (Terbaru)" },
+    { value: "arrivalTime-asc", label: "Tanggal Booking (Terlama)" },
   ];
 
   const handleStatusChange = (status: string) => {
@@ -212,7 +214,7 @@ const MyWarehousePage = () => {
     (filter.status && filter.status !== "all") ||
     filter.weekStart ||
     filter.weekEnd ||
-    filter.sortBy !== "createdAt" ||
+    filter.sortBy !== "updatedAt" ||
     filter.sortOrder !== "desc";
   //socket
   useEffect(() => {
@@ -322,25 +324,72 @@ const MyWarehousePage = () => {
               </div>
             </div>
 
-            {/* Status Tabs */}
-            <div className="border-b border-gray-200">
-              <div className="flex overflow-x-auto pb-1 hide-scrollbar">
-                {statusOptions.map((option) => (
+            <div className="flex justify-between rounded-t-md">
+              {/* Status Tabs */}
+              <div className="border-b border-gray-200">
+                <div className="flex overflow-x-auto pb-1 hide-scrollbar">
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleStatusChange(option.value)}
+                      className={`flex-shrink-0 px-4 py-2 text-xs font-medium rounded-t-lg transition-all duration-200 relative ${
+                        filter.status === option.value
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {option.label}
+                      {filter.status === option.value && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 "></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Status Tabs */}
+              <div className="border-b border-gray-200">
+                <div className="flex overflow-x-auto pb-1 hide-scrollbar lg:max-w-[700px]">
                   <button
-                    key={option.value}
-                    onClick={() => handleStatusChange(option.value)}
+                    key={"semua-dock"}
+                    onClick={(e) =>
+                      setFilter({
+                        ...filter,
+                        dockId: "all",
+                      })
+                    }
                     className={`flex-shrink-0 px-4 py-2 text-xs font-medium rounded-t-lg transition-all duration-200 relative ${
-                      filter.status === option.value
+                      filter.dockId === "all"
                         ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
                         : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    {option.label}
-                    {filter.status === option.value && (
+                    Semua
+                    {filter.dockId === "all" && (
                       <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 "></span>
                     )}
                   </button>
-                ))}
+                  {myWarehouse?.docks.map((dock: Partial<IDock>) => (
+                    <button
+                      key={dock.id}
+                      onClick={(e) =>
+                        setFilter({
+                          ...filter,
+                          dockId: dock.id,
+                        })
+                      }
+                      className={`flex-shrink-0 px-4 py-2 text-xs font-medium rounded-t-lg transition-all duration-200 relative ${
+                        filter.dockId === dock.id
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {dock.name}
+                      {filter.dockId === dock.id && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 "></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -389,7 +438,7 @@ const MyWarehousePage = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Rentang Tanggal
+                    Rentang Tanggal (arrival Time)
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
@@ -549,162 +598,11 @@ const MyWarehousePage = () => {
                   <div className="overflow-x-auto max-h-[60vh] min-h-[60vh] overflow-y-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <tbody className="bg-white divide-y divide-gray-100">
-                        {bookings.map((booking: any) => (
-                          <tr
-                            key={booking.id}
-                            className="hover:bg-gray-50 transition-colors duration-150 relative"
-                          >
-                            {/* Booking Code */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div>
-                                <p className="text-sm font-bold text-gray-900">
-                                  {booking.code}
-                                  {booking.notes && (
-                                    <div
-                                      className="text-xs text-gray-500 mt-1 truncate max-w-[150px]"
-                                      title={booking.notes}
-                                    >
-                                      <div className="flex items-center gap-x-1">
-                                        <PanelLeftDashedIcon size={12} />{" "}
-                                        {booking.notes}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {booking.canceledReason && (
-                                    <div className="text-xs text-rose-600 bg-rose-50 px-2 py-1 rounded mt-1 absolute">
-                                      ❗ {booking.canceledReason}
-                                    </div>
-                                  )}
-                                </p>
-                              </div>
-                            </td>
-
-                            {/* Vehicle & Driver */}
-                            <td className="px-6 py-4">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                  <span className="text-blue-600 font-bold">
-                                    {booking.Vehicle?.brand?.charAt(0) || "V"}
-                                  </span>
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {booking.Vehicle?.brand || "N/A"}
-                                    <span className="ml-2 text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                      {booking.Vehicle?.vehicleType || "N/A"}
-                                    </span>
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    <span className="flex items-center mt-1">
-                                      <span className="mr-1">👤</span>
-                                      {booking.driver?.displayName ||
-                                        booking.driverUsername ||
-                                        "N/A"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Schedule */}
-                            <td className="px-6 py-4">
-                              <div className="text-sm">
-                                <div className="font-medium text-gray-900">
-                                  Arrival:{" "}
-                                  {new Date(
-                                    booking.arrivalTime
-                                  ).toLocaleDateString("id-ID", {
-                                    weekday: "short",
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
-                                </div>
-                                <div className="text-gray-500 text-xs mt-1">
-                                  {new Date(
-                                    booking.arrivalTime
-                                  ).toLocaleTimeString("id-ID", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                  {booking.estimatedFinishTime && (
-                                    <>
-                                      <span className="mx-1">→</span>
-                                      {new Date(
-                                        booking.estimatedFinishTime
-                                      ).toLocaleTimeString("id-ID", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </>
-                                  )}
-                                </div>
-                                {booking.actualArrivalTime && (
-                                  <div className="text-green-600 text-xs mt-1 font-medium">
-                                    ✅ Actual:{" "}
-                                    {new Date(
-                                      booking.actualArrivalTime
-                                    ).toLocaleTimeString("id-ID")}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Duration */}
-                            <td className="px-6 py-4">
-                              <div className="text-sm">
-                                {booking.Vehicle?.durasiBongkar ? (
-                                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
-                                    ⏱️ {booking.Vehicle.durasiBongkar} min
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Dock */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm">
-                                <span className="inline-flex items-center px-3 py-1 rounded-lg bg-gray-100 text-gray-800 text-sm font-medium">
-                                  🏗️ {booking.Dock?.name || "N/A"}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Status */}
-                            <td className="px-6 py-4 whitespace-nowrap ">
-                              <div className="flex w-28 flex-col gap-1">
-                                <div
-                                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusBadgeColor(
-                                    booking.status
-                                  )}`}
-                                >
-                                  <span>{getStatusIcon(booking.status)}</span>
-                                  <span>{getStatusLabel(booking.status)}</span>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Organization */}
-                            <td className="px-6 py-4 ">
-                              <div className="text-sm w-24">
-                                <button
-                                  onClick={() => {
-                                    setSelectedBookingId(booking.id);
-                                    (
-                                      document.getElementById(
-                                        "my-warehouse-action-modal"
-                                      ) as HTMLDialogElement
-                                    )?.showModal();
-                                  }}
-                                  className="btn "
-                                >
-                                  <LucideSettings2 />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                        {bookings.map((booking: Booking) => (
+                          <BookingRow
+                            booking={booking}
+                            setSelectedBookingId={setSelectedBookingId}
+                          />
                         ))}
                       </tbody>
                     </table>

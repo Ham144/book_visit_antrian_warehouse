@@ -5,7 +5,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import ConfirmationWithInput from "../shared-common/ConfirmationWithInput";
-import { ArrowRight, Edit2, X } from "lucide-react";
+import { ArrowRight, Crosshair, Edit2, X } from "lucide-react";
+import ConfirmationModal from "../shared-common/confirmationModal";
 
 interface MyWarehouseActionModalProps {
   selectedBooking?: Booking;
@@ -123,6 +124,20 @@ const MyWarehouseActionModal = ({
               className="group flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
               onClick={() => {
                 if (!selectedBooking?.id) return;
+                const arrival = new Date(selectedBooking.arrivalTime);
+                const now = new Date();
+                const isNotConfirmable = arrival.getTime() < now.getTime();
+                if (isNotConfirmable) {
+                  (
+                    document.getElementById(
+                      "my-warehouse-action-modal"
+                    ) as HTMLDialogElement
+                  )?.close();
+
+                  return toast.error(
+                    "Tidak dapat mengonfirmasi: Arrival Time Tidak Benar"
+                  );
+                }
                 handleUpdateStatus({
                   id: selectedBooking.id,
                   status: BookingStatus.IN_PROGRESS,
@@ -150,7 +165,12 @@ const MyWarehouseActionModal = ({
                     Confirm Booking
                   </span>
                   <p className="text-xs text-gray-600 mt-1">
-                    Start processing this booking
+                    Ubah Status Menjadi IN_PROGRESS dan booking akan muncul di
+                    live queue
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    note: saat ini pending, artinya booking tidak akan muncul di
+                    live queue sampai anda klik confirm ini
                   </p>
                 </div>
               </div>
@@ -169,7 +189,39 @@ const MyWarehouseActionModal = ({
               </svg>
             </button>
           )}
-
+          {selectedBooking?.status == BookingStatus.IN_PROGRESS && (
+            <button
+              className="group  flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+              onClick={() => {
+                (
+                  document.getElementById(
+                    "arrival-confirmation"
+                  ) as HTMLDialogElement
+                )?.showModal();
+                (
+                  document.getElementById(
+                    "my-warehouse-action-modal"
+                  ) as HTMLDialogElement
+                )?.close();
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <Crosshair />
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold text-gray-900">
+                    Mobil Telah Datang
+                  </span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Catat Kedatangan: waktu datang sebenarnya akan tercatat
+                    sebagai actualArrivalTime
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="absolute right-10" />
+            </button>
+          )}{" "}
           {selectedBooking?.status !== BookingStatus.FINISHED &&
             selectedBooking?.status !== BookingStatus.CANCELED && (
               <button
@@ -196,14 +248,13 @@ const MyWarehouseActionModal = ({
                       Cancel Booking
                     </span>
                     <p className="text-xs text-gray-600 mt-1">
-                      Cancel this booking request
+                      Batalkan/Tolak Konfirmasi ini
                     </p>
                   </div>
                 </div>
                 <ArrowRight />
               </button>
             )}
-
           {selectedBooking?.status == BookingStatus.PENDING && (
             <button
               className={`group flex items-center justify-between p-4 border rounded-xl transition-all duration-200 ${
@@ -240,7 +291,7 @@ const MyWarehouseActionModal = ({
                         : "text-gray-900"
                     }`}
                   >
-                    Modify & Confirm Booking
+                    Justify & Confirm Booking
                   </span>
                   <p
                     className={`text-xs mt-1 ${
@@ -249,7 +300,8 @@ const MyWarehouseActionModal = ({
                         : "text-gray-600"
                     }`}
                   >
-                    Edit details before confirming
+                    Justify / Sesuaikan ulang booking dan klik confirm untuk
+                    menjadikannya IN_PROGRESS
                   </p>
                 </div>
               </div>
@@ -284,7 +336,6 @@ const MyWarehouseActionModal = ({
               )}
             </button>
           )}
-
           <button className="group flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 hover:shadow-md transition-all duration-200">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white rounded-lg shadow-sm">
@@ -386,6 +437,18 @@ const MyWarehouseActionModal = ({
         input={canceledReason}
         setInput={setCanceledReason}
         key={"cancel-confirmation"}
+      />
+      <ConfirmationModal
+        message="Konfirmasi Kendaraan Telah Datang"
+        modalId="arrival-confirmation"
+        onConfirm={() => {
+          handleUpdateStatus({
+            id: selectedBooking.id,
+            actualArrivalTime: new Date(),
+            status: BookingStatus.IN_PROGRESS,
+          });
+        }}
+        title="Unload Confirmation"
       />
     </dialog>
   );

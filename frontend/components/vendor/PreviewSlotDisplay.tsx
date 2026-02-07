@@ -188,10 +188,6 @@ const PreviewSlotDisplay = ({
           date: dateString,
         }));
     });
-    onUpdateFormData({
-      arrivalTime: null,
-      estimatedFinishTime: null,
-    });
 
     return schedulesByDay;
   }, [dockDetail?.vacants, selectedWeek, weekDays, dockDetail]);
@@ -462,44 +458,6 @@ const PreviewSlotDisplay = ({
       return weekStart;
     }
   );
-
-  //socket
-  useEffect(() => {
-    if (!socket || !userInfo?.homeWarehouse?.id) return;
-
-    const warehouseId = userInfo.homeWarehouse.id;
-
-    const handleConnect = () => {
-      socket.emit("join_warehouse", {
-        warehouseId,
-      });
-    };
-
-    const handleSemiDetailList = () => {
-      queryClient.invalidateQueries({
-        queryKey: ["bookings", formData?.warehouseId],
-      });
-    };
-
-    if (socket.connected) {
-      socket.emit("join_warehouse", {
-        warehouseId,
-      });
-    }
-
-    socket.on("connect", handleConnect);
-    socket.on("semi-detail-list", handleSemiDetailList);
-
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("semi-detail-list", handleSemiDetailList);
-      if (socket.connected) {
-        socket.emit("leave_warehouse", {
-          warehouseId,
-        });
-      }
-    };
-  }, [socket, queryClient, userInfo?.homeWarehouse?.id]);
 
   // UI Components
   const LoadingSpinner = () => (
@@ -1167,39 +1125,81 @@ const PreviewSlotDisplay = ({
     );
   };
 
-  // Effects
-  const [count, setCount] = useState(0);
+  //socket
   useEffect(() => {
-    if (formData?.dockId && !selectedWeek) {
-      if (mode === "justify") {
-        const arrivalDate = new Date(formData.arrivalTime);
-        handleWeekSelect(getStartOfWeek(arrivalDate));
-        handleDateSelect(arrivalDate);
-        if (formData.estimatedFinishTime) {
-          setVisualStartTime(
-            `${arrivalDate.getHours().toString().padStart(2, "0")}:${arrivalDate
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")}:00`
-          );
-          const finishDate = new Date(formData.estimatedFinishTime);
-          setVisualEndTime(
-            `${finishDate.getHours().toString().padStart(2, "0")}:${finishDate
-              .getMinutes()
-              .toString()
-              .padStart(2, "0")}:00`
-          );
-        }
-        setCount((prev) => prev++);
-      } else {
-        handleWeekSelect(getStartOfWeek(new Date()));
-      }
-    }
-  }, [formData?.dockId, mode]);
+    if (!socket || !userInfo?.homeWarehouse?.id) return;
 
-  // Effect khusus untuk mode justify: update visual time ketika arrivalTime berubah
+    const warehouseId = userInfo.homeWarehouse.id;
+
+    const handleConnect = () => {
+      socket.emit("join_warehouse", {
+        warehouseId,
+      });
+    };
+
+    const handleSemiDetailList = () => {
+      queryClient.invalidateQueries({
+        queryKey: ["bookings", formData?.warehouseId],
+      });
+    };
+
+    if (socket.connected) {
+      socket.emit("join_warehouse", {
+        warehouseId,
+      });
+    }
+
+    socket.on("connect", handleConnect);
+    socket.on("semi-detail-list", handleSemiDetailList);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("semi-detail-list", handleSemiDetailList);
+      if (socket.connected) {
+        socket.emit("leave_warehouse", {
+          warehouseId,
+        });
+      }
+    };
+  }, [socket, queryClient, userInfo?.homeWarehouse?.id]);
+
+  // Effects - pre-fill from formData when ada arrivalTime (justify atau create dari Modify & Confirm)
   useEffect(() => {
-    if (mode === "justify" && formData?.arrivalTime && selectedWeek) {
+    if (!formData?.dockId || selectedWeek) return;
+
+    const hasExistingSlot =
+      formData.arrivalTime && formData.estimatedFinishTime;
+
+    if (mode === "justify" || hasExistingSlot) {
+      const arrivalDate = new Date(formData.arrivalTime);
+      setSelectedWeek(getStartOfWeek(arrivalDate));
+      setSelectedDate(arrivalDate);
+      setVisualStartTime(
+        `${arrivalDate.getHours().toString().padStart(2, "0")}:${arrivalDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}:00`
+      );
+      const finishDate = new Date(formData.estimatedFinishTime);
+      setVisualEndTime(
+        `${finishDate.getHours().toString().padStart(2, "0")}:${finishDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}:00`
+      );
+    } else {
+      handleWeekSelect(getStartOfWeek(new Date()));
+    }
+  }, [
+    formData?.dockId,
+    formData?.arrivalTime,
+    formData?.estimatedFinishTime,
+    mode,
+  ]);
+
+  // Effect: update visual time ketika arrivalTime berubah (justify atau create dengan existing data)
+  useEffect(() => {
+    if (formData?.arrivalTime && selectedWeek) {
       const arrivalDate = new Date(formData.arrivalTime);
       const dateString = formatDateToString(arrivalDate);
 
@@ -1250,10 +1250,16 @@ const PreviewSlotDisplay = ({
   }, [selectedWeek, weekDays.length, mode]);
 
   useEffect(() => {
-    if (mode == "create") {
+    if (
+      mode === "create" &&
+      !formData?.arrivalTime &&
+      selectedWeek &&
+      !selectedDate
+    ) {
       handleDateSelect(new Date());
+      setNotes(formData?.notes);
     }
-  }, []);
+  }, [mode, formData?.arrivalTime, selectedWeek]);
 
   return (
     <div className="flex flex-col  h-[600px] ">

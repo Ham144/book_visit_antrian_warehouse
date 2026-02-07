@@ -89,13 +89,7 @@ export class BookingWarehouseService {
 
   //user|admin organization
   async justifyBooking(id: string, updateDto: UpdateBookingDto) {
-    const {
-      arrivalTime,
-      dockId,
-      actualStartTime,
-      actualFinishTime,
-      actualArrivalTime,
-    } = updateDto;
+    const { arrivalTime, dockId } = updateDto;
 
     // Get existing booking
     const existingBooking = await this.prismaService.booking.findUnique({
@@ -107,6 +101,16 @@ export class BookingWarehouseService {
 
     if (!existingBooking) {
       throw new NotFoundException(`Booking dengan id ${id} tidak ditemukan`);
+    }
+    //cegah yang aneh2
+    if (
+      existingBooking.status == BookingStatus.CANCELED ||
+      existingBooking.status == BookingStatus.UNLOADING ||
+      existingBooking.status == BookingStatus.FINISHED
+    ) {
+      throw new BadRequestException(
+        `Booking yang ditemukan berstatus yang tidak bisa diubah [canceled, unloading, finished]`,
+      );
     }
 
     // Use provided values or fallback to existing values
@@ -203,6 +207,7 @@ export class BookingWarehouseService {
         arrivalTime: newArrivalTime,
         estimatedFinishTime: newEstimatedFinishTime,
         dockId: newDockId,
+        ...updateDto,
       },
       include: {
         Vehicle: true,
@@ -861,6 +866,10 @@ export class BookingWarehouseService {
       };
     }
 
+    if (filter.dockId && filter.dockId != 'all') {
+      where.dockId = filter.dockId;
+    }
+
     if (searchKey) {
       where.OR = [
         {
@@ -885,12 +894,16 @@ export class BookingWarehouseService {
         },
       ];
     }
+    const orderBy: Prisma.BookingOrderByWithRelationInput = {};
+    if (filter.sortBy && filter.sortOrder) {
+      orderBy[filter.sortBy] = filter.sortOrder;
+    } else {
+      orderBy.updatedAt = 'desc';
+    }
 
     const bookings = await this.prismaService.booking.findMany({
       where,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy,
       take: 10,
       skip: (page - 1) * 10,
       include: {

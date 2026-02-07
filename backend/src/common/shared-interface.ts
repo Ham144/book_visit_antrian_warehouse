@@ -13,4 +13,7 @@ export interface BookingFilter {
   weekStart?: string; //jangan dihapus, emang begini
   weekEnd?: string; //jangan dihapus, emang begini
   isForBooking?: string; //ini untuk layering
+  sortBy?: 'updatedAt' | 'bookingDate';
+  sortOrder?: 'asc' | 'desc';
+  dockId?: string;
 }

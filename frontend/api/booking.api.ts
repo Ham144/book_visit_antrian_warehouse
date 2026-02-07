@@ -4,7 +4,7 @@ import {
   BookingFilter,
   UpdateBookingStatus,
 } from "@/types/booking.type";
-import { BookingStatus, DragAndDropPayload } from "@/types/shared.type";
+import { DragAndDropPayload } from "@/types/shared.type";
 
 export const BookingApi = {
   createBooking: async (formData: Booking) => {
@@ -23,6 +23,9 @@ export const BookingApi = {
     if (filter.date !== undefined) params.set("date", filter.date);
     if (filter.isForBooking)
       params.set("isForBooking", filter.isForBooking.toString());
+    if (filter.sortBy) params.set("sortBy", filter.sortBy);
+    if (filter.sortOrder) params.set("sortOrder", filter.sortOrder);
+    if (filter.dockId) params.set("dockId", filter.dockId);
 
     const res = await axiosInstance.get("/api/booking/list", { params });
     return res.data;

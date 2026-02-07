@@ -485,9 +485,7 @@ export default function LiveQueuePage() {
   // Open justify modal
   const onDetail = (booking: Booking) => {
     setSelectedBookingId(booking.id!);
-    (
-      document.getElementById("QueueDetailModalJustify") as HTMLDialogElement
-    )?.showModal();
+    (document.getElementById("justify") as HTMLDialogElement)?.showModal();
   };
 
   // Mutation untuk konfirmasi datang
@@ -989,7 +987,7 @@ export default function LiveQueuePage() {
         selectedBookingId={selectedBookingId}
         setSelectedBookingId={setSelectedBookingId}
         setNow={setNow}
-        key={"QueueDetailModalJustify"}
+        key={"justify"}
         mode="justify"
       />
       <DockOptionModal

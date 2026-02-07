@@ -194,6 +194,34 @@ export class WarehouseService {
     });
   }
 
+  async getMyWarehouseDetail(userinfo: TokenPayload) {
+    const warehouse = await this.prismaService.warehouse.findUnique({
+      where: { id: userinfo.homeWarehouseId },
+      include: {
+        homeMembers: { select: { username: true, displayName: true } },
+        docks: { select: { name: true, id: true } },
+        userWarehouseAccesses: {
+          select: {
+            username: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+    const warehouseData = {
+      ...warehouse,
+      userWarehouseAccesses:
+        (warehouse as any)?.userWarehouseAccesses?.map(
+          (access: any) => access.username,
+        ) ?? [],
+    };
+
+    return plainToInstance(responseWarehouseDto, warehouseData, {
+      excludeExtraneousValues: true,
+      groups: ['detail'],
+    });
+  }
+
   async switchHomeWarehouse(id: string, userInfo: LoginResponseDto, req: any) {
     //coba periksa apakah benar anggota
     const targetWH = await this.prismaService.warehouse.findUnique({

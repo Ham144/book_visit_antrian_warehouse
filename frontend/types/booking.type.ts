@@ -48,8 +48,9 @@ export interface BookingFilter {
   weekEnd?: string; //jangan dihapus, emang begini
   //other
   isForBooking?: boolean;
-  sortBy?: "createdAt" | "updatedAt" | "bookingDate";
+  sortBy?: "updatedAt" | "bookingDate";
   sortOrder?: "asc" | "desc";
+  dockId?: string;
 }
 
 export interface UpdateBookingStatus {

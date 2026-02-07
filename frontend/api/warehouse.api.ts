@@ -37,19 +37,18 @@ export const WarehouseApi = {
     return response.data;
   },
 
-  getWarehouse: async (filter: BookingFilter): Promise<Warehouse> => {
-    const params = new URLSearchParams();
-    if (filter.searchKey) params.append("searchKey", filter.searchKey);
-    if (filter.page) params.append("page", filter.page.toString());
+  getWarehouseDetail: async (id: string): Promise<Warehouse> => {
+    const response = await axiosInstance.get<Warehouse>(`/api/warehouse/${id}`);
+    return response.data;
+  },
 
+  getMyWarehouseDetail: async (): Promise<Warehouse> => {
     const response = await axiosInstance.get<Warehouse>(
-      `/api/warehouse/detail/${filter.warehouseId}`,
-      {
-        params,
-      }
+      `/api/warehouse/my-warehouse`
     );
     return response.data;
   },
+
   getMyAccessWarehouses: async () => {
     const response = await axiosInstance.get(
       "/api/warehouse/my-access-warehouses"

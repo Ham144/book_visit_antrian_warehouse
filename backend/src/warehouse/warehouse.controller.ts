@@ -56,6 +56,12 @@ export class WarehouseController {
     return this.warehouseService.getAccessWarehouses(userInfo);
   }
 
+  @Authorization('ADMIN_GUDANG', 'ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Get('my-warehouse')
+  getMyWarehouse(@Auth() userInfo: any) {
+    return this.warehouseService.getMyWarehouseDetail(userInfo);
+  }
+
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Patch(':id')
   updateWarehouse(@Param('id') id: string, @Body() body: UpdateWarehouseDto) {

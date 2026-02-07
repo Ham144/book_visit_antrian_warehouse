@@ -74,9 +74,12 @@ start 12/11/2025
 
 # Meeting 28-01-2026
 
-[x] add: tampilkan vendor nya
+[x] add: tampilkan vendor
 [x] add: perlu konfirmasi booking
-[] add: limit kubikasi
+[] add: template mobil per dock bukan universal
+[nanti saja] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
+booking.durasiBongkarEstimasi =
+vehicle.durasiBongkar × (0.3 + (1 − 0.3) × loadPercent/100)
 
 //update antrian booking
 [x] add: perlu jenis VehicleType ada yang bisa masuk dan ada yang tidak bisa

@@ -122,11 +122,12 @@ const QueueDetailModal = ({
       }
 
       // Only send necessary data for the justify API
-      const justifyData = {
+      const justifyData: Partial<Booking> = {
         arrivalTime: selectedBooking.arrivalTime,
         estimatedFinishTime: selectedBooking.estimatedFinishTime,
         notes: selectedBooking.notes,
         dockId: selectedBooking.dockId,
+        status: BookingStatus.IN_PROGRESS,
       };
 
       return await BookingApi.justifyBooking(selectedBookingId, justifyData);
@@ -177,7 +178,8 @@ const QueueDetailModal = ({
 
     try {
       await justifyBooking();
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(error?.message);
       // Error handled in mutation
     }
   };
@@ -354,10 +356,10 @@ const QueueDetailModal = ({
               )}
             </div>
             <PreviewSlotDisplay
-              formData={selectedBooking}
+              formData={(selectedBooking ?? bookingData) as Booking}
               onUpdateFormData={handleUpdateFormData}
               mode={mode === "justify" ? "justify" : "create"}
-              currentBookingId={selectedBooking?.id}
+              currentBookingId={selectedBooking?.id ?? bookingData?.id}
             />
           </div>
         </div>
@@ -376,7 +378,7 @@ const QueueDetailModal = ({
 
               <button
                 type="button"
-                className="btn btn-primary text-white min-w-[200px]"
+                className="btn disabled:bg-slate-200 btn-primary text-white min-w-[200px]"
                 onClick={handleJustifyClick}
                 disabled={isJustifying || !isFormModified}
               >
