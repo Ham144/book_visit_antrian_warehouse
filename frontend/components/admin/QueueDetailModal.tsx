@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 import PreviewSlotDisplay from "../vendor/PreviewSlotDisplay";
-import { Calendar, Clock, MessageSquare } from "lucide-react";
+import { Calendar, Clock, MessageSquare, SearchCodeIcon } from "lucide-react";
+import MoveTraceList from "../shared-common/move-trace-list";
 // Versi statis yang lebih cantik dengan warna dan styling yang lebih menarik
 export const getStatusBadgeColor = (status?: BookingStatus) => {
   switch (status) {
@@ -391,10 +392,25 @@ const QueueDetailModal = ({
                   "Update Booking & Konfirmasi"
                 )}
               </button>
+              <button
+                type="button"
+                className="btn disabled:bg-slate-200  text-white min-w-[200px] bg-orange-600"
+                onClick={() => {
+                  (
+                    document.getElementById(
+                      "move-trace-modal"
+                    ) as HTMLDialogElement
+                  )?.showModal();
+                }}
+              >
+                <SearchCodeIcon />
+                Lihat Booking List
+              </button>
             </div>
           </div>
         </div>
       </div>
+      <MoveTraceList booking={selectedBooking} key={selectedBooking?.id} />
 
       {/* Toaster */}
       <Toaster position="bottom-right" />

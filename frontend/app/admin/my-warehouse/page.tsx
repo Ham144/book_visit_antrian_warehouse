@@ -1,17 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import {
-  Edit,
-  Filter,
-  WarehouseIcon,
-  Users,
-  Calendar,
-  UserCheck,
-  Search,
-  X,
-  PanelLeftDashedIcon,
-  LucideSettings2,
-} from "lucide-react";
+import { Filter, Calendar, Search, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { WarehouseApi } from "@/api/warehouse.api";
 import { toast } from "sonner";
@@ -20,12 +9,7 @@ import WarehouseModalForm from "@/components/admin/warehouseModalForm";
 import { Warehouse } from "@/types/warehouse";
 import { Booking, BookingFilter } from "@/types/booking.type";
 import { BookingApi } from "@/api/booking.api";
-import { BookingStatus } from "@/types/shared.type";
-import QueueDetailModal, {
-  getStatusBadgeColor,
-  getStatusIcon,
-  getStatusLabel,
-} from "@/components/admin/QueueDetailModal";
+import QueueDetailModal from "@/components/admin/QueueDetailModal";
 import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
 import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
 import { IDock } from "@/types/dock.type";
@@ -598,8 +582,9 @@ const MyWarehousePage = () => {
                   <div className="overflow-x-auto max-h-[60vh] min-h-[60vh] overflow-y-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <tbody className="bg-white divide-y divide-gray-100">
-                        {bookings.map((booking: Booking) => (
+                        {bookings?.map((booking: Booking) => (
                           <BookingRow
+                            key={booking.id}
                             booking={booking}
                             setSelectedBookingId={setSelectedBookingId}
                           />

@@ -6,11 +6,12 @@ import { useState } from "react";
 import { Booking, BookingFilter } from "@/types/booking.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
-import DetailBookingModal from "@/components/shared-common/DetailBookingModal";
 import ConfirmationWithInput from "@/components/shared-common/ConfirmationWithInput";
 import { useUserInfo } from "@/components/UserContext";
-import BookingListCard from "@/components/shared-common/BookingListCard";
 import { BookingStatus } from "@/types/shared.type";
+import BookingRow from "@/components/shared-common/BookingRow";
+import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
+import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
 
 export default function HistoryPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string>(null);
@@ -27,7 +28,7 @@ export default function HistoryPage() {
   //cancel states
   const [canceledReason, setCanceledReason] = useState<string>("");
 
-  const { data: bookings } = useQuery({
+  const { data: bookings, isLoading: isLoadingBookings } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => await BookingApi.getAllBookingsList(filter),
     enabled: !!userInfo,
@@ -56,7 +57,7 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="mx-auto p-6 container">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold mb-2">Riwayat Pemesanan</h1>
@@ -116,58 +117,73 @@ export default function HistoryPage() {
             </div>
           </label>
         </div>
+        {/* TABLE Section */}
+        <div className="rounded-lg border border-gray-200">
+          {bookings?.length > 0 ? (
+            <div>
+              {/* Header Table (Fixed) */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Booking Code
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Vehicle & Driver
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Schedule
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Duration
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Dock
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
 
-        <div className="space-y-4 max-h-[70vh] overflow-auto">
-          {bookings?.length === 0 ? (
-            <div className="card bg-white shadow">
-              <div className="card-body text-center py-12">
-                <Truck size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-600">Belum ada pemesanan</p>
+              {/* Body Table (Scrollable) */}
+              <div className="overflow-x-auto max-h-[60vh] min-h-[60vh] overflow-y-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {bookings.map((booking: Booking) => (
+                      <BookingRow
+                        key={booking?.id}
+                        booking={booking}
+                        setSelectedBookingId={setSelectedBookingId}
+                      />
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : (
-            <div className="space-y-3 flex flex-col ">
-              {bookings?.map((booking: Booking) => (
-                <BookingListCard
-                  booking={booking}
-                  selectedBookingId={selectedBookingId}
-                  setSelectedBookingId={setSelectedBookingId}
-                  key={booking.id}
-                />
-              ))}
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-3">📅</div>
+              <p className="text-gray-500 font-medium">No bookings available</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Start by creating a new booking
+              </p>
             </div>
           )}
-        </div>
-        <div className="flex items-center p-3 justify-between space-x-2">
-          <button
-            onClick={() => {
-              if (filter.page > 1) {
-                setFilter((prev) => ({
-                  ...prev,
-                  page: prev.page - 1,
-                }));
-              }
-            }}
-            className="btn btn-primary w-40"
-          >
-            <ArrowLeft size={16} className="mr-1" /> Previous page
-          </button>
-          <span className="text-lg font-bold  border px-5 py-2 bg-primary text-white rounded-md">
-            {filter.page}
-          </span>
-          <button
-            onClick={() => {
-              setFilter((prev) => ({
-                ...prev,
-                page: prev.page + 1,
-              }));
-            }}
-            className="btn btn-primary w-40"
-          >
-            Next page
-            <ArrowRight size={16} className="ml-1" />
-          </button>
-        </div>
+        </div>{" "}
+        <PaginationFullTable
+          data={bookings}
+          filter={filter}
+          isLoading={isLoadingBookings}
+          setFilter={setFilter}
+          key={"my-warehouse-pagination"}
+        />
       </div>
 
       <ConfirmationWithInput
@@ -179,7 +195,11 @@ export default function HistoryPage() {
         setInput={setCanceledReason}
         key={"cancel-confirmation"}
       />
-      <DetailBookingModal id={selectedBookingId} key={"DetailBookingModal"} />
+      <MyWarehouseActionModal
+        key={"action-modal"}
+        onModifyAndConfirm={() => toast.error("tidak diizinkan")}
+        selectedBooking={bookings?.find((b) => b.id === selectedBookingId)}
+      />
     </div>
   );
 }

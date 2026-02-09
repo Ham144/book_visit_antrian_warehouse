@@ -10,7 +10,7 @@ export const BusyTimeApi = {
     const res = await axiosInstance.patch(`/api/busy-time/${id}`, body);
     return res.data;
   },
-  getAll: async (dockId: string) => {
+  getAll: async (dockId: string): Promise<IDockBusyTime[]> => {
     const res = await axiosInstance.get(`/api/busy-time/${dockId}`);
     return res.data;
   },

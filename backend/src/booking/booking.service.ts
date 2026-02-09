@@ -18,10 +18,14 @@ import { BookingFilter } from 'src/common/shared-interface';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ResponseReportsBookingDto } from './dto/response-reports-boking.dto';
 import { ResponseDashboardBookingDto } from './dto/response-dashboard-booking.dto';
+import { MoveTraceService } from 'src/move-trace/move-trace.service';
 
 @Injectable()
 export class BookingWarehouseService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly moveTraceService: MoveTraceService,
+  ) {}
 
   private mapDayIndexToEnum(dayIndex: number): string {
     const dayMapping = [
@@ -88,7 +92,11 @@ export class BookingWarehouseService {
   }
 
   //user|admin organization
-  async justifyBooking(id: string, updateDto: UpdateBookingDto) {
+  async justifyBooking(
+    id: string,
+    updateDto: UpdateBookingDto,
+    userInfo: TokenPayload,
+  ) {
     const { arrivalTime, dockId } = updateDto;
 
     // Get existing booking
@@ -96,6 +104,7 @@ export class BookingWarehouseService {
       where: { id },
       include: {
         Vehicle: true,
+        Dock: true,
       },
     });
 
@@ -217,6 +226,20 @@ export class BookingWarehouseService {
       },
     });
 
+    await this.moveTraceService.create({
+      bookingId: id,
+      doer: userInfo.username,
+      fromStatus: existingBooking.status,
+      toStatus: updatedBooking.status,
+      fromArrivalTime: existingBooking.arrivalTime.toISOString(),
+      toArrivalTime: updatedBooking.arrivalTime.toISOString(),
+      detailMovement:
+        'justify - ' +
+        existingBooking?.Dock?.name +
+        ' to ' +
+        updatedBooking?.Dock?.name,
+    });
+
     return plainToInstance(ResponseBookingDto, updatedBooking, {
       excludeExtraneousValues: true,
       groups: ['detail'],
@@ -224,7 +247,11 @@ export class BookingWarehouseService {
   }
 
   //user|admin organization
-  async dragAndDrop(id: string, payload: DragAndDropPayload) {
+  async dragAndDrop(
+    id: string,
+    payload: DragAndDropPayload,
+    userInfo: TokenPayload,
+  ) {
     /* ======================================
      * 1. VALIDASI DASAR & AMBIL DATA
      * ====================================== */
@@ -277,6 +304,15 @@ export class BookingWarehouseService {
           status: 'CANCELED',
         },
       });
+      await this.moveTraceService.create({
+        bookingId: id,
+        doer: userInfo.username,
+        fromStatus: booking.status,
+        toStatus: 'CANCELED',
+        fromArrivalTime: booking.arrivalTime.toISOString(),
+        toArrivalTime: booking.arrivalTime.toISOString(),
+        detailMovement: 'drag and drop - cancel',
+      });
       return { success: true, warehouseId: booking.warehouseId };
     }
 
@@ -314,6 +350,9 @@ export class BookingWarehouseService {
 
       const updatingBooking = await this.prismaService.booking.findFirst({
         where: { id },
+        include: {
+          Dock: true,
+        },
       });
 
       const bookingData: Prisma.BookingUpdateInput = {
@@ -336,6 +375,19 @@ export class BookingWarehouseService {
           id: id,
         },
         data: bookingData,
+      });
+      await this.moveTraceService.create({
+        bookingId: id,
+        doer: userInfo.username,
+        fromStatus: booking.status,
+        toStatus: 'UNLOADING',
+        fromArrivalTime: booking.arrivalTime.toISOString(),
+        toArrivalTime: booking.arrivalTime.toISOString(),
+        detailMovement:
+          'drag and drop - to unloading from ' +
+          booking.Dock.name +
+          ' to ' +
+          updatingBooking.Dock.name,
       });
       return { success: true, warehouseId: booking.warehouseId };
     }
@@ -595,6 +647,17 @@ export class BookingWarehouseService {
           },
         });
 
+        await this.moveTraceService.create({
+          bookingId: id,
+          doer: userInfo.username,
+          fromStatus: booking.status,
+          toStatus: toStatus,
+          fromArrivalTime: booking.arrivalTime.toISOString(),
+          toArrivalTime: tempArrivalTime.toISOString(),
+          detailMovement:
+            'drag and drop - swap with booking ' + targetBooking.code,
+        });
+
         return { success: true, warehouseId: booking.warehouseId };
       }
 
@@ -822,9 +885,26 @@ export class BookingWarehouseService {
     bookingBody.status = BookingStatus.IN_PROGRESS;
     bookingBody.arrivalTime = effectiveArrivalTime;
     bookingBody.estimatedFinishTime = estimatedFinishTime;
-    await this.prismaService.booking.update({
+    const updatedBooking = await this.prismaService.booking.update({
       where: { id },
       data: bookingBody,
+      include: {
+        Dock: true,
+      },
+    });
+
+    await this.moveTraceService.create({
+      bookingId: id,
+      doer: userInfo.username,
+      fromStatus: booking.status,
+      toStatus: BookingStatus.IN_PROGRESS,
+      fromArrivalTime: booking.arrivalTime.toISOString(),
+      toArrivalTime: effectiveArrivalTime.toISOString(),
+      detailMovement:
+        'drag and drop - to in progress from ' +
+        booking.Dock.name +
+        ' to ' +
+        updatedBooking.Dock.name,
     });
 
     return { success: true, warehouseId: booking.warehouseId };
@@ -1019,7 +1099,11 @@ export class BookingWarehouseService {
     });
   }
 
-  async updateBookingStatus(id: string, payload: UpdateBookingDto) {
+  async updateBookingStatus(
+    id: string,
+    payload: UpdateBookingDto,
+    userInfo: TokenPayload,
+  ) {
     const existingBooking = await this.prismaService.booking.findUnique({
       where: { id },
     });
@@ -1067,6 +1151,16 @@ export class BookingWarehouseService {
         Dock: true,
         driver: true,
       },
+    });
+
+    await this.moveTraceService.create({
+      bookingId: id,
+      doer: userInfo.username,
+      fromStatus: existingBooking.status,
+      toStatus: updatedBooking.status,
+      fromArrivalTime: existingBooking.arrivalTime.toISOString(),
+      toArrivalTime: updatedBooking.arrivalTime.toISOString(),
+      detailMovement: 'update status',
     });
 
     return plainToInstance(ResponseBookingDto, updatedBooking, {
@@ -1331,7 +1425,7 @@ export class BookingWarehouseService {
               gte: todayStart,
             },
             status: {
-              in: ['IN_PROGRESS', 'ARRIVED'],
+              in: [BookingStatus.IN_PROGRESS, BookingStatus.FINISHED],
             },
           },
           include: {
@@ -1353,6 +1447,7 @@ export class BookingWarehouseService {
 
     // Hitung metrics
     const totalBookingsToday = bookings.length;
+    const pending = bookings.filter((b) => b.status == BookingStatus.PENDING);
 
     const activeBookings = bookings.filter((b) =>
       [BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING].includes(
@@ -1501,7 +1596,17 @@ export class BookingWarehouseService {
       };
     });
     // Prepare queue snapshot (top 5 waiting bookings)
-    const queueSnapshot = [];
+    const queueSnapshot = bookings
+      .filter((b) => b.arrivalTime.getTime() > now.getTime())
+      .sort((a, b) => {
+        if (BookingStatus[b.status] === BookingStatus.IN_PROGRESS) {
+          return -1;
+        }
+        const aTime = a.arrivalTime.getTime();
+        const bTime = b.arrivalTime.getTime();
+        return aTime - bTime;
+      })
+      .slice(0, 5);
 
     // Generate KPI data
     const kpiData = this.generateKPIData(bookings, docks, now);
@@ -1515,6 +1620,7 @@ export class BookingWarehouseService {
     return {
       summaryMetrics: {
         totalBookingsToday,
+        pending: pending.length,
         activeQueue: activeBookings,
         completedToday,
         delayedBookings,
@@ -1523,6 +1629,7 @@ export class BookingWarehouseService {
         lastUpdated: now.toISOString(),
       },
       dockStatuses,
+      queueSnapshot,
       kpiData,
       busyTimeData,
       alerts,
@@ -1928,5 +2035,9 @@ export class BookingWarehouseService {
 
     // Fallback to default 06:00-18:00
     return { startHour: 6, endHour: 18 };
+  }
+
+  async getDetailMoveTrace(id: string) {
+    return this.moveTraceService.findAll(id);
   }
 }

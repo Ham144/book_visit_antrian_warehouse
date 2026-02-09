@@ -8,6 +8,8 @@ import {
   getStatusIcon,
   getStatusLabel,
 } from "../admin/QueueDetailModal";
+import { useQuery } from "@tanstack/react-query";
+import { WarehouseApi } from "@/api/warehouse.api";
 
 interface BookingRowProps {
   booking: Booking;
@@ -16,9 +18,21 @@ interface BookingRowProps {
 
 const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
   const arrival = new Date(booking.arrivalTime);
+
+  const { data: warehouseDetail, isLoading } = useQuery({
+    queryKey: ["warehouse-detail"],
+    queryFn: async () =>
+      await WarehouseApi.getWarehouseDetail(booking.warehouseId),
+    enabled: !!booking?.warehouseId,
+  });
+
+  console.log(warehouseDetail);
+
   const now = new Date();
   const isPast =
-    arrival.getTime() < now.getTime() &&
+    !isLoading &&
+    arrival.getTime() + (warehouseDetail?.delayTolerance || 0) * 60_000 <
+      now.getTime() &&
     (booking.status == BookingStatus.IN_PROGRESS ||
       booking.status == BookingStatus.PENDING) &&
     !booking.actualArrivalTime;
@@ -30,14 +44,14 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
   return (
     <tr
       key={booking.id}
-      className={`hover:bg-gray-50  transition-colors duration-150 relative ${
+      className={`hover:bg-gray-50 transition-colors duration-150 relative ${
         isPast && "bg-yellow-100 hover:bg-yellow-50"
       }`}
     >
       {/* Booking Code */}
-      <td className="px-6 py-4 whitespace-nowrap ">
+      <td className="px-6 py-4 whitespace-nowrap">
         <div>
-          <p className="text-sm font-bold py-3 text-gray-900 lg:w-40">
+          <div className="text-sm font-bold py-3 text-gray-900 lg:w-40">
             {booking.code}
             {booking.notes && (
               <div
@@ -54,7 +68,7 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
                 ❗ {booking.canceledReason}
               </div>
             )}
-          </p>
+          </div>
         </div>
       </td>
 
@@ -87,7 +101,7 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
       <td className="px-6 py-4">
         <div className="text-sm">
           <div className="font-medium text-gray-900">
-            Arrivl Tme:{" "}
+            Arrival Time:{" "}
             {new Date(booking.arrivalTime).toLocaleDateString("id-ID", {
               weekday: "short",
               day: "numeric",
@@ -170,7 +184,7 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
       </td>
 
       {/* Status */}
-      <td className="px-6 py-4 whitespace-nowrap ">
+      <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex w-28 flex-col gap-1">
           <div
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusBadgeColor(
@@ -184,7 +198,7 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
       </td>
 
       {/* Organization */}
-      <td className="px-6 py-4 ">
+      <td className="px-6 py-4">
         <div className="text-sm w-24">
           <button
             onClick={() => {
@@ -195,7 +209,7 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
                 ) as HTMLDialogElement
               )?.showModal();
             }}
-            className="btn "
+            className="btn"
           >
             <LucideSettings2 />
           </button>

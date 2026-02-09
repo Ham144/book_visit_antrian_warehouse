@@ -25,12 +25,12 @@ import { useQuery } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
 import { useUserInfo } from "@/components/UserContext";
 import { ROLE } from "@/types/shared.type";
-import { Booking } from "@/types/booking.type";
 
 // Types
-interface DashboardState {
+export interface DashboardState {
   summaryMetrics: {
     totalBookingsToday: number;
+    pending: number;
     activeQueue: number;
     completedToday: number;
     delayedBookings: number;
@@ -38,7 +38,6 @@ interface DashboardState {
     dockUtilizationPercent: number;
     lastUpdated: string;
   };
-
   dockStatuses: Array<{
     dockId: string;
     dockName: string;
@@ -50,7 +49,7 @@ interface DashboardState {
     isOverdue: boolean;
     colorStatus: "green" | "yellow" | "red";
   }>;
-  queueSnapshot: Partial<Booking>;
+  queueSnapshot: any[];
   kpiData: {
     queueLengthTimeline: Array<{ time: string; value: number }>;
     avgWaitingTime: Array<{ time: string; minutes: number }>;
@@ -135,13 +134,19 @@ const DashboardAdmin = () => {
   // Summary cards data
   const summaryCards = [
     {
-      metric: "Total Booking Hari ini",
+      metric: "Total Semua Booking",
       value: dashboardState?.summaryMetrics?.totalBookingsToday,
       icon: <Package className="h-5 w-5" />,
       status: "normal" as const,
     },
     {
-      metric: "Semua IN_PROGRESS (& DELAYED)",
+      metric: "Booking Butuh Konfirmasi hari ini",
+      value: dashboardState?.summaryMetrics?.pending,
+      icon: <Package className="h-5 w-5" />,
+      status: "normal" as const,
+    },
+    {
+      metric: "Semua (in_progress dan delayed)",
       value: dashboardState?.summaryMetrics?.activeQueue,
       icon: <Truck className="h-5 w-5" />,
       status:
@@ -156,7 +161,7 @@ const DashboardAdmin = () => {
       status: "normal" as const,
     },
     {
-      metric: "Belum Kunjung Datang",
+      metric: "Belum Juga Datang",
       value: dashboardState?.summaryMetrics.delayedBookings,
       icon: <AlertTriangle className="h-5 w-5" />,
       status:
@@ -211,7 +216,9 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
             d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <span>Page ini sedang dalam pengembangan, akan segera tiba.</span>
+        <span>
+          Page ini sedang dalam pengembangan, beberapa belum disempurkan.
+        </span>
       </div>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
@@ -248,7 +255,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
         </div>
       </div>
       {/* Top Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
         {summaryCards?.map((card, index) => (
           <SummaryCard
             key={index}
@@ -261,7 +268,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
       </div>
 
       {/* Main Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Dock Status Overview */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-5 border-b border-gray-200 dark:border-gray-700">
@@ -287,7 +294,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
         </div>
 
         {/* Queue Snapshot */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white col-span-2 dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-5 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -315,6 +322,9 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                     Booking Code
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Plat
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Vendor
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -326,10 +336,26 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {dashboardState?.queueSnapshot?.length > 0 &&
-                  dashboardState?.queueSnapshot.map((booking) => (
-                    <QueueTableRow key={booking.bookingId} booking={booking} />
-                  ))}
+                {dashboardState?.queueSnapshot &&
+                dashboardState.queueSnapshot.length > 0 ? (
+                  dashboardState.queueSnapshot
+                    .slice(0, 5)
+                    .map((booking, index) => (
+                      <QueueTableRow
+                        key={booking.id || booking.code || index}
+                        booking={booking}
+                      />
+                    ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-5 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                    >
+                      Belum ada antrian untuk hari ini.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -371,17 +397,17 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                   </h3>
                   <div className="space-y-3">
                     {dashboardState?.kpiData.dockThroughput.map(
-                      (dock: IDock, index) => (
+                      (item, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between"
                         >
                           <span className="text-sm text-gray-600 dark:text-gray-300">
-                            {dock.name}
+                            {item.dock}
                           </span>
                           <div className="flex items-center">
                             <span className="font-medium text-gray-900 dark:text-white mr-2">
-                              tes
+                              {item.completed}
                             </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               bookings
@@ -393,48 +419,6 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Alert & Incident Panel */}
-      <div className="mb-24">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Alerts & Incidents
-                </h2>
-                <span className="ml-3 px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
-                  {dashboardState?.alerts.filter((a) => !a.acknowledged).length}{" "}
-                  active
-                </span>
-              </div>
-              <button
-                onClick={() => {}}
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                Mark all as read
-              </button>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="space-y-3">
-              {dashboardState?.alerts?.length > 0 ? (
-                dashboardState?.alerts.map((alert) => (
-                  <AlertItem key={alert.id} alert={alert} />
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No active alerts
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>

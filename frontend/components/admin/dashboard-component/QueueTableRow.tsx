@@ -4,8 +4,17 @@ import { Booking } from "@/types/booking.type";
 const QueueTableRow = ({ booking }: { booking: Booking }) => {
   const now = new Date();
 
-  const isOverdue = booking.estimatedFinishTime
-    ? now.getTime() > booking.estimatedFinishTime.getTime()
+  // Normalisasi tipe tanggal (bisa datang sebagai string dari API)
+  const arrivalTime = booking.arrivalTime
+    ? new Date(booking.arrivalTime)
+    : null;
+
+  const estimatedFinishTime = booking.estimatedFinishTime
+    ? new Date(booking.estimatedFinishTime)
+    : null;
+
+  const isOverdue = estimatedFinishTime
+    ? now.getTime() > estimatedFinishTime.getTime()
     : false;
   return (
     <tr
@@ -17,15 +26,18 @@ const QueueTableRow = ({ booking }: { booking: Booking }) => {
         <span>{booking.Dock?.name}</span>
       </td>
       <td className="py-2 px-3 font-medium">{booking.code}</td>
+      <td className="py-2 px-3 font-medium">{booking.code}</td>
       <td className="py-2 px-3">{booking.driver?.vendorName}</td>
       <td className="py-2 px-3">
         <span className={isOverdue ? "text-red-600 font-medium" : ""}>
-          {FormatTimeIndonesian(booking.arrivalTime)}
+          {arrivalTime ? FormatTimeIndonesian(arrivalTime) : "-"}
         </span>
       </td>
       <td className="py-2 px-3">
         <span className={isOverdue ? "text-red-600 font-medium" : ""}>
-          {FormatTimeIndonesian(new Date(booking.Vehicle?.durasiBongkar))}
+          {booking.Vehicle?.durasiBongkar !== undefined
+            ? `${booking.Vehicle?.durasiBongkar} m`
+            : "-"}
         </span>
       </td>
     </tr>

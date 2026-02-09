@@ -63,7 +63,4 @@ export class ResponseBookingDto {
   @Expose()
   @Type(() => LoginResponseDto)
   driver?: LoginResponseDto;
-
-  @Expose({ groups: ['detail'] })
-  organizationName: string;
 }

@@ -15,6 +15,7 @@ import { VendorModule } from './vendor/vendor.module';
 import { RedisIoAdapterModule } from './RedisIoAdapter/redis-io-adapter.module';
 import { ChatModule } from './chat/chat.module';
 import { GlobalSettingModule } from './global-setting/global-setting.module';
+import { MoveTraceModule } from './move-trace/move-trace.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { GlobalSettingModule } from './global-setting/global-setting.module';
     RedisIoAdapterModule,
     ChatModule,
     GlobalSettingModule,
+    MoveTraceModule,
   ],
   controllers: [],
   providers: [HttpExceptionFilter],

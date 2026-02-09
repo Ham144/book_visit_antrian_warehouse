@@ -86,6 +86,7 @@ const BookingListCard = ({
   // Handler untuk membuka modal
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (userInfo.role == ROLE.ADMIN_VENDOR || ROLE.DRIVER_VENDOR) return;
     setSelectedBookingId(booking.id);
     const modal = document.getElementById(
       "DetailBookingModal"

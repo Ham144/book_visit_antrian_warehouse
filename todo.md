@@ -68,7 +68,7 @@ start 12/11/2025
 [x] driver menu realtime monitoring
 [x] perbaikin tampilan supir yang lebih jelas
 [x] add: warehouse setting untuk ruling berbeda tiap warehouse
-[] add: dashboard driver & vendor admin dengan endpoint sudah ada stats/...
+[x] add: dashboard driver & vendor admin dengan endpoint sudah ada stats/...
 [] mod: race condition booking
 [] add: My Warehouse untuk library utama warehouse dan konfirmasinya (required: filter kompleks)
 
@@ -76,9 +76,11 @@ start 12/11/2025
 
 [x] add: tampilkan vendor
 [x] add: perlu konfirmasi booking
-[] add: template mobil per dock bukan universal
-[nanti saja] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
-booking.durasiBongkarEstimasi =
+[x] add: template mobil per warehouse bukan universal
+[x] add: tracing tiap perubahan arrivalTime
+[] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
+[] add: penyempurnaan role
+Menentukan durasi bongkar mobil =
 vehicle.durasiBongkar × (0.3 + (1 − 0.3) × loadPercent/100)
 
 //update antrian booking

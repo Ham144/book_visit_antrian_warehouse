@@ -28,7 +28,7 @@ export class LoginResponseDto {
   isActive?: boolean;
 
   @Expose()
-  organizationName: string;
+  organizationName?: string;
 
   @Expose()
   @Type(() => responseWarehouseDto)

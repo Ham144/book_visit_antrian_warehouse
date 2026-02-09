@@ -34,12 +34,11 @@ export class WarehouseController {
     return this.warehouseService.createWarehouse(body, userInfo);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Get('detail/:id')
   getWarehouseDetail(@Param('id') id: string) {
     return this.warehouseService.getWarehouseDetail(id);
   }
-
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
   @Get()
   list(@Query() filter: any, @Auth() userInfo: any) {

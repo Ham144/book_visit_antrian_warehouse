@@ -5,6 +5,8 @@ import {
   UpdateBookingStatus,
 } from "@/types/booking.type";
 import { DragAndDropPayload } from "@/types/shared.type";
+import { DashboardState } from "@/app/admin/dashboard/page";
+import { VendorDashboardState } from "@/types/vendor-dashboard.type";
 
 export const BookingApi = {
   createBooking: async (formData: Booking) => {
@@ -86,8 +88,8 @@ export const BookingApi = {
     const res = await axiosInstance.get("/api/booking/stats/stats-for-driver");
     return res.data;
   },
-  getStatsForAdminVendor: async () => {
-    const res = await axiosInstance.get(
+  getStatsForAdminVendor: async (): Promise<VendorDashboardState> => {
+    const res = await axiosInstance.get<VendorDashboardState>(
       "/api/booking/stats/stats-for-admin-vendor"
     );
     return res.data;
@@ -111,9 +113,14 @@ export const BookingApi = {
     );
     return res.data;
   },
+  getMoveTraceList: async (id) => {
+    if (!id) return;
+    const res = await axiosInstance.get("/api/booking/get-move-trace/" + id);
+    return res.data;
+  },
   //ini untuk admin/dashboards
-  adminWarehouseDashboard: async () => {
-    const res = await axiosInstance.get(
+  adminWarehouseDashboard: async (): Promise<DashboardState> => {
+    const res = await axiosInstance.get<DashboardState>(
       "/api/booking/admin-warehouse-dashboard"
     );
     return res.data;

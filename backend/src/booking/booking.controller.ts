@@ -39,6 +39,7 @@ export class BookingController {
     if (response.success && response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
+    return response;
   }
 
   @Authorization()
@@ -65,10 +66,15 @@ export class BookingController {
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Put('/justify/:id')
-  async justify(@Param('id') id: string, @Body() body) {
+  async justify(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Auth() userInfo: TokenPayload,
+  ) {
     const response = await this.bookingWarehouseService.justifyBooking(
       id,
       body,
+      userInfo,
     );
     if (response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
@@ -78,8 +84,16 @@ export class BookingController {
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Put('/drag-and-drop/:id')
-  async dragAndDrop(@Param('id') id: string, @Body() body) {
-    const response = await this.bookingWarehouseService.dragAndDrop(id, body);
+  async dragAndDrop(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Auth() userInfo: TokenPayload,
+  ) {
+    const response = await this.bookingWarehouseService.dragAndDrop(
+      id,
+      body,
+      userInfo,
+    );
     if (response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
@@ -91,14 +105,17 @@ export class BookingController {
   async updateStatus(
     @Param('id') id: string,
     @Body() payload: UpdateBookingDto,
+    @Auth() userInfo: TokenPayload,
   ) {
     const response = await this.bookingWarehouseService.updateBookingStatus(
       id,
       payload,
+      userInfo,
     );
     if (response.warehouseId) {
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
+    return response;
   }
 
   @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
@@ -110,7 +127,6 @@ export class BookingController {
       body,
     );
     if (response.success && response.warehouseId) {
-      console.log('emit justify');
       this.gateway.emitWarehouseUpdate(response.warehouseId);
     }
     return response;
@@ -124,15 +140,15 @@ export class BookingController {
 
   @Authorization('ADMIN_VENDOR', 'ADMIN_ORGANIZATION')
   @Get('/stats/stats-for-admin-vendor')
-  getStatsForAdminVendor() {
-    return this.bookingForVendorService.getStatsForAdminVendor();
+  getStatsForAdminVendor(@Auth() userInfo: TokenPayload) {
+    return this.bookingForVendorService.getStatsForAdminVendor(userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
-  @Get('/stats/stats-for-organization')
-  getStatsForUserOrganizations() {
-    return this.bookingWarehouseService.getStatsForUserOrganizations();
-  }
+  // @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  // @Get('/stats/stats-for-organization')
+  // getStatsForUserOrganizations() {
+  //   return this.bookingWarehouseService.getStatsForUserOrganizations();
+  // }
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
   @Get('/admin-warehouse-reports')
@@ -145,6 +161,17 @@ export class BookingController {
       filter.startDate,
       filter.endDate,
     );
+  }
+
+  @Authorization(
+    'ADMIN_ORGANIZATION',
+    'USER_ORGANIZATION',
+    'ADMIN_VENDOR',
+    'ADMIN_GUDANG',
+  )
+  @Get('/get-move-trace/:id')
+  getDetailMoveTrace(@Param('id') id: string) {
+    return this.bookingWarehouseService.getDetailMoveTrace(id);
   }
 
   @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')

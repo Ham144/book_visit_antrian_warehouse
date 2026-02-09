@@ -1264,11 +1264,9 @@ const PreviewSlotDisplay = ({
   return (
     <div className="flex flex-col  h-[600px] ">
       {/* Dock Selector */}
-      {availableDocks?.length && mode === "justify" && (
+      {availableDocks?.length && (
         <div className="bg-white rounded-lg shadow-sm p-4 ">
-          <label className="block text-sm font-medium mb-2">
-            Pilih Dock/Gate
-          </label>
+          <label className="block text-sm font-medium mb-2">Pilih Gate</label>
           <select
             className="w-full border rounded-lg px-3 py-2 text-sm"
             value={formData.dockId || ""}

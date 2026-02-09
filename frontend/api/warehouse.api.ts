@@ -38,7 +38,9 @@ export const WarehouseApi = {
   },
 
   getWarehouseDetail: async (id: string): Promise<Warehouse> => {
-    const response = await axiosInstance.get<Warehouse>(`/api/warehouse/${id}`);
+    const response = await axiosInstance.get<Warehouse>(
+      `/api/warehouse/detail/${id}`
+    );
     return response.data;
   },
 

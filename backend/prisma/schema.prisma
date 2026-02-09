@@ -61,7 +61,6 @@ model Warehouse {
   userWarehouseAccesses User[]
   organizationName      String?
   organization          Organization? @relation(fields: [organizationName], references: [name])
-  vehicles Vehicle[]
   //settings & Preferences
   delayTolerance Int @default(15)
   intervalMinimalQueueu Int @default(5)
@@ -93,7 +92,7 @@ model Vehicle {
   bookings Booking[]
   warehouseId String?
   isGlobalWarehouse Boolean? @default(true)
-  
+
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   organizationName String
@@ -160,7 +159,6 @@ model Booking {
   driver         User    @relation("bookingDriver", fields: [driverUsername], references: [username])
   
   canceledReason String?
-  durasiBongkarEstimasi  Int?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   createByUsername String?
@@ -205,6 +203,18 @@ model Vendor {
   organization Organization @relation(fields: [organizationName], references: [name])
 }
 
+model MoveTrace {
+  id String @unique() @default(uuid())
+  doer String 
+  bookingId String
+  fromStatus String
+  toStatus String
+  fromArrivalTime DateTime
+  toArrivalTime DateTime
+  detailMovement String?
+  createdAt DateTime @default(now())
+}
+
 // CHAT FEATURE
 model Room {
   id            String   @id @default(cuid()) //harusnya bukan cuid tapi custom
@@ -219,7 +229,7 @@ model Chat {
   roomId    String
   senderId  String   // refer ke User (tidak perlu relasi Prisma kalau sudah kompleks)
   message   String
-  status    String   //read, delivered
+  status    String?   //read, delivered
   
   createdAt DateTime @default(now())
 
@@ -227,5 +237,6 @@ model Chat {
 
   @@index([roomId, createdAt])
 }
+
 
 
