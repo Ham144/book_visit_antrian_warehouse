@@ -52,7 +52,12 @@ export class BookingController {
     return response;
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_ORGANIZATION',
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get('/semi-detail-list')
   semiDetailList(@Query() filter, @Auth() userInfo: any) {
     return this.bookingWarehouseService.semiDetailList(filter, userInfo);
@@ -64,7 +69,7 @@ export class BookingController {
     return this.bookingForVendorService.findOne(id);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Put('/justify/:id')
   async justify(
     @Param('id') id: string,
@@ -82,7 +87,7 @@ export class BookingController {
     return response;
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Put('/drag-and-drop/:id')
   async dragAndDrop(
     @Param('id') id: string,
@@ -118,7 +123,12 @@ export class BookingController {
     return response;
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Delete('/cancel/:id')
   async cancelBook(@Param('id') id: string, @Auth() userInfo, @Body() body) {
     const response = await this.bookingForVendorService.cancelBook(
@@ -144,13 +154,13 @@ export class BookingController {
     return this.bookingForVendorService.getStatsForAdminVendor(userInfo);
   }
 
-  // @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  // @Authorization('ADMIN_ORGANIZATION', "ADMIN_GUDANG", 'USER_ORGANIZATION')
   // @Get('/stats/stats-for-organization')
   // getStatsForUserOrganizations() {
   //   return this.bookingWarehouseService.getStatsForUserOrganizations();
   // }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Get('/admin-warehouse-reports')
   getStatsForVendor(
     @Query() filter: { startDate: string; endDate: string },
@@ -165,6 +175,7 @@ export class BookingController {
 
   @Authorization(
     'ADMIN_ORGANIZATION',
+    'ADMIN_GUDANG',
     'USER_ORGANIZATION',
     'ADMIN_VENDOR',
     'ADMIN_GUDANG',
@@ -174,7 +185,7 @@ export class BookingController {
     return this.bookingWarehouseService.getDetailMoveTrace(id);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Get('/admin-warehouse-dashboard')
   adminDashboard(@Auth() userinfo: TokenPayload) {
     return this.bookingWarehouseService.adminDashboard(userinfo);

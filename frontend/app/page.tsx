@@ -258,12 +258,14 @@ export default function HomePage() {
                 userInfo?.role === ROLE.ADMIN_ORGANIZATION
                   ? "/admin/member-management"
                   : userInfo?.role === ROLE.USER_ORGANIZATION
-                  ? "/admin/dashboard"
+                  ? "/admin/my-warehouse"
                   : userInfo?.role === ROLE.ADMIN_VENDOR
-                  ? "/vendor/dashboard"
+                  ? "/vendor/booking"
                   : userInfo?.role === ROLE.DRIVER_VENDOR
                   ? "/vendor/driver-menu"
-                  : "/"
+                  : userInfo?.role === ROLE.ADMIN_GUDANG
+                  ? "/admin/dashboard"
+                  : "/forbidden"
               }
               onClick={(e) => {
                 if (!userInfo) {
@@ -279,7 +281,8 @@ export default function HomePage() {
             >
               <PlayCircle className="w-5 h-5" />
               {userInfo?.role === ROLE.ADMIN_ORGANIZATION ||
-              userInfo?.role === ROLE.USER_ORGANIZATION
+              userInfo?.role === ROLE.USER_ORGANIZATION ||
+              userInfo?.role === ROLE.ADMIN_GUDANG
                 ? "Lihat Dashboard Admin"
                 : userInfo?.role === ROLE.ADMIN_VENDOR
                 ? "Mulai Order"

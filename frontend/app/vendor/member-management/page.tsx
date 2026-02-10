@@ -46,6 +46,7 @@ const MemberManagementPage = () => {
     vendorName: userInfo?.vendorName,
   };
   const [formData, setFormData] = useState<UserApp>(initialUserAPP);
+  const [editModalKey, setEditModalKey] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
   const [filter, setFilter] = useState<MemberManagementFilter>({
     searchKey: "",
@@ -66,10 +67,10 @@ const MemberManagementPage = () => {
 
   const { mutateAsync: handleCreateAppUser } = useMutation({
     mutationKey: ["users"],
-    mutationFn: async () => {
-      const { passwordConfirm, ...res } = formData;
-      const data = AuthApi.createAppUser(res);
-      return data;
+    mutationFn: async (data: UserApp) => {
+      const { passwordConfirm, ...res } = data;
+      const out = AuthApi.createAppUser(res);
+      return out;
     },
     onSuccess: () => {
       (document.getElementById("UserEditModalForm") as any)?.close();
@@ -82,7 +83,7 @@ const MemberManagementPage = () => {
 
   const { mutateAsync: handleUpdateUser } = useMutation({
     mutationKey: ["users"],
-    mutationFn: async () => await AuthApi.updateAccount(formData),
+    mutationFn: async (data: UserApp) => await AuthApi.updateAccount(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       (document.getElementById("UserEditModalForm") as any)?.close();
@@ -110,8 +111,12 @@ const MemberManagementPage = () => {
   });
 
   const handleOpenEdit = (user?: UserApp) => {
-    setFormData(user);
-    (document.getElementById("UserEditModalForm") as any)?.showModal();
+    setIsCreating(false);
+    setFormData(user ?? initialUserAPP);
+    setEditModalKey((k) => k + 1);
+    setTimeout(() => {
+      (document.getElementById("UserEditModalForm") as HTMLDialogElement)?.showModal();
+    }, 0);
   };
 
   return (
@@ -135,11 +140,14 @@ const MemberManagementPage = () => {
                     onClick={() => {
                       setIsCreating(true);
                       setFormData(initialUserAPP);
-                      (
-                        document.getElementById(
-                          "UserEditModalForm"
-                        ) as HTMLDialogElement
-                      )?.showModal();
+                      setEditModalKey((k) => k + 1);
+                      setTimeout(() => {
+                        (
+                          document.getElementById(
+                            "UserEditModalForm"
+                          ) as HTMLDialogElement
+                        )?.showModal();
+                      }, 0);
                     }}
                     className="btn  btn-primary px-3 "
                   >
@@ -321,10 +329,11 @@ const MemberManagementPage = () => {
       <UserEditModalForm
         formData={formData}
         setFormData={setFormData}
-        submitCreate={handleCreateAppUser}
+        submitCreate={(data) => handleCreateAppUser(data ?? formData)}
         isCreating={isCreating}
-        submitUpdate={handleUpdateUser}
-        key={"UserEditModalForm"}
+        submitUpdate={(data) => handleUpdateUser(data ?? formData)}
+        openKey={editModalKey}
+        key={`UserEditModalForm-${editModalKey}`}
       />
       <ConfirmationModal
         message="Apakah anda yakin ingin menghapus user ini ?"

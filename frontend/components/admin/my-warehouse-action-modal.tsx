@@ -17,6 +17,7 @@ import {
 import ConfirmationModal from "../shared-common/confirmationModal";
 import { useUserInfo } from "../UserContext";
 import MoveTraceList from "../shared-common/move-trace-list";
+import { useCalculateIsPast } from "@/hooks/useCalculateIsPast";
 
 interface MyWarehouseActionModalProps {
   selectedBooking?: Booking;
@@ -29,6 +30,7 @@ const MyWarehouseActionModal = ({
 }: MyWarehouseActionModalProps) => {
   const [canceledReason, setCanceledReason] = useState<string>("");
   const queryClient = useQueryClient();
+  const { isPast } = useCalculateIsPast({ booking: selectedBooking });
 
   const { userInfo } = useUserInfo();
   const isAdmin = [
@@ -136,10 +138,8 @@ const MyWarehouseActionModal = ({
                 disabled={isPending}
                 onClick={() => {
                   if (!selectedBooking?.id) return;
-                  const arrival = new Date(selectedBooking.arrivalTime);
-                  const now = new Date();
-                  const isNotConfirmable = arrival.getTime() < now.getTime();
-                  if (isNotConfirmable) {
+
+                  if (isPast) {
                     (
                       document.getElementById(
                         "my-warehouse-action-modal"
@@ -147,7 +147,7 @@ const MyWarehouseActionModal = ({
                     )?.close();
 
                     return toast.error(
-                      "Tidak dapat mengonfirmasi: Arrival Time Tidak Benar"
+                      "Tidak dapat mengonfirmasi: Arrival Time masa lalu"
                     );
                   }
                   handleUpdateStatus({
@@ -175,6 +175,48 @@ const MyWarehouseActionModal = ({
                   <div className="text-left">
                     <span className="font-semibold text-gray-900">
                       Confirm Booking
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900">
+                          Arrival Time:{" "}
+                          {new Date(
+                            selectedBooking.arrivalTime
+                          ).toLocaleDateString("id-ID", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
+                        <div className="text-gray-500 text-xs mt-1">
+                          {new Date(
+                            selectedBooking.arrivalTime
+                          ).toLocaleTimeString("id-ID", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          <span>
+                            {selectedBooking.estimatedFinishTime && (
+                              <>
+                                <span className="mx-1">→</span>
+                                {new Date(
+                                  selectedBooking.estimatedFinishTime
+                                ).toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        {selectedBooking.actualArrivalTime && (
+                          <div className="text-green-600 text-xs mt-1 font-medium">
+                            ✅ Actual:{" "}
+                            {new Date(
+                              selectedBooking.actualArrivalTime
+                            ).toLocaleTimeString("id-ID")}
+                          </div>
+                        )}
+                      </div>
                     </span>
                     <p className="text-xs text-gray-600 mt-1">
                       Ubah Status Menjadi IN_PROGRESS dan booking akan muncul di
@@ -201,8 +243,9 @@ const MyWarehouseActionModal = ({
                 </svg>
               </button>
             )}
-            {selectedBooking?.status == BookingStatus.IN_PROGRESS ||
-              (isAdmin && (
+
+            {selectedBooking?.status == BookingStatus.IN_PROGRESS &&
+              isAdmin && (
                 <button
                   className="group  flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
                   onClick={() => {
@@ -234,7 +277,7 @@ const MyWarehouseActionModal = ({
                   </div>
                   <ArrowRight className="absolute right-10" />
                 </button>
-              ))}
+              )}
             {selectedBooking?.status !== BookingStatus.FINISHED &&
               selectedBooking?.status !== BookingStatus.CANCELED && (
                 <button

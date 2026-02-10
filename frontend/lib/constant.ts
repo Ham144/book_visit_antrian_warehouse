@@ -105,3 +105,19 @@ export interface DashboardState {
     error: string | null;
   };
 }
+
+export const RoleExplanation = {
+  ADMIN_VENDOR:
+    "Role untuk user pihak vendor yang akan melakukan permintaan kunjungan.",
+
+  DRIVER_VENDOR:
+    "Driver hanya dapat mengonfirmasi kedatangan dan mengikuti arahan gate yang ditampilkan pada dashboard driver.",
+
+  ADMIN_ORGANIZATION: "Role dengan level akses tertinggi tanpa batasan fitur.",
+
+  USER_ORGANIZATION:
+    "Role untuk procurement atau user yang bertugas melakukan konfirmasi booking serta mengelola ADMIN_GUDANG.",
+
+  ADMIN_GUDANG:
+    "Role untuk user yang melakukan supervisi operasional di lapangan. Beberapa fungsionalitas aplikasi tidak tersedia untuk role ini.",
+};

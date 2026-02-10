@@ -33,7 +33,7 @@ export class MyOrganizationController {
     return this.myOrganizationService.create(createMyOrganizationDto);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Post('switch')
   async switchOrganization(
     @Body('name') name: string,

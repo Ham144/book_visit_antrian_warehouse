@@ -9,7 +9,7 @@ import { VendorDashboardState } from "@/types/vendor-dashboard.type";
 
 export default function VendorDashboard() {
   const { userInfo } = useUserInfo();
-  const isAdminVendor = userInfo.role == ROLE.ADMIN_VENDOR;
+  const isAdminVendor = userInfo?.role == ROLE.ADMIN_VENDOR;
 
   const { data, isLoading } = useQuery<VendorDashboardState>({
     queryKey: ["vendor-dashboard"],

@@ -30,7 +30,6 @@ export class AuthService {
         },
       });
 
-
     if (!organizationSetting) {
       throw new BadRequestException('Organization Setting tidak ditemukan.');
     }

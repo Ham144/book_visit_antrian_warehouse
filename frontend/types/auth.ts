@@ -61,3 +61,10 @@ export enum AccountType {
   APP = "APP",
   AD = "AD",
 }
+
+export interface IMemberManagement {
+  page: number;
+  searchKey: string | undefined;
+  vendorName?: string;
+  role?: string;
+}

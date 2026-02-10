@@ -113,12 +113,11 @@ export class BookingWarehouseService {
     }
     //cegah yang aneh2
     if (
-      existingBooking.status == BookingStatus.CANCELED ||
       existingBooking.status == BookingStatus.UNLOADING ||
       existingBooking.status == BookingStatus.FINISHED
     ) {
       throw new BadRequestException(
-        `Booking yang ditemukan berstatus yang tidak bisa diubah [canceled, unloading, finished]`,
+        `Booking yang ditemukan berstatus yang tidak bisa diubah [unloading, finished]`,
       );
     }
 
@@ -999,6 +998,7 @@ export class BookingWarehouseService {
           select: {
             username: true,
             displayName: true,
+            vendorName: true,
           },
         },
         Dock: {
@@ -1090,6 +1090,7 @@ export class BookingWarehouseService {
           select: {
             username: true,
             displayName: true,
+            vendorName: true,
           },
         },
       },

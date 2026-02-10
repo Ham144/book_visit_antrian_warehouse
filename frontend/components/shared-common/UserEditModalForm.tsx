@@ -21,13 +21,15 @@ import {
   Building2,
   Handshake,
   Shield,
+  MessageCircleWarning,
 } from "lucide-react";
-import { Dispatch, SetStateAction, useState } from "react";
-import { toast, Toaster } from "sonner";
+import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useUserInfo } from "../UserContext";
 import { IVendor } from "@/types/vendor.type";
 import { VendorApi } from "@/api/vendor.api";
 import { ROLE } from "@/types/shared.type";
+import { RoleExplanation } from "@/lib/constant";
 
 export enum MemberFor {
   VENDOR = "VENDOR",
@@ -37,10 +39,19 @@ export enum MemberFor {
 export interface UserEditProps {
   formData: UserApp;
   setFormData: Dispatch<SetStateAction<UserApp>>;
-  submitCreate: any;
-  submitUpdate: any;
+  /** Dipanggil dengan data form; bila tidak dikirim, parent pakai formData state */
+  submitCreate: (data?: UserApp) => void | Promise<unknown>;
+  submitUpdate: (data?: UserApp) => void | Promise<unknown>;
   isCreating: boolean;
 }
+
+const ROLE_OPTIONS_VENDOR = Object.values(ROLE)
+  .filter((r) => r.includes("VENDOR"))
+  .map((role) => ({ value: role, label: role }));
+
+const ROLE_OPTIONS_ORG = Object.values(ROLE)
+  .filter((r) => !r.includes("VENDOR"))
+  .map((role) => ({ value: role, label: role }));
 
 export default function UserEditModalForm({
   formData,
@@ -50,6 +61,7 @@ export default function UserEditModalForm({
   isCreating,
 }: UserEditProps) {
   const { userInfo } = useUserInfo();
+  const [localFormData, setLocalFormData] = useState(formData);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { data: warehouses } = useQuery({
@@ -58,7 +70,9 @@ export default function UserEditModalForm({
   });
 
   const am_i_vendor = userInfo?.vendorName ? true : false;
-  const [memberFor, setMemberFor] = useState(MemberFor.VENDOR);
+  const [memberFor, setMemberFor] = useState(() =>
+    formData.vendorName ? MemberFor.VENDOR : MemberFor.MY_ORGANIZATION
+  );
 
   const { data: vendors } = useQuery({
     queryKey: ["vendors"],
@@ -66,17 +80,23 @@ export default function UserEditModalForm({
     enabled: !!am_i_vendor == false,
   });
 
+  const roleOptions = useMemo(
+    () =>
+      memberFor === MemberFor.VENDOR ? ROLE_OPTIONS_VENDOR : ROLE_OPTIONS_ORG,
+    [memberFor]
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.passwordConfirm) {
+    if (localFormData.password !== localFormData.passwordConfirm) {
       toast.error("Password dan Konfirmasi Password harus sama");
       return;
     }
-
+    setFormData(localFormData);
     if (isCreating) {
-      submitCreate();
+      submitCreate(localFormData);
     } else {
-      submitUpdate();
+      submitUpdate(localFormData);
     }
   };
 
@@ -97,9 +117,11 @@ export default function UserEditModalForm({
               <h3 className="font-bold text-lg text-gray-800">
                 {!isCreating ? "Edit User" : "Tambah User Baru"}
               </h3>
-              {isCreating && <div className="flex text-xs p-1 border ">
-                User Berikut akan login dengan APP method
-              </div>}
+              {isCreating && (
+                <div className="flex text-xs p-1 border ">
+                  User Berikut akan login dengan APP method
+                </div>
+              )}
             </div>
             <button
               onClick={handleClose}
@@ -128,9 +150,12 @@ export default function UserEditModalForm({
                   type="text"
                   className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Username untuk login"
-                  value={formData.username || ""}
+                  value={localFormData.username || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, username: e.target.value })
+                    setLocalFormData((prev) => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
                   }
                   required
                 />
@@ -147,9 +172,12 @@ export default function UserEditModalForm({
                   type="text"
                   className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="Nama lengkap"
-                  value={formData.displayName || ""}
+                  value={localFormData.displayName || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, displayName: e.target.value })
+                    setLocalFormData((prev) => ({
+                      ...prev,
+                      displayName: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -165,9 +193,12 @@ export default function UserEditModalForm({
                   type="text"
                   className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="0812xxxx"
-                  value={formData.driverPhone || ""}
+                  value={localFormData.driverPhone || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, driverPhone: e.target.value })
+                    setLocalFormData((prev) => ({
+                      ...prev,
+                      driverPhone: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -196,10 +227,10 @@ export default function UserEditModalForm({
                       disabled={!isCreating}
                       onClick={() => {
                         setMemberFor(MemberFor.MY_ORGANIZATION);
-                        setFormData({
-                          ...formData,
+                        setLocalFormData((prev) => ({
+                          ...prev,
                           vendorName: null,
-                        });
+                        }));
                       }}
                       className={`relative p-5 rounded-xl border-2 transition-all duration-300 hover:shadow-lg disabled:cursor-not-allowed ${
                         memberFor === MemberFor.MY_ORGANIZATION
@@ -256,11 +287,11 @@ export default function UserEditModalForm({
                       disabled={!isCreating}
                       onClick={() => {
                         setMemberFor(MemberFor.VENDOR);
-                        setFormData({
-                          ...formData,
+                        setLocalFormData((prev) => ({
+                          ...prev,
                           homeWarehouseId: null,
                           homeWarehouse: null,
-                        });
+                        }));
                       }}
                       className={`relative p-5 rounded-xl border-2 transition-all duration-300 hover:shadow-lg disabled:cursor-not-allowed ${
                         memberFor === MemberFor.VENDOR
@@ -323,12 +354,12 @@ export default function UserEditModalForm({
 
                   <select
                     className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                    value={formData.homeWarehouseId || ""}
+                    value={localFormData.homeWarehouseId || ""}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setLocalFormData((prev) => ({
+                        ...prev,
                         homeWarehouseId: e.target.value || undefined,
-                      })
+                      }))
                     }
                     disabled={(memberFor as MemberFor) === MemberFor.VENDOR}
                   >
@@ -341,48 +372,39 @@ export default function UserEditModalForm({
                     ))}
                   </select>
                 </div>
-              ) : 
-              !am_i_vendor && <div className="form-control col-span-2">
-              <label className="label py-2 ">
-                <span className="label-text font-medium text-gray-700 flex items-center">
-                  <Handshake className="w-4 h-4 mr-2 text-leaf-green-500" />
-                  Vendor Name
-                </span>
-              </label>
+              ) : (
+                !am_i_vendor && (
+                  <div className="form-control col-span-2">
+                    <label className="label py-2 ">
+                      <span className="label-text font-medium text-gray-700 flex items-center">
+                        <Handshake className="w-4 h-4 mr-2 text-leaf-green-500" />
+                        Vendor Name
+                      </span>
+                    </label>
 
-              <select
-                disabled={am_i_vendor}
-                className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                value={formData.vendorName || ""}
-                onChange={(e) => {
-                  setFormData({
-                    ...formData,
-                    vendorName: e.target.value || undefined,
-                    description: null,
-                  });
-                }}
-              >
-                <option
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFormData((prev) => ({
-                      ...prev,
-                      vendorName: null,
-                      description: null,
-                    }));
-                  }}
-                  value="empty"
-                >
-                  Pilih vendor
-                </option>
-                {vendors?.map((vendor: IVendor) => (
-                  <option key={vendor.name} value={vendor.name}>
-                    {vendor.name}{" "}
-                  </option>
-                ))}
-              </select>
-            </div>
-              }
+                    <select
+                      disabled={am_i_vendor}
+                      className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                      value={localFormData.vendorName || ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setLocalFormData((prev) => ({
+                          ...prev,
+                          vendorName: v === "empty" ? undefined : v,
+                          description: null,
+                        }));
+                      }}
+                    >
+                      <option value="empty">Pilih vendor</option>
+                      {vendors?.map((vendor: IVendor) => (
+                        <option key={vendor.name} value={vendor.name}>
+                          {vendor.name}{" "}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )
+              )}
 
               {/* ROLE */}
               <div className="form-control col-span-2">
@@ -395,34 +417,33 @@ export default function UserEditModalForm({
 
                 <select
                   className="select select-bordered w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                  value={formData.role || ""}
+                  value={localFormData.role || ""}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setLocalFormData((prev) => ({
+                      ...prev,
                       role: e.target.value || undefined,
-                    })
+                    }))
                   }
                 >
-                  <option value="empty">Pilih Role Tersedia</option>
-                  {MemberFor.VENDOR === memberFor
-                    ? Object.values(ROLE)
-                        .filter((r) => r.includes("VENDOR"))
-                        .map((role) => (
-                          <option key={role} value={role}>
-                            {role}
-                          </option>
-                        ))
-                    : Object.values(ROLE)
-                        .filter((r) => r.includes("ORGANIZATION"))
-                        .map((role) => (
-                          <option key={role} value={role}>
-                            {role}
-                          </option>
-                        ))}
+                  <option>Pilih Role Tersedia</option>
+                  {roleOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
+                {localFormData?.role.length > 1 && (
+                  <div role="alert" className="alert bg-teal-300">
+                    <MessageCircleWarning />
+                    <span>
+                      {RoleExplanation[localFormData.role]}
+                      {localFormData.role}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {formData.role == ROLE.DRIVER_VENDOR && (
+              {localFormData.role == ROLE.DRIVER_VENDOR && (
                 <>
                   {/* Driver License */}
                   <div className="form-control">
@@ -436,12 +457,12 @@ export default function UserEditModalForm({
                       type="text"
                       className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                       placeholder="SIM A, SIM B1, SIM B2"
-                      value={formData.driverLicense || ""}
+                      value={localFormData.driverLicense || ""}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setLocalFormData((prev) => ({
+                          ...prev,
                           driverLicense: e.target.value,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -459,15 +480,18 @@ export default function UserEditModalForm({
                   type="text"
                   className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
                   placeholder="ham@dev.com"
-                  value={formData.mail || ""}
+                  value={localFormData.mail || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, mail: e.target.value })
+                    setLocalFormData((prev) => ({
+                      ...prev,
+                      mail: e.target.value,
+                    }))
                   }
                 />
               </div>
               {/* Password & confirm pass - Only for new users */}
               <div className="flex flex-1  ">
-                {formData?.accountType === "APP" && (
+                {localFormData?.accountType === "APP" && (
                   <div className="flex gap-x-2 items-center w-full">
                     <div className="form-control flex-1">
                       <label className="label py-2">
@@ -482,12 +506,12 @@ export default function UserEditModalForm({
                           type={showPassword ? "text" : "password"}
                           className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
                           placeholder="Password"
-                          value={formData.password || ""}
+                          value={localFormData.password || ""}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
+                            setLocalFormData((prev) => ({
+                              ...prev,
                               password: e.target.value,
-                            })
+                            }))
                           }
                           required={isCreating}
                         />
@@ -518,12 +542,12 @@ export default function UserEditModalForm({
                           autoComplete="off"
                           className="input input-bordered border px-3 w-full bg-white border-gray-300 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors pr-10"
                           placeholder="Konfirmasi password"
-                          value={formData.passwordConfirm || ""}
+                          value={localFormData.passwordConfirm || ""}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
+                            setLocalFormData((prev) => ({
+                              ...prev,
                               passwordConfirm: e.target.value,
-                            })
+                            }))
                           }
                           required={isCreating}
                         />
@@ -554,14 +578,16 @@ export default function UserEditModalForm({
                     <span className="text-red-500 ml-1">*</span>
                   </span>
                 </label>
-                
                 <input
                   type="text"
                   placeholder="short description"
-                  className="input input-bordered w-full px-2"
-                  value={formData.description || ""}
+                  className="input border input-bordered w-full px-2"
+                  value={localFormData.description || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
+                    setLocalFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -570,10 +596,13 @@ export default function UserEditModalForm({
                 <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-primary border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
-                    checked={formData.isActive ?? true}
+                    className="checkbox border border-dashed  border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
+                    checked={localFormData.isActive ?? true}
                     onChange={(e) =>
-                      setFormData({ ...formData, isActive: e.target.checked })
+                      setLocalFormData((prev) => ({
+                        ...prev,
+                        isActive: e.target.checked,
+                      }))
                     }
                   />
                   <span className="label-text font-medium text-gray-700">
@@ -603,7 +632,6 @@ export default function UserEditModalForm({
           </div>
         </form>
       </div>
-      <Toaster />
     </dialog>
   );
 }

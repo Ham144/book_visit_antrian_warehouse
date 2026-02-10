@@ -25,7 +25,7 @@ export class VehicleController {
     return this.vehicleService.create(createVehicleDto, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Get()
   findAll(
     @Query('page') page: number,
@@ -35,7 +35,12 @@ export class VehicleController {
     return this.vehicleService.findAll(page, searchKey, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR', 'USER_ORGANIZATION')
+  @Authorization(
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+  )
   @Get('/vendor-vehicles')
   getMyVehicles(
     @Query('page') page: number,
@@ -45,19 +50,29 @@ export class VehicleController {
     return this.vehicleService.findAll(page, searchKey, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_ORGANIZATION',
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get('/detail/:id')
   findOne(@Param('id') id: string) {
     return this.vehicleService.findOne(id);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_ORGANIZATION',
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateVehicleDto: UpdateVehicleDto) {
     return this.vehicleService.update(id, updateVehicleDto);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.vehicleService.remove(id);

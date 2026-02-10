@@ -15,12 +15,10 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
 // Components
-import AlertItem from "@/components/admin/dashboard-component/AlertItem";
 import DockStatusCard from "@/components/admin/dashboard-component/DockStatusCard";
 import QueueTableRow from "@/components/admin/dashboard-component/QueueTableRow";
 import SparklineChart from "@/components/admin/dashboard-component/SparklineChart";
 import SummaryCard from "@/components/admin/dashboard-component/SummaryCard";
-import { IDock } from "@/types/dock.type";
 import { useQuery } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
 import { useUserInfo } from "@/components/UserContext";
@@ -110,14 +108,16 @@ export interface DashboardState {
 
 const DashboardAdmin = () => {
   const { userInfo } = useUserInfo();
+  const isAdmin =
+    userInfo?.role == ROLE.USER_ORGANIZATION ||
+    userInfo?.role == ROLE.ADMIN_ORGANIZATION ||
+    userInfo.role == ROLE.ADMIN_GUDANG;
 
   //main
   const { data: dashboardState, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => await BookingApi.adminWarehouseDashboard(),
-    enabled:
-      userInfo?.role == ROLE.USER_ORGANIZATION ||
-      userInfo?.role == ROLE.ADMIN_ORGANIZATION,
+    enabled: isAdmin,
   });
 
   const formatRelativeTime = (dateString: string) => {

@@ -13,6 +13,7 @@ const MoveTraceList = ({ booking }: Props) => {
     queryKey: ["move-trace-list", booking?.id],
     queryFn: async () => BookingApi.getMoveTraceList(booking?.id),
     enabled: !!booking?.id,
+    refetchInterval: 60000, // 1 minute
   });
 
   return (
@@ -189,7 +190,7 @@ const MoveTraceList = ({ booking }: Props) => {
                                   clipRule="evenodd"
                                 />
                               </svg>
-                              <span>Event #{index + 1}</span>
+                              <span>Event #{moveTraceList.length - index}</span>
                             </div>
                           </div>
                         </div>

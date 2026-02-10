@@ -78,8 +78,8 @@ start 12/11/2025
 [x] add: perlu konfirmasi booking
 [x] add: template mobil per warehouse bukan universal
 [x] add: tracing tiap perubahan arrivalTime
+[x] add: penyempurnaan role
 [] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
-[] add: penyempurnaan role
 Menentukan durasi bongkar mobil =
 vehicle.durasiBongkar × (0.3 + (1 − 0.3) × loadPercent/100)
 

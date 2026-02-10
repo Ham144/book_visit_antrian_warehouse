@@ -16,6 +16,7 @@ export class UserService {
   async createAppUser(body: CreateAppUserDto, userInfo: TokenPayload) {
     const { password, homeWarehouseId, vendorName, ...rest } = body;
 
+    console.log(homeWarehouseId);
     if (!homeWarehouseId && !vendorName) {
       throw new BadRequestException(
         'homeWarehouseId atau vendorName salah satu diperlukan',
@@ -29,7 +30,7 @@ export class UserService {
     const passwordHash = await bcrypt.hash(password, 10);
 
     let homeWarehouse;
-    if (rest.role.includes('ORGANIZATION')) {
+    if (!rest.role.includes('VENDOR')) {
       homeWarehouse = await this.prismaService.warehouse.findUnique({
         where: {
           id: body.homeWarehouseId,
@@ -43,7 +44,7 @@ export class UserService {
         passwordHash: passwordHash,
         accountType: 'APP',
         vendorName: vendorName || null,
-        homeWarehouseId: homeWarehouse?.id || null,
+        homeWarehouseId: homeWarehouse.id,
         organizations: {
           connect: {
             name: userInfo.organizationName,
@@ -51,7 +52,7 @@ export class UserService {
         },
       },
     });
-    return HttpStatus.CREATED;
+    return { message: 'berhasil membuat user app' };
   }
 
   //get myDriver
@@ -96,6 +97,8 @@ export class UserService {
     page: number,
     searchKey: string | string[] | undefined,
     userInfo: TokenPayload,
+    vendorName?: string,
+    role?: string,
   ) {
     const where: Prisma.UserWhereInput = {
       organizations: {
@@ -104,6 +107,24 @@ export class UserService {
         },
       },
     };
+
+    if (vendorName && vendorName != 'all') {
+      where.OR = [
+        {
+          vendorName: vendorName,
+        },
+        {
+          warehouseAccess: {
+            some: {
+              name: vendorName,
+            },
+          },
+        },
+      ];
+    }
+    if (role && role != 'all') {
+      where.role = role;
+    }
 
     const key =
       typeof searchKey === 'string'
@@ -118,7 +139,6 @@ export class UserService {
         mode: 'insensitive',
       };
     }
-
     const accounts = await this.prismaService.user.findMany({
       where,
       include: {
@@ -129,6 +149,11 @@ export class UserService {
         organizations: {
           select: { name: true },
         },
+      },
+      skip: (page - 1) * 50,
+      take: 50,
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 

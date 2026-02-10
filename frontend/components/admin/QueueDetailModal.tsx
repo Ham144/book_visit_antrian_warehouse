@@ -177,12 +177,7 @@ const QueueDetailModal = ({
       return;
     }
 
-    try {
-      await justifyBooking();
-    } catch (error: any) {
-      toast.error(error?.message);
-      // Error handled in mutation
-    }
+    await justifyBooking();
   };
 
   // Update local state when booking data changes
@@ -404,7 +399,7 @@ const QueueDetailModal = ({
                 }}
               >
                 <SearchCodeIcon />
-                Lihat Booking List
+                Jejak Perubahan
               </button>
             </div>
           </div>

@@ -9,6 +9,7 @@ export function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   const DRIVER_VENDOR = ["/vendor/driver-menu"];
+
   const ADMIN_VENDOR = [
     "/vendor/dashboard",
     "/vendor/booking",
@@ -69,6 +70,8 @@ export function middleware(req: NextRequest) {
 
     const role: ROLE = decoded?.role;
     const am_i_vendor = decoded?.vendorName ? true : false;
+
+    console.log(role);
 
     if (!role) {
       //ini belum login maka lempar ke landing page

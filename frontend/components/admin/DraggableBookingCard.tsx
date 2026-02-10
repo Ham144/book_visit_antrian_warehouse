@@ -157,10 +157,14 @@ const DraggableBookingCard = ({
                   Swap
                 </div>
               )}
-            <div className="flex items-center gap-1 truncate">
-              {StatusIcon()}
-              <span className="font-medium text-gray-700 truncate">
+            <div className="flex items-center gap-1 truncate justify-between w-full">
+              <span className="font-medium text-gray-700 truncate flex gap-x-1">
+                {StatusIcon()}
                 {booking.code && booking.code.slice(0, 15)}
+              </span>
+              <span className="font-medium text-gray-700 truncate">
+                {booking.driver.vendorName &&
+                  booking.driver.vendorName.slice(0, 9)}
               </span>
             </div>
             {booking.status === BookingStatus.IN_PROGRESS && (

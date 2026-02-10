@@ -119,12 +119,16 @@ export class UserController {
   async getAllAccountForMemberManagement(
     @Query('page', ParseIntPipe) page: number,
     @Query('searchKey') searchKey: string,
+    @Query('vendorName') vendorName: string,
+    @Query('role') role: string,
     @Auth() userInfo: TokenPayload,
   ) {
     return this.userService.getAllAccountForMemberManagement(
       page,
       searchKey,
       userInfo,
+      vendorName,
+      role,
     );
   }
 

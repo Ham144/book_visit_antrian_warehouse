@@ -6,14 +6,12 @@ import {
   WarehouseIcon,
   MapPin,
   Calendar,
-  Star,
   Activity,
   CheckCircle,
   User2,
   Car,
   Building,
   DockIcon,
-  Search,
   Dock,
   Truck,
   User,
@@ -21,6 +19,7 @@ import {
   ArrowLeft,
   Loader2,
   Info,
+  WrapTextIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,12 +30,13 @@ import { Booking } from "@/types/booking.type";
 import { Warehouse } from "@/types/warehouse";
 import { IVehicle } from "@/types/vehicle";
 import { IDock } from "@/types/dock.type";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
 import { BookingApi } from "@/api/booking.api";
 import { AuthApi } from "@/api/auth";
 import { UserApp } from "@/types/auth";
-import { BaseProps, BasePropsInit } from "@/types/shared.type";
+import { BaseProps, BasePropsInit, ROLE } from "@/types/shared.type";
+import { useUserInfo } from "@/components/UserContext";
 
 type BookingStep = "warehouse" | "driver" | "vehicle" | "dock" | "confirmation";
 
@@ -66,6 +66,9 @@ export default function BookingPage() {
     notes: "",
     estimatedFinishTime: null,
   });
+
+  const { userInfo } = useUserInfo();
+  const isVendor = userInfo?.role == ROLE.ADMIN_VENDOR;
 
   // URL params
   const driverUsernameParam = params.get("driverUsername");
@@ -370,6 +373,17 @@ export default function BookingPage() {
       router.replace("/vendor/booking");
     }
   }, [isBookCompleted, router]);
+
+  if (!isVendor) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <WrapTextIcon className="animate-spin" />
+          <span>Ini adalah menu admin vendor</span>
+        </div>
+      </div>
+    );
+  }
 
   const StepProgress = () => (
     <Suspense>

@@ -18,31 +18,41 @@ import { Authorization } from 'src/common/authorization.decorator';
 export class DockController {
   constructor(private readonly dockService: DockService) {}
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Post()
   create(@Body() createDockDto: CreateDockDto, @Auth() userInfo) {
     return this.dockService.create(createDockDto, userInfo);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get('/warehouse/:id')
   getDocksByWarehouseId(@Param('id') id: string) {
     return this.dockService.getDocksByWarehouseId(id);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get('/detail/:id')
   findOne(@Param('id') id: string) {
     return this.dockService.findOne(id);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDockDto: UpdateDockDto) {
     return this.dockService.update(id, updateDockDto);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.dockService.remove(id);

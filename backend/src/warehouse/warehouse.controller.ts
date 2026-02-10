@@ -34,12 +34,22 @@ export class WarehouseController {
     return this.warehouseService.createWarehouse(body, userInfo);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get('detail/:id')
   getWarehouseDetail(@Param('id') id: string) {
     return this.warehouseService.getWarehouseDetail(id);
   }
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get()
   list(@Query() filter: any, @Auth() userInfo: any) {
     return this.warehouseService.getWarehouses(
@@ -49,25 +59,30 @@ export class WarehouseController {
     );
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Get('my-access-warehouses')
   getMyAccessWarehouses(@Auth() userInfo: any) {
     return this.warehouseService.getAccessWarehouses(userInfo);
   }
 
-  @Authorization('ADMIN_GUDANG', 'ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+  )
   @Get('my-warehouse')
   getMyWarehouse(@Auth() userInfo: any) {
     return this.warehouseService.getMyWarehouseDetail(userInfo);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Patch(':id')
   updateWarehouse(@Param('id') id: string, @Body() body: UpdateWarehouseDto) {
     return this.warehouseService.updateWarehouse(id, body);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Post('switch-homeWarehouse')
   async switchHomeWarehouse(
     @Body('id') id: string,
@@ -91,19 +106,19 @@ export class WarehouseController {
     return responseWithoutTokens;
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Delete(':id')
   deleteWarehouse(@Param('id') id: string) {
     return this.warehouseService.deleteWarehouse(id);
   }
 
-  @Authorization('USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
   @Get('/settings')
   getSettings(@Auth() userinfo: TokenPayload) {
     return this.warehouseService.getSettings(userinfo.homeWarehouseId);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'USER_ORGANIZATION')
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
   @Put('/settings')
   updateSettings(
     @Body() payload: UpdateSettingWarehouseDto,

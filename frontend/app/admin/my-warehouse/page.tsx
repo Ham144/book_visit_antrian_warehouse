@@ -22,7 +22,6 @@ const MyWarehousePage = () => {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null
   );
-  const [now, setNow] = useState(() => new Date());
 
   const bookingFilterQueueInit: BookingFilter = {
     date: null,
@@ -152,14 +151,6 @@ const MyWarehousePage = () => {
     });
   };
 
-  const handleSearchChange = (value: string) => {
-    setFilter({
-      ...filter,
-      searchKey: value || null,
-      page: 1,
-    });
-  };
-
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split("-") as [
       BookingFilter["sortBy"],
@@ -200,6 +191,7 @@ const MyWarehousePage = () => {
     filter.weekEnd ||
     filter.sortBy !== "updatedAt" ||
     filter.sortOrder !== "desc";
+
   //socket
   useEffect(() => {
     if (!socket || !userInfo?.homeWarehouse?.id) return;
@@ -385,12 +377,23 @@ const MyWarehousePage = () => {
                   type="text"
                   placeholder="Cari berdasarkan code atau Driver Username..."
                   value={filter.searchKey || ""}
-                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onChange={(e) => {
+                    setFilter((prev) => ({
+                      ...prev,
+                      searchKey: e.target.value,
+                    }));
+                  }}
                   className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  autoFocus
                 />
                 {filter.searchKey && (
                   <button
-                    onClick={() => handleSearchChange("")}
+                    onClick={() =>
+                      setFilter((prev) => ({
+                        ...prev,
+                        searchKey: "",
+                      }))
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     <X size={16} />
@@ -556,6 +559,9 @@ const MyWarehousePage = () => {
                             Booking Code
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                            Vendor
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                             Vehicle & Driver
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -640,7 +646,6 @@ const MyWarehousePage = () => {
       <QueueDetailModal
         selectedBookingId={selectedBookingId || ""}
         setSelectedBookingId={setSelectedBookingId}
-        setNow={setNow}
         key={"QueueDetailModalCreate"}
         mode="create"
       />

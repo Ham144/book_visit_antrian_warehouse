@@ -1,5 +1,10 @@
 import axiosInstance from "@/lib/axios";
-import type { LoginRequestDto, UserApp, UserInfo } from "@/types/auth";
+import type {
+  IMemberManagement,
+  LoginRequestDto,
+  UserApp,
+  UserInfo,
+} from "@/types/auth";
 import { BaseProps } from "@/types/shared.type";
 
 export const AuthApi = {
@@ -49,13 +54,21 @@ export const AuthApi = {
   getAllAccountForMemberManagement: async ({
     page = 1,
     searchKey = "",
-  }: BaseProps) => {
+    role = "",
+    vendorName,
+  }: IMemberManagement) => {
     let params = new URLSearchParams();
     if (page) {
       params.set("page", page.toString());
     }
     if (searchKey) {
       params.set("searchKey", searchKey);
+    }
+    if (role) {
+      params.set("role", role);
+    }
+    if (vendorName) {
+      params.set("vendorName", vendorName);
     }
     const response = await axiosInstance.get(
       "/api/user/list-member-management",

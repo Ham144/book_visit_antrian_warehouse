@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 
 export const useGoToUnloadingBar = (
   booking: Booking,
-  updateInterval: number = 10000,
+  updateInterval: number = 10000
 ) => {
-  const [remainingTime, setRemainingTime] = useState<string>("");
+  const [remainingTime, setRemainingTime] = useState<string | undefined>("");
 
   useEffect(() => {
     function calculate() {
