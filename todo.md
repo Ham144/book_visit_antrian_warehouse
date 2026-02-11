@@ -78,6 +78,7 @@ start 12/11/2025
 [x] add: perlu konfirmasi booking
 [x] add: template mobil per warehouse bukan universal
 [x] add: tracing tiap perubahan arrivalTime
+[x] add: opsi mobil per warehouse bukan global
 [x] add: penyempurnaan role
 [] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
 Menentukan durasi bongkar mobil =

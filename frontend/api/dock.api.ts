@@ -28,4 +28,8 @@ export const DockApi = {
     const res = await axiosInstance.delete(`/api/dock/${id}`);
     return res.data;
   },
+  bulkUploadDocks: async (docks: { name: string; warehouseId: string; allowedTypes?: string[]; isActive?: boolean; priority?: number }[]) => {
+    const res = await axiosInstance.post("/api/dock/bulk", docks);
+    return res.data;
+  },
 };

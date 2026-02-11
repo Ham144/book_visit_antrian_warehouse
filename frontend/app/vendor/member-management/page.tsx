@@ -115,7 +115,9 @@ const MemberManagementPage = () => {
     setFormData(user ?? initialUserAPP);
     setEditModalKey((k) => k + 1);
     setTimeout(() => {
-      (document.getElementById("UserEditModalForm") as HTMLDialogElement)?.showModal();
+      (
+        document.getElementById("UserEditModalForm") as HTMLDialogElement
+      )?.showModal();
     }, 0);
   };
 
@@ -332,7 +334,6 @@ const MemberManagementPage = () => {
         submitCreate={(data) => handleCreateAppUser(data ?? formData)}
         isCreating={isCreating}
         submitUpdate={(data) => handleUpdateUser(data ?? formData)}
-        openKey={editModalKey}
         key={`UserEditModalForm-${editModalKey}`}
       />
       <ConfirmationModal

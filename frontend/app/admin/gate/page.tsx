@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Edit, Trash2, MapPin, Star } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Edit, Trash2, MapPin, Star, Upload } from "lucide-react";
 import { toast } from "sonner";
 import DockFormModal from "@/components/admin/DockFormModal";
 import { IDock } from "@/types/dock.type";
@@ -11,6 +11,79 @@ import { useUserInfo } from "@/components/UserContext";
 import { Days } from "@/types/shared.type";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
 import { Vacant } from "@/types/vacant.type";
+
+function parseCSV(text: string): Record<string, string>[] {
+  const lines = text.trim().split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  const header = lines[0]
+    .split(",")
+    .map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
+  const rows: Record<string, string>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i]
+      .split(",")
+      .map((v) => v.trim().replace(/^"|"$/g, ""));
+    const row: Record<string, string> = {};
+    header.forEach((h, j) => {
+      row[h] = values[j] ?? "";
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function csvRowsToDocks(
+  rows: Record<string, string>[],
+  warehouseId: string
+): {
+  name: string;
+  warehouseId: string;
+  allowedTypes?: string[];
+  isActive?: boolean;
+  priority?: number;
+}[] {
+  return rows
+    .filter((r) => r.name ?? r.nama)
+    .map((r) => {
+      const name = (r.name ?? r.nama ?? "").trim();
+      const allowedTypesStr = (
+        r.allowed_types ??
+        r.allowedtypes ??
+        r["allowed types"] ??
+        ""
+      ).trim();
+      const allowedTypes = allowedTypesStr
+        ? allowedTypesStr
+            .split(/[,;]/)
+            .map((s) => s.trim().toUpperCase())
+            .filter(Boolean)
+        : undefined;
+      const priorityStr = (r.priority ?? r.prioritas ?? "").trim();
+      const priority = priorityStr ? parseInt(priorityStr, 10) : undefined;
+      const isActiveStr = (
+        r.is_active ??
+        r.isactive ??
+        r["is active"] ??
+        r.aktif ??
+        "1"
+      )
+        .trim()
+        .toLowerCase();
+      const isActive =
+        isActiveStr === "1" ||
+        isActiveStr === "true" ||
+        isActiveStr === "ya" ||
+        isActiveStr === "yes" ||
+        isActiveStr === "";
+      return {
+        name,
+        warehouseId,
+        allowedTypes,
+        isActive,
+        priority: priority ?? undefined,
+      };
+    });
+}
 
 export default function GatesPage() {
   const queryClient = useQueryClient();
@@ -111,6 +184,53 @@ export default function GatesPage() {
     },
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { mutateAsync: handleBulkUpload, isPending: isBulkUploading } =
+    useMutation({
+      mutationKey: ["docks"],
+      mutationFn: async (
+        docks: {
+          name: string;
+          warehouseId: string;
+          allowedTypes?: string[];
+          isActive?: boolean;
+          priority?: number;
+        }[]
+      ) => DockApi.bulkUploadDocks(docks),
+      onError: (error: any) => {
+        toast.error(
+          error?.response?.data?.message || "Gagal upload spreadsheet"
+        );
+      },
+      onSuccess: () => {
+        toast.success("Spreadsheet berhasil diupload");
+        queryClient.invalidateQueries({ queryKey: ["docks"] });
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      },
+    });
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userInfo?.homeWarehouse?.id) return;
+    const warehouseId = userInfo.homeWarehouse.id;
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if (!rows.length) {
+      toast.error(
+        "File kosong atau format tidak valid. Gunakan CSV dengan header: name, allowed_types, priority, is_active"
+      );
+      return;
+    }
+    const docks = csvRowsToDocks(rows, warehouseId);
+    if (!docks.length) {
+      toast.error(
+        "Tidak ada baris dengan kolom name/nama. Pastikan header: name, allowed_types, priority, is_active"
+      );
+      return;
+    }
+    await handleBulkUpload(docks);
+  };
+
   const handleSelectToEdit = (dock: IDock) => {
     setFormData(dock);
     (document.getElementById("DockFormModal") as HTMLDialogElement).showModal();
@@ -125,20 +245,49 @@ export default function GatesPage() {
               {/* Header */}
               <div className="flex justify-between mb-2 items-center">
                 <h1 className="text-3xl font-bold">Gate Management</h1>
-                <button
-                  onClick={() => {
-                    setFormData(initialDock);
-                    (
-                      document.getElementById(
-                        "DockFormModal",
-                      ) as HTMLDialogElement
-                    ).showModal();
-                  }}
-                  className="btn px-4 btn-primary"
-                >
-                  <Plus size={20} /> New Gate
-                </button>
+                <div className="flex gap-2 items-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={onFileChange}
+                    disabled={isBulkUploading || !userInfo?.homeWarehouse?.id}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isBulkUploading || !userInfo?.homeWarehouse?.id}
+                    className="btn btn-outline btn-primary px-4"
+                  >
+                    {isBulkUploading ? (
+                      <span className="loading loading-spinner loading-sm" />
+                    ) : (
+                      <>
+                        <Upload size={20} /> Upload CSV
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData(initialDock);
+                      (
+                        document.getElementById(
+                          "DockFormModal"
+                        ) as HTMLDialogElement
+                      ).showModal();
+                    }}
+                    className="btn px-4 btn-primary"
+                  >
+                    <Plus size={20} /> New Gate
+                  </button>
+                </div>
               </div>
+              <p className="text-sm text-gray-500 mb-4">
+                Format CSV upload: baris pertama header (name, allowed_types,
+                priority, is_active). allowed_types dipisah koma (contoh:
+                PICKUP,VAN,CDE), untuk jam default terisi.
+              </p>
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="table w-full">
@@ -206,7 +355,7 @@ export default function GatesPage() {
                                       >
                                         <Star className="w-4 h-4 text-leaf-green-500 flex-shrink-0" />
                                       </span>
-                                    ),
+                                    )
                                   )}
                                 </div>
                               ) : (
@@ -240,7 +389,7 @@ export default function GatesPage() {
                                     setSelectedDockId(dock.id);
                                     (
                                       document.getElementById(
-                                        "confirmation1",
+                                        "confirmation1"
                                       ) as HTMLDialogElement
                                     ).showModal();
                                   }}

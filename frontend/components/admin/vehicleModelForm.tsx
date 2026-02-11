@@ -1,20 +1,8 @@
 import { mockVehicleBrands } from "@/lib/mock-data";
-import {
-  Car,
-  Truck,
-  Clock,
-  Users,
-  User,
-  Search,
-  XCircle,
-  Check,
-  IdCard,
-  X,
-} from "lucide-react";
+import { Car, Truck, Clock, X } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { IVehicle } from "@/types/vehicle";
 import { MutateFunction, useQuery } from "@tanstack/react-query";
-import { AuthApi } from "@/api/auth";
 import { VehicleType } from "@/types/shared.type";
 import { Toaster } from "sonner";
 import { UserApp, UserInfo } from "@/types/auth";
@@ -36,56 +24,12 @@ export default function VehilcleModalForm({
   setFormData,
   initialFormData,
 }: VehicleModalFormProps) {
-  const [searchKeyDriver, setSearchKeyDriver] = useState<string | null>(null);
-
-  const { data: drivers } = useQuery({
-    queryKey: ["vehicles", searchKeyDriver],
-    queryFn: () =>
-      AuthApi.getAllAccountForMemberManagement({
-        page: 1,
-        searchKey: searchKeyDriver,
-      }),
-    enabled: searchKeyDriver?.length > 1,
-  });
-
   const onSubmit = () => {
     if (formData.id) {
       onEdit();
     } else {
       onCreate();
     }
-  };
-  // Handle add driver
-  const handleAddDriver = (driver: UserApp) => {
-    const driverUsername = driver.username;
-    const currentDrivers = formData.driverNames || [];
-
-    // Check if already exists
-    // Normalize currentDrivers menjadi array username string
-    const usernames = currentDrivers.map((d: UserInfo | string) =>
-      typeof d === "string" ? d : d.username,
-    );
-
-    // Cek apakah sudah ada
-    const exists = usernames.includes(driverUsername);
-
-    if (!exists) {
-      setFormData({
-        ...formData,
-        driverNames: [...currentDrivers, driverUsername],
-      });
-    }
-    setSearchKeyDriver("");
-  };
-
-  // Handle remove driver
-  const handleRemoveDriver = (index: number) => {
-    const newDrivers = [...(formData.driverNames || [])];
-    newDrivers.splice(index, 1);
-    setFormData({
-      ...formData,
-      driverNames: newDrivers,
-    });
   };
 
   return (
@@ -271,7 +215,7 @@ export default function VehilcleModalForm({
               <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <input
                   type="checkbox"
-                  className="checkbox checkbox-primary border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
+                  className="checkbox border-dashed border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
                   checked={formData.isActive ?? true}
                   onChange={(e) =>
                     setFormData({
@@ -282,6 +226,22 @@ export default function VehilcleModalForm({
                 />
                 <span className="label-text font-medium text-gray-700">
                   Status Aktif
+                </span>
+              </label>{" "}
+              <label className="label cursor-pointer justify-start space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <input
+                  type="checkbox"
+                  className="checkbox border-dashed border-gray-300 checked:border-leaf-green-500 checked:bg-leaf-green-500"
+                  checked={formData.isGlobalWarehouse ?? true}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      isGlobalWarehouse: e.target.checked,
+                    })
+                  }
+                />
+                <span className="label-text font-medium text-gray-700">
+                  Apakah ini untuk seluruh warehouse
                 </span>
               </label>
             </div>

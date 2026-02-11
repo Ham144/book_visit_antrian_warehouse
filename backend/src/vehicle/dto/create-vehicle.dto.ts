@@ -32,4 +32,8 @@ export class CreateVehicleDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  isGlobalWarehouse?: boolean;
 }

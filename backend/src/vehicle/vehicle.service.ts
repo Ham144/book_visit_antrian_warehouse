@@ -3,6 +3,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -19,13 +20,15 @@ export class VehicleService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(createVehicleDto: CreateVehicleDto, userInfo: LoginResponseDto) {
-    const { vehicleType, ...rest } = createVehicleDto;
+    const { vehicleType, isGlobalWarehouse, ...rest } = createVehicleDto;
     try {
       await this.prismaService.vehicle.create({
         data: {
           ...rest,
           vehicleType: VehicleType[vehicleType],
           organizationName: userInfo?.organizationName,
+          isGlobalWarehouse: Boolean(isGlobalWarehouse),
+          warehouseId: userInfo.homeWarehouseId,
         },
       });
       return HttpStatus.CREATED;
@@ -34,26 +37,48 @@ export class VehicleService {
     }
   }
 
-  async findAll(page: number, searchKey: string, userInfo: TokenPayload) {
+  async findAll(
+    page: number,
+    searchKey: string,
+    userInfo: TokenPayload,
+    selectedWarehouseId?: string,
+  ) {
     try {
+      const warehouseScope = selectedWarehouseId
+        ? {
+            OR: [
+              { warehouseId: selectedWarehouseId },
+              { isGlobalWarehouse: true },
+            ],
+          }
+        : {
+            OR: [
+              { warehouseId: userInfo.homeWarehouseId },
+              { isGlobalWarehouse: true },
+            ],
+          };
+
       let where: Prisma.VehicleWhereInput = {
-        // filter fixed vendorName nanti
+        AND: [warehouseScope],
       };
+
       if (searchKey) {
-        where.OR = [
-          {
-            brand: {
-              contains: searchKey,
-              mode: 'insensitive',
+        (where.AND as Prisma.VehicleWhereInput[]).push({
+          OR: [
+            {
+              brand: {
+                contains: searchKey,
+                mode: 'insensitive',
+              },
             },
-          },
-          {
-            description: {
-              contains: searchKey,
-              mode: 'insensitive',
+            {
+              description: {
+                contains: searchKey,
+                mode: 'insensitive',
+              },
             },
-          },
-        ];
+          ],
+        });
       }
 
       const vehicles = await this.prismaService.vehicle.findMany({
@@ -64,45 +89,6 @@ export class VehicleService {
           },
         },
         skip: (page - 1) * 10,
-      });
-
-      return vehicles.map((vehicle) =>
-        plainToInstance(ResponseVehicleDto, vehicle, {
-          excludeExtraneousValues: true,
-        }),
-      );
-    } catch (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  //note: saat ini find all & getVendorVehicles masih sama hasilnya
-  async getVendorVehicles(
-    page: number,
-    searchKey: string,
-    userInfo: TokenPayload,
-  ) {
-    try {
-      const where: Prisma.VehicleWhereInput = {
-        // filter fixed vendorName nanti
-      };
-      if (searchKey) {
-        where.OR = [
-          {
-            brand: {
-              contains: searchKey,
-            },
-          },
-        ];
-      }
-
-      const vehicles = await this.prismaService.vehicle.findMany({
-        where,
-        orderBy: {
-          createdAt: 'asc',
-        },
-        skip: (page - 1) * 10,
-        take: 10,
       });
 
       return vehicles.map((vehicle) =>
@@ -136,7 +122,11 @@ export class VehicleService {
     }
   }
 
-  async update(id: string, updateVehicleDto: UpdateVehicleDto) {
+  async update(
+    id: string,
+    updateVehicleDto: UpdateVehicleDto,
+    userInfo: TokenPayload,
+  ) {
     try {
       const existingVehicle = await this.prismaService.vehicle.findUnique({
         where: { id },
@@ -145,18 +135,25 @@ export class VehicleService {
       if (!existingVehicle) {
         throw new NotFoundException(`Vehicle dengan id ${id} tidak ditemukan`);
       }
-
-      await this.prismaService.vehicle.update({
-        where: { id },
-        data: {
-          brand: updateVehicleDto.brand,
-          vehicleType: updateVehicleDto.vehicleType,
-          productionYear: updateVehicleDto.productionYear,
-          durasiBongkar: updateVehicleDto.durasiBongkar,
-          description: updateVehicleDto.description,
-          isActive: updateVehicleDto.isActive,
-        },
-      });
+      if (!userInfo.homeWarehouseId) {
+        throw new BadRequestException(
+          'pencegahan vehicle menghilang: user tidak punya home warehouse',
+        );
+      }
+      if (userInfo.homeWarehouseId)
+        await this.prismaService.vehicle.update({
+          where: { id },
+          data: {
+            brand: updateVehicleDto.brand,
+            vehicleType: updateVehicleDto.vehicleType,
+            productionYear: updateVehicleDto.productionYear,
+            durasiBongkar: updateVehicleDto.durasiBongkar,
+            description: updateVehicleDto.description,
+            isActive: updateVehicleDto.isActive,
+            isGlobalWarehouse: updateVehicleDto.isGlobalWarehouse,
+            warehouseId: userInfo.homeWarehouseId,
+          },
+        });
 
       return HttpStatus.ACCEPTED;
     } catch (error) {

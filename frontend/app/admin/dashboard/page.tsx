@@ -111,7 +111,7 @@ const DashboardAdmin = () => {
   const isAdmin =
     userInfo?.role == ROLE.USER_ORGANIZATION ||
     userInfo?.role == ROLE.ADMIN_ORGANIZATION ||
-    userInfo.role == ROLE.ADMIN_GUDANG;
+    userInfo?.role == ROLE.ADMIN_GUDANG;
 
   //main
   const { data: dashboardState, isLoading } = useQuery({
@@ -169,7 +169,6 @@ const DashboardAdmin = () => {
           ? "critical"
           : ("warning" as const),
     },
-
     {
       metric: "Persentase Utilisasi Warehouse anda",
       value: `${dashboardState?.summaryMetrics.dockUtilizationPercent}%`,

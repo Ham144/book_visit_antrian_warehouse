@@ -28,7 +28,7 @@ import { VehicleApi } from "@/api/vehicle.api";
 import { DockApi } from "@/api/dock.api";
 import { Booking } from "@/types/booking.type";
 import { Warehouse } from "@/types/warehouse";
-import { IVehicle } from "@/types/vehicle";
+import { IFilterVehicle, IVehicle } from "@/types/vehicle";
 import { IDock } from "@/types/dock.type";
 import { redirect, useRouter } from "next/navigation";
 import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
@@ -52,8 +52,11 @@ export default function BookingPage() {
   // Filter states
   const [filterWarehouse, setFilterWarehouse] =
     useState<BaseProps>(BasePropsInit);
-  const [filterVehicles, setFilterVehicles] =
-    useState<BaseProps>(BasePropsInit);
+  const [filterVehicles, setFilterVehicles] = useState<IFilterVehicle>({
+    page: 1,
+    searchKey: "",
+    selectedWarehouseId: "",
+  });
   const [filterDriver, setFilterDriver] = useState<BaseProps>(BasePropsInit);
 
   // Form state
@@ -85,9 +88,9 @@ export default function BookingPage() {
 
   const { data: vendorVehicles = [], isLoading: isLoadingVendorVehicles } =
     useQuery({
-      queryKey: ["my-vehicle", filterVehicles],
-      queryFn: () => VehicleApi.getVendorVehicles(filterVehicles),
-      enabled: bookingStep === "vehicle",
+      queryKey: [filterVehicles, formData?.warehouseId],
+      queryFn: () => VehicleApi.getVehicles(filterVehicles),
+      enabled: !!(bookingStep === "vehicle" && formData?.warehouseId),
     });
 
   const { data: myDrivers, isLoading: isLoadingMyDrivers } = useQuery({
@@ -153,6 +156,10 @@ export default function BookingPage() {
         ...prev,
         warehouseId: warehouse.id,
         Warehouse: warehouse,
+      }));
+      setFilterVehicles((prev) => ({
+        ...prev,
+        selectedWarehouseId: warehouse.id,
       }));
       setBookingStep("driver");
       router.push(`/vendor/booking?warehouseId=${warehouse.id}`);
@@ -603,6 +610,11 @@ export default function BookingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoadingMyDrivers && (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
           {myDrivers?.map((driver: UserApp) => (
             <div
               key={driver.username}
@@ -757,8 +769,8 @@ export default function BookingPage() {
                   </div>
 
                   {/* Details Grid */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {vehicle.productionYear && (
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {vehicle?.productionYear && (
                       <div className="text-sm">
                         <div className="text-gray-500">Tahun</div>
                         <div className="font-medium">
@@ -770,6 +782,12 @@ export default function BookingPage() {
                       <div className="text-gray-500">Durasi</div>
                       <div className="font-medium text-emerald-600">
                         {vehicle.durasiBongkar} mnt
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <div className="text-gray-500">global</div>
+                      <div className="font-medium text-emerald-600">
+                        {vehicle.isGlobalWarehouse ? "Ya" : "Tidak"}
                       </div>
                     </div>
                   </div>

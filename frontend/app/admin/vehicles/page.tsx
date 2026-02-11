@@ -7,7 +7,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  Users,
   Snowflake,
   Car,
   Search,
@@ -16,7 +15,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { VehicleApi } from "@/api/vehicle.api";
-import type { IVehicle } from "@/types/vehicle";
+import type { IFilterVehicle, IVehicle } from "@/types/vehicle";
 import VehilcleModalForm from "@/components/admin/vehicleModelForm";
 import { useUserInfo } from "@/components/UserContext";
 import ConfirmationModal from "@/components/shared-common/confirmationModal";
@@ -32,15 +31,11 @@ const initialFormData: IVehicle = {
   isReefer: false,
   drivers: [],
   isActive: true,
+  isGlobalWarehouse: true,
 };
 
-export interface FilterVehicle {
-  searchKey?: string;
-  page?: number;
-}
-
 export default function VehiclesPage() {
-  const [filter, setFilter] = useState<FilterVehicle>({
+  const [filter, setFilter] = useState<IFilterVehicle>({
     searchKey: "",
     page: 1,
   });
@@ -117,8 +112,10 @@ export default function VehiclesPage() {
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
                   Manajemen Template Kendaraan
                 </h1>
-                <p className="text-gray-600">
-                  Kelola Kendaraan template disini
+                <p className="text-gray-600 w-2/3 text-wrap">
+                  Format CSV upload: baris pertama header (brand=VOLVO,
+                  vehicleType=CDE, productionYear=2002, durasiBongkar=90,
+                  description=untuk pembeda, isGlobalWarehouse=TRUE).
                 </p>
               </div>
               <button
@@ -126,7 +123,7 @@ export default function VehiclesPage() {
                   setFormData(initialFormData);
                   (
                     document.getElementById(
-                      "vehicle-modal",
+                      "vehicle-modal"
                     ) as HTMLDialogElement
                   ).showModal();
                 }}
@@ -271,17 +268,13 @@ export default function VehiclesPage() {
                             <div className="flex gap-1">
                               <button
                                 onClick={() => {
-                                  const names = vehicle.drivers.map(
-                                    (driver) => driver.username,
-                                  );
                                   const rest: IVehicle = {
                                     ...vehicle,
-                                    driverNames: names,
                                   };
                                   setFormData(rest);
                                   (
                                     document.getElementById(
-                                      "vehicle-modal",
+                                      "vehicle-modal"
                                     ) as HTMLDialogElement
                                   ).showModal();
                                 }}
@@ -295,7 +288,7 @@ export default function VehiclesPage() {
                                   setSelectedVehicleId(vehicle.id);
                                   (
                                     document.getElementById(
-                                      "detele-vehicle",
+                                      "detele-vehicle"
                                     ) as HTMLDialogElement
                                   ).showModal();
                                 }}

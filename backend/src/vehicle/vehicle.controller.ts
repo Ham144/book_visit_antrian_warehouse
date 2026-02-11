@@ -25,29 +25,25 @@ export class VehicleController {
     return this.vehicleService.create(createVehicleDto, userInfo);
   }
 
-  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')
+  @Authorization(
+    'ADMIN_ORGANIZATION',
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get()
   findAll(
     @Query('page') page: number,
     @Query('searchKey') searchKey: string,
+    @Query('selectedWarehouseId') selectedWarehouseId: string,
     @Auth() userInfo: TokenPayload,
   ) {
-    return this.vehicleService.findAll(page, searchKey, userInfo);
-  }
-
-  @Authorization(
-    'ADMIN_ORGANIZATION',
-    'ADMIN_VENDOR',
-    'ADMIN_GUDANG',
-    'USER_ORGANIZATION',
-  )
-  @Get('/vendor-vehicles')
-  getMyVehicles(
-    @Query('page') page: number,
-    @Query('searchKey') searchKey: string,
-    @Auth() userInfo: TokenPayload,
-  ) {
-    return this.vehicleService.findAll(page, searchKey, userInfo);
+    return this.vehicleService.findAll(
+      page,
+      searchKey,
+      userInfo,
+      selectedWarehouseId,
+    );
   }
 
   @Authorization(
@@ -68,8 +64,12 @@ export class VehicleController {
     'ADMIN_VENDOR',
   )
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateVehicleDto: UpdateVehicleDto) {
-    return this.vehicleService.update(id, updateVehicleDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateVehicleDto: UpdateVehicleDto,
+    @Auth() userInfo: any,
+  ) {
+    return this.vehicleService.update(id, updateVehicleDto, userInfo);
   }
 
   @Authorization('ADMIN_ORGANIZATION', 'ADMIN_GUDANG', 'USER_ORGANIZATION')

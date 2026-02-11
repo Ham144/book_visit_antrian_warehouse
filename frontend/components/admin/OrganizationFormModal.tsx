@@ -1,5 +1,5 @@
 import { AuthApi } from "@/api/auth";
-import { UserInfo } from "@/types/auth";
+import { IMemberManagement, UserInfo } from "@/types/auth";
 import { Organization } from "@/types/organization";
 import { BaseProps } from "@/types/shared.type";
 import { MutateFunction, useQuery } from "@tanstack/react-query";
@@ -26,7 +26,7 @@ const OrganizationFormModal = ({
   isPendingCreate,
   isPendingEdit,
 }: OrganizationFormModalProps) => {
-  const [accountsFilter, setAccountsFilter] = useState<BaseProps>({
+  const [accountsFilter, setAccountsFilter] = useState<IMemberManagement>({
     page: 1,
     searchKey: "",
   });
@@ -87,7 +87,7 @@ const OrganizationFormModal = ({
               onClick={() =>
                 (
                   document.getElementById(
-                    "OrganizationFormModal",
+                    "OrganizationFormModal"
                   ) as HTMLDialogElement
                 ).close()
               }
@@ -318,7 +318,7 @@ const OrganizationFormModal = ({
               onClick={() =>
                 (
                   document.getElementById(
-                    "OrganizationFormModal",
+                    "OrganizationFormModal"
                   ) as HTMLDialogElement
                 ).close()
               }

@@ -15,6 +15,8 @@ export class ResponseVehicleDto {
   description?: string;
   @Expose()
   isActive: boolean;
+  @Expose()
+  isGlobalWarehouse?: boolean;
   @Expose({ groups: ['detail'] })
   createdAt?: Date;
   @Expose({ groups: ['detail'] })

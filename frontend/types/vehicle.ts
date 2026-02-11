@@ -11,7 +11,14 @@ export interface IVehicle {
   description?: string;
   isActive?: boolean;
   driverNames?: string[];
+  isGlobalWarehouse?: boolean;
   isReefer?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface IFilterVehicle {
+  page: number;
+  searchKey: string;
+  selectedWarehouseId?: string;
 }

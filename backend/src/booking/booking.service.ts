@@ -943,6 +943,8 @@ export class BookingWarehouseService {
           mode: 'insensitive',
         },
       };
+    } else {
+      where.warehouseId = userInfo.homeWarehouseId;
     }
 
     if (filter.dockId && filter.dockId != 'all') {

@@ -24,6 +24,12 @@ export class DockController {
     return this.dockService.create(createDockDto, userInfo);
   }
 
+  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Post('bulk')
+  bulkUpload(@Body() body: CreateDockDto[], @Auth() userInfo) {
+    return this.dockService.bulkUpload(body, userInfo);
+  }
+
   @Authorization(
     'ADMIN_GUDANG',
     'USER_ORGANIZATION',
