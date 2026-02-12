@@ -35,12 +35,11 @@ export class ResponseBookingDto {
   status: string;
   @Expose()
   driverUsername: string;
+  @Expose()
+  canceledReason?: string;
 
   @Expose({ groups: ['detail'] })
   createdByUsername?: string;
-
-  @Expose({ groups: ['detail'] })
-  canceledReason?: string;
 
   @Expose()
   notes?: string | null;

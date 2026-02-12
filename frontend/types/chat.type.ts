@@ -1,30 +1,32 @@
-
-
 export enum ChatStatus {
-    READ = "READ",
-    DELIVERED = "DELIVERED",
-  }
-  
-export interface IChat {
-    id: string;
-    roomId: string;
-    senderId: string;
-    message: string;
-    status: string;
-    createdAt: Date;
-  }
-  
-  export interface IRoom {
-    roomId: string,
-    recipientId: string,
-    lastMessageAt: null,
-    recipient: IUserChat,
-    status: string,
-    chats: IChat[]
-  }
+  READ = "READ",
+  DELIVERED = "DELIVERED",
+}
 
-  export interface IUserChat {
-    username: string;
-    displayName?: string;
-    isOnline?: boolean;
-  }
+export interface IChat {
+  recipientId: string;
+  senderId: string;
+  message: string;
+  createdAt: Date;
+  id?: string;
+  roomId?: string;
+  status?: ChatStatus;
+  room?: IRoom;
+}
+
+export interface IRoom {
+  id?: string;
+  roomId: string;
+  recipientId: string;
+  lastMessage?: string | null;
+  lastMessageAt?: Date | null;
+  createdAt?: Date;
+  chats?: IChat[];
+  unreadMessages?: number;
+}
+
+export interface IUserChat {
+  username: string;
+  displayName?: string;
+  isOnline?: boolean;
+}

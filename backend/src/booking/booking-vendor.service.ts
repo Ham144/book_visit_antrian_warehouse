@@ -236,7 +236,7 @@ export class BookingforVendorService {
       },
       data: {
         status: 'CANCELED',
-        canceledReason: canceledReason + 'by ' + userinfo.username,
+        canceledReason: canceledReason + ' by ' + userinfo.username,
       },
     });
 
@@ -480,9 +480,7 @@ export class BookingforVendorService {
 
       const waitingMinutes =
         b.arrivalTime && now.getTime() > b.arrivalTime.getTime()
-          ? Math.round(
-              (now.getTime() - b.arrivalTime.getTime()) / (1000 * 60),
-            )
+          ? Math.round((now.getTime() - b.arrivalTime.getTime()) / (1000 * 60))
           : undefined;
 
       return {
@@ -504,7 +502,9 @@ export class BookingforVendorService {
     });
 
     const todayQueue = snapshotItems.sort((a, b) => {
-      return new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime();
+      return (
+        new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime()
+      );
     });
 
     const nextArrivals = todayQueue
@@ -514,7 +514,13 @@ export class BookingforVendorService {
     // KPI data untuk range
     const bookingsPerDayMap = new Map<
       string,
-      { total: number; completed: number; canceled: number; onTimeSamples: number; onTimeCount: number }
+      {
+        total: number;
+        completed: number;
+        canceled: number;
+        onTimeSamples: number;
+        onTimeCount: number;
+      }
     >();
 
     bookings.forEach((b) => {
@@ -609,7 +615,8 @@ export class BookingforVendorService {
           warehouseName: b.Warehouse?.name,
           message: `Booking ${b.code} melewati estimasi selesai ${overdueMinutes} menit.`,
           timestamp: now.toISOString(),
-          actionSuggested: 'Follow up ke warehouse untuk klarifikasi keterlambatan.',
+          actionSuggested:
+            'Follow up ke warehouse untuk klarifikasi keterlambatan.',
         });
       }
     });
@@ -619,8 +626,7 @@ export class BookingforVendorService {
       const isWaiting = b.status === BookingStatus.PENDING;
       if (isWaiting) {
         const graceMinutes = 30;
-        const noShowTime =
-          b.arrivalTime.getTime() + graceMinutes * 60 * 1000;
+        const noShowTime = b.arrivalTime.getTime() + graceMinutes * 60 * 1000;
         if (now.getTime() > noShowTime) {
           const lateMinutes = Math.round(
             (now.getTime() - b.arrivalTime.getTime()) / (1000 * 60),
@@ -676,7 +682,8 @@ export class BookingforVendorService {
         warehouseName: b.Warehouse?.name,
         message: `Booking ${b.code} dibatalkan.`,
         timestamp: b.updatedAt.toISOString(),
-        actionSuggested: 'Cek alasan pembatalan dan sesuaikan rencana pengiriman.',
+        actionSuggested:
+          'Cek alasan pembatalan dan sesuaikan rencana pengiriman.',
       });
     });
 

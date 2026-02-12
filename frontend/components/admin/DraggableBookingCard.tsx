@@ -246,6 +246,19 @@ const DraggableBookingCard = ({
                   </span>
                 </div>
               )}
+              {/* actualStartTime */}
+              {booking.status == BookingStatus.CANCELED &&
+                booking.canceledReason && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Timer size={10} className="text-gray-400" />
+                      <span className="text-gray-600">Cancel Reason:</span>
+                    </div>
+                    <span className="font-medium text-gray-800 truncate w-2/3 text-wrap">
+                      {booking.canceledReason || "-"}
+                    </span>
+                  </div>
+                )}
 
               {/* Duration dengan native title attribute */}
               <div className="flex flex-1 ">

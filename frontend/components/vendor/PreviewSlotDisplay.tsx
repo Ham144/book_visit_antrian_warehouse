@@ -6,7 +6,7 @@ import { BookingApi } from "@/api/booking.api";
 import { DockApi } from "@/api/dock.api";
 import { Vacant } from "@/types/vacant.type";
 import { IDockBusyTime } from "@/types/busyTime.type";
-import { Days, ROLE } from "@/types/shared.type";
+import { BookingStatus, Days, ROLE } from "@/types/shared.type";
 import { IDock } from "@/types/dock.type";
 import { normalizeDate } from "@/lib/constant";
 import { Calendar, Clock } from "lucide-react";

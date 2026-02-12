@@ -26,8 +26,8 @@ export default function RootLayout({
         <QueryClientProviderWrapper>
           <UserProvider>
             <Navigation />
+            <ChatBubble />
             <ToasterProvider>{children}</ToasterProvider>
-            {/* <ChatBubble /> */}
           </UserProvider>
         </QueryClientProviderWrapper>
       </body>

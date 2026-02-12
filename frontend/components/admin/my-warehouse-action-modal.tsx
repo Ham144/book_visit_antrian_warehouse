@@ -99,12 +99,6 @@ const MyWarehouseActionModal = ({
                 <h3 className="font-bold text-xl text-gray-900">
                   Booking Actions
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  ID:{" "}
-                  <span className="font-mono text-gray-700">
-                    {selectedBooking?.id || "N/A"}
-                  </span>
-                </p>
               </div>
             </div>
 

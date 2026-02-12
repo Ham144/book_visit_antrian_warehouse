@@ -1,7 +1,13 @@
-import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
-import { ChatService } from "./chat.service";
-import { Socket, Server } from "socket.io";
-import { CreateChatDto } from "./dto/create-chat.dto";
+import {
+  ConnectedSocket,
+  MessageBody,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import { ChatService } from './chat.service';
+import { Socket, Server } from 'socket.io';
+import { CreateChatDto } from './dto/create-chat.dto';
 
 @WebSocketGateway()
 export class ChatGateway {
@@ -10,7 +16,6 @@ export class ChatGateway {
 
   constructor(private readonly chatService: ChatService) {}
 
-  // 1️⃣ join room
   @SubscribeMessage('join_room')
   handleJoinRoom(
     @ConnectedSocket() client: Socket,
@@ -20,15 +25,22 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('send_message')
-    async handleSendMessage(
-    @MessageBody() dto: CreateChatDto,
-    ) {
+  async handleSendMessage(@MessageBody() dto: CreateChatDto) {
     const message = await this.chatService.sendMessage(dto);
-
-    this.server
-        .to(this.chatService.getRoomId(dto.senderId, dto.receiverId))
-        .emit('receive_message', message);
-
+    const roomId = this.chatService.getRoomId(dto.senderId, dto.recipientId);
+    this.server.to(roomId).emit('receive_message', message);
     return message;
-}
+  }
+
+  async handleSystemNotification(dto: CreateChatDto) {
+    const recipientId = dto.recipientId;
+    if (!recipientId) return;
+    const message = await this.chatService.sendMessage(dto);
+    const roomId = this.chatService.getRoomId('system', recipientId);
+    this.server.to(roomId).emit('receive_message', message);
+  }
+
+  emitMessageToRoom(roomId: string, message: unknown) {
+    this.server.to(roomId).emit('receive_message', message);
+  }
 }

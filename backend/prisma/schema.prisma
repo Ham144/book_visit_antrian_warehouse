@@ -220,16 +220,17 @@ model Room {
   id            String   @id @default(cuid()) //harusnya bukan cuid tapi custom
   createdAt     DateTime @default(now())
   lastMessageAt DateTime?
-
+  
   chats         Chat[]
 }
 
 model Chat {
   id        String   @id @default(cuid())
   roomId    String
-  senderId  String   // refer ke User (tidak perlu relasi Prisma kalau sudah kompleks)
+  senderId  String   
+  recipientId  String? 
   message   String
-  status    String?   //read, delivered
+  status    String?   //READ | DELIVERED
   
   createdAt DateTime @default(now())
 

@@ -943,6 +943,8 @@ export class BookingWarehouseService {
           mode: 'insensitive',
         },
       };
+    } else if (userInfo.role == ROLE.DRIVER_VENDOR) {
+      where.driverUsername = userInfo.username;
     } else {
       where.warehouseId = userInfo.homeWarehouseId;
     }
@@ -1004,6 +1006,11 @@ export class BookingWarehouseService {
           },
         },
         Dock: {
+          select: {
+            name: true,
+          },
+        },
+        Warehouse: {
           select: {
             name: true,
           },

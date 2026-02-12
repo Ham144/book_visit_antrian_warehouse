@@ -1,14 +1,16 @@
-import { Expose } from "class-transformer";
+import { Expose } from 'class-transformer';
 
 export class ChatResponseDto {
-    @Expose()
-    @Expose()
-    id: string;
-    roomId: string;
-    @Expose()
-    senderId: string;
-    @Expose()
-    message: string;
-    @Expose()
-    createdAt: Date;
+  @Expose()
+  id: string;
+  @Expose()
+  roomId: string;
+  @Expose()
+  senderId: string;
+  @Expose()
+  message: string;
+  @Expose()
+  status?: string;
+  @Expose()
+  createdAt: Date;
 }

@@ -2,7 +2,11 @@ import { useGoToUnloadingBar } from "@/hooks/useGoToUnloadingBar";
 import { useCalculateIsPast } from "@/hooks/useCalculateIsPast";
 import { Booking } from "@/types/booking.type";
 import { BookingStatus, ROLE } from "@/types/shared.type";
-import { LucideSettings2, PanelLeftDashedIcon } from "lucide-react";
+import {
+  LucideSettings2,
+  PanelLeftDashedIcon,
+  WarehouseIcon,
+} from "lucide-react";
 import React from "react";
 import {
   getStatusBadgeColor,
@@ -88,6 +92,16 @@ const BookingRow = ({ booking, setSelectedBookingId }: BookingRowProps) => {
           </div>
         </div>
       </td>
+
+      {userInfo.role == ROLE.ADMIN_VENDOR && (
+        <td className="px-2  py-4 whitespace-nowrap">
+          <div>
+            <div className="text-sm font-bold py-3 text-gray-900 lg:w-40 flex items-center gap-x-2">
+              {booking.Warehouse?.name || "N/A"} <WarehouseIcon size={16} />
+            </div>
+          </div>
+        </td>
+      )}
 
       {/* Schedule */}
       <td className="px-6 py-4">
