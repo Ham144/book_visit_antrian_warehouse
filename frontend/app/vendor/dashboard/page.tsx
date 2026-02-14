@@ -43,7 +43,6 @@ export default function VendorDashboard() {
     operationalSnapshotToday,
     warehouseBreakdown,
     kpiData,
-    alerts,
   } = data;
 
   return (
@@ -64,7 +63,7 @@ export default function VendorDashboard() {
             />
           </svg>
           <span>
-            Page ini sedang dalam pengembangan, beberapa belum disempurkan.
+            Page ini sedang dalam pengembangan, masih dalam tahap awal.
           </span>
         </div>
         {/* Header */}
@@ -236,31 +235,7 @@ export default function VendorDashboard() {
                 </h2>
               </div>
               <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
-                {alerts.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    Tidak ada alert penting saat ini.
-                  </p>
-                ) : (
-                  alerts.slice(0, 5).map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="text-xs border border-gray-100 rounded-lg p-3"
-                    >
-                      <p className="font-semibold text-gray-900">
-                        {alert.type} • {alert.bookingCode}
-                      </p>
-                      <p className="text-gray-600 mt-1">{alert.message}</p>
-                      {alert.actionSuggested && (
-                        <p className="text-gray-500 mt-1">
-                          Saran: {alert.actionSuggested}
-                        </p>
-                      )}
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {new Date(alert.timestamp).toLocaleString("id-ID")}
-                      </p>
-                    </div>
-                  ))
-                )}
+                no content
               </div>
             </div>
           </div>

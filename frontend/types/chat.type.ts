@@ -23,6 +23,7 @@ export interface IRoom {
   createdAt?: Date;
   chats?: IChat[];
   unreadMessages?: number;
+  isOnline?: boolean;
 }
 
 export interface IUserChat {

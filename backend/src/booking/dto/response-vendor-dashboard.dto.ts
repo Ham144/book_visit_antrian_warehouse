@@ -73,17 +73,6 @@ export class ResponseVendorDashboardDto {
     }>;
   };
 
-  alerts: Array<{
-    id: string;
-    type: 'OVERDUE' | 'NO_SHOW' | 'CANCELED_BY_WAREHOUSE' | 'SLA_BREACH';
-    severity: 'LOW' | 'MEDIUM' | 'HIGH';
-    bookingCode?: string;
-    warehouseName?: string;
-    message: string;
-    timestamp: string;
-    actionSuggested?: string;
-  }>;
-
   filters: {
     selectedRange: {
       from: string;

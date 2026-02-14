@@ -142,12 +142,6 @@ export class BookingController {
     return response;
   }
 
-  @Authorization('DRIVER_VENDOR', 'ADMIN_ORGANIZATION')
-  @Get('/stats/stats-for-driver')
-  getStatsForDriver() {
-    return this.bookingForVendorService.getStatsForDriver();
-  }
-
   @Authorization('ADMIN_VENDOR', 'ADMIN_ORGANIZATION')
   @Get('/stats/stats-for-admin-vendor')
   getStatsForAdminVendor(@Auth() userInfo: TokenPayload) {

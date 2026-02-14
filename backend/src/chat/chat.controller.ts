@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
 import { Authorization } from 'src/common/authorization.decorator';
@@ -20,7 +28,16 @@ export class ChatController {
     @Auth() userinfo: TokenPayload,
     @Query('searchKey') searchKey?: string,
   ) {
-    return this.chatService.getLastMessages(userinfo, searchKey);
+    const base = await this.chatService.getLastMessages(userinfo, searchKey);
+    const chatRooms = base.chatRooms.map((room) => ({
+      ...room,
+      isOnline: this.chatGateway.isUserOnline(room.recipientId),
+    }));
+
+    return {
+      ...base,
+      chatRooms,
+    };
   }
 
   // 💬 buka chat
@@ -29,7 +46,7 @@ export class ChatController {
     @Param('roomId') roomId: string,
     @Auth() userinfo: TokenPayload,
     @Query('recipient') recipient?: string,
-    @Query('limit') limit = 50,
+    @Query('lastMessageLimit') limit = 50,
   ) {
     const room = recipient
       ? this.chatService.getRoomId(userinfo.username, recipient)
@@ -51,7 +68,52 @@ export class ChatController {
       userinfo.username,
       dto.recipientId ?? '',
     );
-    this.chatGateway.emitMessageToRoom(roomId, message);
+    this.chatGateway.emitMessageToRoom(
+      roomId,
+      dto.recipientId,
+      userinfo.username,
+      message,
+    );
     return message;
+  }
+
+  @Delete('selected')
+  async deleteSelectedMessages(
+    @Body('chatIds') chatIds: string[],
+    @Body('roomId') roomId: string,
+    @Body('recipientId') recipientId: string,
+    @Auth() userinfo: TokenPayload,
+  ) {
+    this.chatService.deleteSelectedMessages(chatIds, userinfo);
+
+    await this.chatGateway.emitMessageToRoom(
+      roomId,
+      recipientId,
+      userinfo.username,
+      'Berhasil menghapus pesan',
+    );
+
+    return {
+      message: 'berhasil menghapuas',
+      success: true,
+    };
+  }
+  // Di controller - balik urutannya
+  @Get('/get-room-id/:recipientId')
+  async getRoomId(
+    @Auth() userinfo: TokenPayload,
+    @Param('recipientId') recipientId: string,
+  ) {
+    // userinfo.username = user A, recipientId = user B
+    return this.chatService.getRoomId(userinfo.username, recipientId);
+  }
+
+  @Post('read-all')
+  async readAllMessage(
+    @Auth() userinfo: TokenPayload,
+    @Body('roomId') roomId: string,
+    @Body('recentMessageSeen') recentMessageSeen: Date,
+  ) {
+    return this.chatService.readAllMessage(roomId, recentMessageSeen, userinfo);
   }
 }

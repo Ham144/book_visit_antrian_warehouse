@@ -11,7 +11,7 @@ import { ChatStatus } from 'src/common/shared-enum';
 export class ChatService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async getTotalUnreadCount(userInfo: TokenPayload): Promise<number> {
+  private async getTotalUnreadCount(userInfo: TokenPayload): Promise<number> {
     return this.prismaService.chat.count({
       where: {
         recipientId: userInfo.username,
@@ -48,6 +48,11 @@ export class ChatService {
       },
     });
 
+    // hemat storage: batasi panjang caht
+    if (Math.random() < 0.01) {
+      await this.cleanupRoom(chat.roomId);
+    }
+
     await this.prismaService.room.update({
       where: { id: chat.roomId },
       data: { lastMessageAt: chat.createdAt },
@@ -58,32 +63,37 @@ export class ChatService {
     });
   }
 
+  async deleteSelectedMessages(chatIds: string[], userinfo: TokenPayload) {
+    await this.prismaService.chat.deleteMany({
+      where: {
+        id: {
+          in: chatIds,
+        },
+        senderId: userinfo.username,
+      },
+    });
+  }
+
   async getHistory(
-    roomId: string,
+    roomId: string, // bisa oper recipientId juga
     lastMessageLimit: number,
     userInfo: TokenPayload,
   ) {
-    const messages = await this.prismaService.chat.findMany({
+    let messages = await this.prismaService.chat.findMany({
       where: {
         roomId: roomId,
-      },
-      orderBy: {
-        createdAt: 'asc',
       },
       take: lastMessageLimit,
-    });
-
-    //update bahwa sudah read
-    await this.prismaService.chat.updateMany({
-      where: {
-        roomId: roomId,
-        status: ChatStatus.DELIVERED,
-        recipientId: userInfo.username,
-      },
-      data: {
-        status: 'READ',
+      orderBy: {
+        createdAt: 'desc', //emang begini
       },
     });
+    messages.reverse();
+    this.readAllMessage(
+      roomId,
+      messages[messages.length - 1]?.createdAt,
+      userInfo,
+    );
 
     return plainToInstance(ChatResponseDto, messages, {
       excludeExtraneousValues: true,
@@ -191,5 +201,52 @@ export class ChatService {
       .createHash('sha256')
       .update(sortedUsers.join(':'))
       .digest('hex');
+  }
+
+  async readAllMessage(
+    roomId: string,
+    recentMessageSeen: Date,
+    userInfo: TokenPayload,
+  ) {
+    //update bahwa sudah read
+    await this.prismaService.chat.updateMany({
+      where: {
+        roomId: roomId,
+        status: ChatStatus.DELIVERED,
+        recipientId: userInfo.username,
+        createdAt: { lte: recentMessageSeen },
+      },
+      data: {
+        status: 'READ',
+      },
+    });
+    return {
+      success: true,
+    };
+  }
+
+  async cleanupRoom(roomId: string) {
+    const MAX = 1000;
+
+    console.log('1% kena');
+
+    const count = await this.prismaService.chat.count({
+      where: { roomId },
+    });
+
+    if (count <= MAX) return;
+
+    const ids = await this.prismaService.chat.findMany({
+      where: { roomId },
+      orderBy: { createdAt: 'desc' },
+      skip: MAX,
+      select: { id: true },
+    });
+
+    await this.prismaService.chat.deleteMany({
+      where: {
+        id: { in: ids.map((i) => i.id) },
+      },
+    });
   }
 }

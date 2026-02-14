@@ -310,7 +310,8 @@ export class BookingWarehouseService {
         toStatus: 'CANCELED',
         fromArrivalTime: booking.arrivalTime.toISOString(),
         toArrivalTime: booking.arrivalTime.toISOString(),
-        detailMovement: 'drag and drop - cancel',
+        detailMovement:
+          'drag and drop - cancel' + ' reason: -> ' + booking?.canceledReason,
       });
       return { success: true, warehouseId: booking.warehouseId };
     }

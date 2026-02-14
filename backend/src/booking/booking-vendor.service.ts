@@ -247,19 +247,13 @@ export class BookingforVendorService {
       toStatus: 'CANCELED',
       fromArrivalTime: existingBooking.arrivalTime.toISOString(),
       toArrivalTime: existingBooking.arrivalTime.toISOString(),
-      detailMovement: 'cancel booking',
+      detailMovement: 'cancel booking' + ' cancel reason -> ' + canceledReason,
     });
 
     return {
       success: true,
       warehouseId: updated.warehouseId,
     };
-  }
-
-  async getStatsForDriver() {
-    const bookings = await this.prismaService.booking.findMany({
-      where: {},
-    });
   }
 
   async getStatsForAdminVendor(
@@ -592,101 +586,6 @@ export class BookingforVendorService {
       total,
     }));
 
-    // Alerts (perspektif vendor)
-    const alerts: ResponseVendorDashboardDto['alerts'] = [];
-
-    // Overdue bookings
-    bookings.forEach((b) => {
-      const isOverdue =
-        b.estimatedFinishTime &&
-        now.getTime() > b.estimatedFinishTime.getTime() &&
-        [BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING].includes(
-          b.status as BookingStatus,
-        );
-      if (isOverdue) {
-        const overdueMinutes = Math.round(
-          (now.getTime() - b.estimatedFinishTime.getTime()) / (1000 * 60),
-        );
-        alerts.push({
-          id: `overdue-${b.id}`,
-          type: 'OVERDUE',
-          severity: overdueMinutes > 60 ? 'HIGH' : 'MEDIUM',
-          bookingCode: b.code,
-          warehouseName: b.Warehouse?.name,
-          message: `Booking ${b.code} melewati estimasi selesai ${overdueMinutes} menit.`,
-          timestamp: now.toISOString(),
-          actionSuggested:
-            'Follow up ke warehouse untuk klarifikasi keterlambatan.',
-        });
-      }
-    });
-
-    // No show (driver belum datang setelah jadwal)
-    bookings.forEach((b) => {
-      const isWaiting = b.status === BookingStatus.PENDING;
-      if (isWaiting) {
-        const graceMinutes = 30;
-        const noShowTime = b.arrivalTime.getTime() + graceMinutes * 60 * 1000;
-        if (now.getTime() > noShowTime) {
-          const lateMinutes = Math.round(
-            (now.getTime() - b.arrivalTime.getTime()) / (1000 * 60),
-          );
-          alerts.push({
-            id: `noshow-${b.id}`,
-            type: 'NO_SHOW',
-            severity: 'MEDIUM',
-            bookingCode: b.code,
-            warehouseName: b.Warehouse?.name,
-            message: `Driver belum datang ${lateMinutes} menit setelah jadwal tiba.`,
-            timestamp: now.toISOString(),
-            actionSuggested: 'Hubungi driver atau reschedule booking.',
-          });
-        }
-      }
-    });
-
-    // SLA breach (selesai jauh melewati estimasi)
-    bookings.forEach((b) => {
-      if (
-        b.status === BookingStatus.FINISHED &&
-        b.actualFinishTime &&
-        b.estimatedFinishTime
-      ) {
-        const breachMinutes = Math.round(
-          (b.actualFinishTime.getTime() - b.estimatedFinishTime.getTime()) /
-            (1000 * 60),
-        );
-        if (breachMinutes > 60) {
-          alerts.push({
-            id: `sla-${b.id}`,
-            type: 'SLA_BREACH',
-            severity: 'HIGH',
-            bookingCode: b.code,
-            warehouseName: b.Warehouse?.name,
-            message: `SLA terlewati: unloading selesai ${breachMinutes} menit lebih lama dari estimasi.`,
-            timestamp: now.toISOString(),
-            actionSuggested:
-              'Review performa warehouse dan bicarakan perbaikan SLA dengan pihak terkait.',
-          });
-        }
-      }
-    });
-
-    // Canceled bookings
-    canceledInRange.forEach((b) => {
-      alerts.push({
-        id: `canceled-${b.id}`,
-        type: 'CANCELED_BY_WAREHOUSE',
-        severity: 'LOW',
-        bookingCode: b.code,
-        warehouseName: b.Warehouse?.name,
-        message: `Booking ${b.code} dibatalkan.`,
-        timestamp: b.updatedAt.toISOString(),
-        actionSuggested:
-          'Cek alasan pembatalan dan sesuaikan rencana pengiriman.',
-      });
-    });
-
     const result: ResponseVendorDashboardDto = {
       summaryMetrics: {
         totalBookingsInRange,
@@ -708,7 +607,6 @@ export class BookingforVendorService {
         onTimeRateTimeline,
         warehouseDistribution,
       },
-      alerts,
       filters: {
         selectedRange: {
           from: rangeStart.toISOString(),

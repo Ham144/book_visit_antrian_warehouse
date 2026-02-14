@@ -71,8 +71,6 @@ export function middleware(req: NextRequest) {
     const role: ROLE = decoded?.role;
     const am_i_vendor = decoded?.vendorName ? true : false;
 
-    console.log(role);
-
     if (!role) {
       //ini belum login maka lempar ke landing page
       return NextResponse.redirect(new URL("/", req.url));

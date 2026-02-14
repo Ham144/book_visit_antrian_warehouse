@@ -18,6 +18,7 @@ import ConfirmationModal from "../shared-common/confirmationModal";
 import { useUserInfo } from "../UserContext";
 import MoveTraceList from "../shared-common/move-trace-list";
 import { useCalculateIsPast } from "@/hooks/useCalculateIsPast";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface MyWarehouseActionModalProps {
   selectedBooking?: Booking;
@@ -31,6 +32,9 @@ const MyWarehouseActionModal = ({
   const [canceledReason, setCanceledReason] = useState<string>("");
   const queryClient = useQueryClient();
   const { isPast } = useCalculateIsPast({ booking: selectedBooking });
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { userInfo } = useUserInfo();
   const isAdmin = [
@@ -83,6 +87,24 @@ const MyWarehouseActionModal = ({
       toast.error(error?.response?.data?.message || error.message);
     },
   });
+  const onChatDriver = (booking: Booking) => {
+    if (booking.driverUsername) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("recipient", booking.driverUsername);
+      params.set(
+        "message",
+        "kode booking " +
+          '"' +
+          booking.code +
+          '"' +
+          " yang book ke warehouse " +
+          booking.Warehouse.name +
+          ":  "
+      );
+
+      router.push(`?${params.toString()}`);
+    }
+  };
 
   return (
     <>
@@ -171,7 +193,7 @@ const MyWarehouseActionModal = ({
                       Confirm Booking
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
-                          Arrival Time:{" "}
+                          Arrival Time:
                           {new Date(
                             selectedBooking.arrivalTime
                           ).toLocaleDateString("id-ID", {
@@ -394,7 +416,7 @@ const MyWarehouseActionModal = ({
                     "my-warehouse-action-modal"
                   ) as HTMLElement as HTMLDialogElement
                 )?.close();
-                toast.error("Aktifkan fitur pesan di pengaturan warehouse");
+                onChatDriver(selectedBooking);
               }}
               className="group flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 hover:shadow-md transition-all duration-200"
             >
@@ -407,7 +429,9 @@ const MyWarehouseActionModal = ({
                     Chat Driver
                   </span>
                   <p className="text-xs text-gray-600 mt-1">
-                    Kirim pesan kepada driver
+                    note: Driver dan admin vendor sudah dapat notifikasi
+                    Realtime sistem untuk tiap perubahan yang anda organisasi
+                    anda perbuat.
                   </p>
                 </div>
               </div>

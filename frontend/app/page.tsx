@@ -29,6 +29,12 @@ import {
   FileText,
   Activity,
   Move,
+  SlidersHorizontal,
+  Bell,
+  DoorOpen,
+  Building2,
+  MapPin,
+  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -109,42 +115,37 @@ export default function HomePage() {
     {
       title: "Booking Management",
       desc: "Atur jadwal kunjungan vendor dengan pemilihan warehouse dan slot",
-      href: "/booking",
       icon: CalendarClock,
       color: "bg-blue-500",
     },
     {
       title: "Warehouse Setup",
       desc: "Kelola data gudang, kapasitas, dan informasi operasional",
-      href: "/warehouse",
       icon: Warehouse,
       color: "bg-green-500",
     },
     {
       title: "Slot Management",
       desc: "Atur dock bongkar muat dan status ketersediaan slot",
-      href: "/slots",
       icon: Package,
       color: "bg-purple-500",
     },
+
     {
       title: "Vehicle Setup",
       desc: "Daftar kendaraan vendor dengan estimasi waktu bongkar muat",
-      href: "/vehicles",
       icon: Car,
       color: "bg-orange-500",
     },
     {
       title: "Queue Monitoring",
       desc: "Pantau antrian real-time dan estimasi waktu penyelesaian",
-      href: "/queue",
       icon: BarChart3,
       color: "bg-red-500",
     },
     {
       title: "User Management",
       desc: "Kelola akses pengguna dan role berdasarkan kebutuhan",
-      href: "/users",
       icon: UserCog,
       color: "bg-gray-500",
     },
@@ -153,77 +154,122 @@ export default function HomePage() {
     {
       title: "Live Queue Drag & Drop",
       desc: "Drag booking antar status: IN_PROGRESS → UNLOADING, DELAYED → UNLOADING, antar dock, dan canceled",
-      href: "/queue/drag-drop",
       icon: Move, // atau GripVertical icon
       color: "bg-indigo-500",
     },
     {
       title: "Busy Time Analytics",
       desc: "Analisis waktu sibuk warehouse dengan visualisasi grafik dan prediksi",
-      href: "/analytics/busy-time",
       icon: Activity,
       color: "bg-pink-500",
     },
     {
       title: "Complete Reports",
       desc: "Laporan lengkap untuk admin dan vendor dengan export Excel/PDF",
-      href: "/reports",
       icon: FileText,
       color: "bg-amber-500",
     },
+    // Realtime communication
+    {
+      title: "Realtime Messenger",
+      desc: "Chat realtime antar vendor, warehouse, dan driver dengan notifikasi instan",
+      icon: MessageCircle,
+      color: "bg-sky-500",
+    },
+    {
+      title: "Driver GPS Tracking",
+      desc: "Pantau posisi kendaraan secara realtime untuk estimasi kedatangan yang lebih akurat",
+      icon: MapPin,
+      color: "bg-emerald-600",
+    },
+
+    // Organization level control
+    {
+      title: "Organization Management",
+      desc: "Kelola multi organisasi, warehouse, dan struktur operasional dalam satu platform",
+      icon: Building2,
+      color: "bg-indigo-600",
+    },
+    {
+      title: "Member Access Control",
+      desc: "Role-based access control untuk admin, vendor, dan driver",
+      icon: Users,
+      color: "bg-cyan-600",
+    },
+
+    // Operational control
+    {
+      title: "Gate Operational Control",
+      desc: "Kontrol operasional gate secara realtime termasuk open/close, maintenance, dan overload control",
+      icon: DoorOpen,
+      color: "bg-rose-500",
+    },
+    {
+      title: "Smart Notification & Alerts",
+      desc: "Notifikasi otomatis untuk keterlambatan, perubahan slot, dan kondisi operasional penting",
+      icon: Bell,
+      color: "bg-yellow-500",
+    },
+
+    // System level
+    {
+      title: "Global Rules Engine",
+      desc: "Pengaturan aturan global seperti delay tolerance, booking policy, dan operational rules",
+      icon: SlidersHorizontal,
+      color: "bg-gray-700",
+    },
+    {
+      title: "Driver Operations Module",
+      desc: "Dashboard khusus driver untuk check-in, arrival confirmation, dan instruksi gate",
+      icon: Truck,
+      color: "bg-orange-600",
+    },
+
     {
       title: "Multi-Tenancy",
-      desc: "Dukungan multi-tenant dengan isolasi data per perusahaan/vendor",
-      href: "/admin/tenants",
+      desc: "Dukungan multi-tenant dengan isolasi data per perusahaan",
       icon: Building,
       color: "bg-cyan-500",
     },
     {
       title: "Unlimited Vendor Users",
       desc: "Tidak ada batasan jumlah user vendor dengan role-based access",
-      href: "/vendors/users",
       icon: Users,
       color: "bg-teal-500",
     },
     {
       title: "Warehouse Lock Settings",
       desc: "Pengaturan kunci per warehouse untuk maintenance atau downtime",
-      href: "/warehouse/settings",
       icon: Lock,
       color: "bg-rose-500",
     },
     {
       title: "Auto Efficient Time Picker",
       desc: "Sistem rekomendasi waktu booking otomatis berdasarkan efisiensi",
-      href: "/booking/smart-picker",
       icon: Clock,
       color: "bg-emerald-500",
     },
     {
       title: "Unlimited Warehouse Creation",
       desc: "Tambah warehouse tanpa batas dengan konfigurasi fleksibel",
-      href: "/warehouse/create",
       icon: PlusCircle,
       color: "bg-lime-500",
     },
     {
       title: "Vehicle Type Rules",
       desc: "Aturan khusus berdasarkan tipe kendaraan untuk waktu bongkar muat",
-      href: "/vehicles/rules",
       icon: CarTaxiFront,
       color: "bg-violet-500",
     },
     {
       title: "Smart Queue Positioning",
       desc: "Penempatan otomatis dengan smart check before/after di antrian",
-      href: "/queue/smart-positioning",
       icon: Brain,
       color: "bg-fuchsia-500",
     },
     {
       title: "Canceled Inventory Management",
       desc: "Kelola booking canceled dan kembalikan ke antrian dengan smart positioning",
-      href: "/queue/canceled-inventory",
       icon: ArchiveRestore,
       color: "bg-slate-600",
     },
@@ -359,7 +405,7 @@ export default function HomePage() {
             {features.map((feature) => (
               <Link
                 key={feature.title}
-                href={feature.href}
+                href={"/"}
                 className="group bg-gray-50 dark:bg-gray-700 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
               >
                 <div className="flex items-start gap-4 mb-4">
