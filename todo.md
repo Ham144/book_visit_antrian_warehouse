@@ -82,7 +82,7 @@ start 12/11/2025
 [x] add: opsi mobil per warehouse bukan global
 [x] add: dock bisa import
 [x] mod: pemberitahuan realtime kepada supir dan vendor
-[] mod: penyempurnaan dashboard utama
+[x] mod: penyempurnaan dashboard utama
 
 [] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
 Menentukan durasi bongkar mobil =

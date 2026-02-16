@@ -77,6 +77,12 @@ export class VehicleService {
                 mode: 'insensitive',
               },
             },
+            {
+              vehicleType: {
+                contains: searchKey,
+                mode: 'insensitive',
+              },
+            },
           ],
         });
       }

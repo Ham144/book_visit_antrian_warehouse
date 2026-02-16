@@ -1,5 +1,3 @@
-import { ResponseBookingDto } from './response-booking.dto';
-
 export class ResponseDashboardBookingDto {
   summaryMetrics: {
     totalBookingsToday: number;
@@ -19,12 +17,6 @@ export class ResponseDashboardBookingDto {
     remainingMinutes?: number;
   }>;
   queueSnapshot: any[];
-  kpiData: {
-    queueLengthTimeline: Array<{ time: string; value: number }>;
-    avgWaitingTime: Array<{ time: string; minutes: number }>;
-    dockThroughput: Array<{ dock: string; completed: number }>;
-  };
-
   busyTimeData: {
     currentBusyWindow?: {
       from: string;

@@ -297,6 +297,12 @@ const BusyTimeFormModal = ({
             </div>
           )}
 
+          <p>
+            <span className="font-semibold text-gray-700">Catatan:</span>{" "}
+            Pastikan anda telah membatalkan booking pada range waktu yang anda
+            tentukan.
+          </p>
+
           {/* Actions */}
           <div className="modal-action pt-6 border-t border-gray-200">
             <button

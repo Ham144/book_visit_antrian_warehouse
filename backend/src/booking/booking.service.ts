@@ -282,8 +282,8 @@ export class BookingWarehouseService {
         where: { id: targetDockId },
       });
 
-      if (!dock) {
-        throw new BadRequestException('Dock tidak ditemukan');
+      if (!dock || !dock.isActive) {
+        throw new BadRequestException('Dock Tidak Aktif');
       }
 
       if (!dock.allowedTypes.includes(booking.Vehicle.vehicleType)) {
@@ -1418,7 +1418,6 @@ export class BookingWarehouseService {
     const docks = await this.prismaService.dock.findMany({
       where: {
         organizationName: userInfo.organizationName,
-        isActive: true,
         warehouseId: userInfo.homeWarehouseId,
       },
       include: {
@@ -1434,9 +1433,14 @@ export class BookingWarehouseService {
           where: {
             createdAt: {
               gte: todayStart,
+              lte: todayEnd,
             },
             status: {
-              in: [BookingStatus.IN_PROGRESS, BookingStatus.FINISHED],
+              in: [
+                BookingStatus.IN_PROGRESS,
+                BookingStatus.FINISHED,
+                BookingStatus.UNLOADING,
+              ],
             },
           },
           include: {
@@ -1460,14 +1464,11 @@ export class BookingWarehouseService {
     const totalBookingsToday = bookings.length;
     const pending = bookings.filter((b) => b.status == BookingStatus.PENDING);
 
-    const activeBookings = bookings.filter((b) =>
-      [BookingStatus.IN_PROGRESS, BookingStatus.UNLOADING].includes(
-        BookingStatus[b.status],
-      ),
-    ).length;
-
-    const completedToday = bookings.filter((b) =>
-      [BookingStatus.FINISHED].includes(BookingStatus[b.status]),
+    // booking yang telah datang sedang menungggu
+    const activeBookings = bookings.filter(
+      (b) =>
+        [BookingStatus.IN_PROGRESS].includes(BookingStatus[b.status]) &&
+        b.actualArrivalTime,
     ).length;
 
     // Hitung delayed bookings (melebihi estimatedFinishTime)
@@ -1482,10 +1483,14 @@ export class BookingWarehouseService {
       }
     }).length;
 
+    const completedToday = bookings.filter((b) =>
+      [BookingStatus.FINISHED].includes(BookingStatus[b.status]),
+    ).length;
+
     // Hitung rata-rata processing time
     const completedBookings = bookings.filter(
       (b) =>
-        b.status[b.status] === BookingStatus.FINISHED &&
+        b.status === BookingStatus.FINISHED &&
         b.actualStartTime &&
         b.actualFinishTime,
     );
@@ -1508,26 +1513,34 @@ export class BookingWarehouseService {
       [BookingStatus.CANCELED]: 0,
       [BookingStatus.PENDING]: 0,
     };
-
     const getDockWeight = (bookings: Booking[]): number => {
-      return bookings.reduce((max, booking) => {
-        return Math.max(max, STATUS_WEIGHT[booking.status] ?? 0);
-      }, 0);
-    };
+      if (!bookings || bookings.length === 0) return 0; // Jika ini kena, berarti dock.bookings kosong
 
+      return bookings.reduce((max, booking) => {
+        const weight = STATUS_WEIGHT[booking.status as BookingStatus];
+        return Math.max(max, weight ?? 0);
+      }, 0);
+    }; // 1. Pastikan kita punya list dock yang unik
+    // 2. Map setiap dock untuk mengambil booking-nya dari data JSON yang kamu punya
+    const dockScores = docks.map((dock) => {
+      // Cari booking di data JSON yang dockId-nya sama dengan id dock ini
+      const bookingsForThisDock = bookings.filter((b) => b.dockId === dock.id);
+
+      // Hitung weight untuk dock ini
+      return getDockWeight(bookingsForThisDock);
+    });
+
+    // 3. Hitung rata-rata
     const score =
-      docks.reduce((sum, dock) => {
-        return sum + getDockWeight(dock.bookings);
-      }, 0) / docks.length;
+      dockScores.length > 0
+        ? dockScores.reduce((sum, weight) => sum + weight, 0) / docks.length
+        : 0;
 
     const dockUtilizationPercent = Math.round(score * 100);
 
     const timeStringToMinutes = (time: string): number => {
       const [hour, minute] = time.split(':').map(Number);
       return hour * 60 + minute;
-    };
-    const nowToMinutes = (date: Date): number => {
-      return date.getHours() * 60 + date.getMinutes();
     };
 
     const dockStatuses = docks.map((dock) => {
@@ -1536,33 +1549,39 @@ export class BookingWarehouseService {
         | 'TIDAK AKTIF'
         | 'SEDANG MEMBONGKAR'
         | 'SIBUK/ISTIRAHAT'
-        | 'DILUAR JAM KERJA' = 'KOSONG';
+        | 'DILUAR JAM KERJA';
 
       let vendorName = '';
       let remainingMinutes = 0;
 
       const now = new Date();
-      const nowTime = now.getTime();
-      const nowMinutes = nowToMinutes(now);
+      // Geser ke WIB
+      const jakartaTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+
+      // AMBIL DARI jakartaTime!
+      const nowMinutes =
+        jakartaTime.getUTCHours() * 60 + jakartaTime.getUTCMinutes();
+      const nowTime = jakartaTime.getTime();
 
       const days = Object.values(Days);
       const todayVacant = dock.vacants.find((v) => {
         return Days[v.day] === days[now.getDay()];
       });
 
-      if (!todayVacant) {
+      if (!dock?.isActive) {
         status = 'TIDAK AKTIF';
         return { dockId: dock.id, dockName: dock.name, status };
       }
 
-      const availableFrom = new Date(todayVacant.availableFrom).getTime();
-      const availableUntil = new Date(todayVacant.availableUntil).getTime();
+      // Asumsi todayVacant.availableFrom isinya "08:00"
+      const startMinutes = timeStringToMinutes(todayVacant.availableFrom);
+      const endMinutes = timeStringToMinutes(todayVacant.availableUntil);
 
-      if (nowTime < availableFrom || nowTime > availableUntil) {
+      // Pastikan membandingkan menit dengan menit
+      if (nowMinutes < startMinutes || nowMinutes > endMinutes) {
         status = 'DILUAR JAM KERJA';
         return { dockId: dock.id, dockName: dock.name, status };
       }
-
       const onBusyTime = dock.busyTimes.find((bt) => {
         const from = timeStringToMinutes(bt.from);
         const to = timeStringToMinutes(bt.to);
@@ -1570,7 +1589,12 @@ export class BookingWarehouseService {
 
         if (bt.recurring === 'DAILY') return inRange;
         if (bt.recurring === 'WEEKLY')
-          return bt.recurringCustom?.includes(Days[now.getDay()]) && inRange;
+          return (
+            bt.recurringCustom?.includes(
+              this.mapDayIndexToEnum(now.getDay()),
+            ) && inRange
+          );
+
         if (bt.recurring === 'MONTHLY')
           return now.getDate() === bt.recurringStep && inRange;
         return false;
@@ -1580,8 +1604,9 @@ export class BookingWarehouseService {
         status = 'SIBUK/ISTIRAHAT';
         remainingMinutes = timeStringToMinutes(onBusyTime.to) - nowMinutes;
       }
+
       const unloading = dock.bookings.find((b) => {
-        return BookingStatus[b.status] === BookingStatus.UNLOADING;
+        return b.status === 'UNLOADING';
       });
 
       if (unloading) {
@@ -1596,6 +1621,10 @@ export class BookingWarehouseService {
           ),
         );
         vendorName = unloading.driver.vendorName;
+      }
+
+      if (!status) {
+        status = 'KOSONG';
       }
 
       return {
@@ -1641,7 +1670,6 @@ export class BookingWarehouseService {
       },
       dockStatuses,
       queueSnapshot,
-      kpiData,
       busyTimeData,
       alerts,
       filters: {
@@ -1690,12 +1718,6 @@ export class BookingWarehouseService {
       };
     });
 
-    // Hitung average waiting time (dummy calculation)
-    const avgWaitingTime = hours.map((time, index) => ({
-      time,
-      minutes: Math.floor(Math.random() * 30) + 30,
-    }));
-
     // Hitung dock throughput
     const dockThroughput = docks.slice(0, 6).map((dock) => {
       const dockCompleted = bookings.filter(
@@ -1710,7 +1732,6 @@ export class BookingWarehouseService {
 
     return {
       queueLengthTimeline,
-      avgWaitingTime,
       dockThroughput,
     };
   }

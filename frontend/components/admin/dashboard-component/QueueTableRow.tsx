@@ -1,7 +1,13 @@
 import { FormatTimeIndonesian } from "@/lib/constant";
 import { Booking } from "@/types/booking.type";
 
-const QueueTableRow = ({ booking }: { booking: Booking }) => {
+const QueueTableRow = ({
+  booking,
+  onClick,
+}: {
+  booking: Booking;
+  onClick: () => void;
+}) => {
   const now = new Date();
 
   // Normalisasi tipe tanggal (bisa datang sebagai string dari API)
@@ -16,9 +22,11 @@ const QueueTableRow = ({ booking }: { booking: Booking }) => {
   const isOverdue = estimatedFinishTime
     ? now.getTime() > estimatedFinishTime.getTime()
     : false;
+
   return (
     <tr
-      className={`border-b hover:bg-gray-50 ${
+      onClick={onClick}
+      className={`border-b cursor-pointer hover:bg-gray-50 ${
         booking.code ? "bg-amber-50" : ""
       }`}
     >
@@ -31,6 +39,13 @@ const QueueTableRow = ({ booking }: { booking: Booking }) => {
       <td className="py-2 px-3">
         <span className={isOverdue ? "text-red-600 font-medium" : ""}>
           {arrivalTime ? FormatTimeIndonesian(arrivalTime) : "-"}
+        </span>
+      </td>
+      <td className="py-2 px-3">
+        <span className={isOverdue ? "text-red-600 font-medium" : ""}>
+          {booking?.actualArrivalTime
+            ? FormatTimeIndonesian(booking?.actualArrivalTime)
+            : "Blm Dtg"}
         </span>
       </td>
       <td className="py-2 px-3">

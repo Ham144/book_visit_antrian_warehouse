@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateMoveTraceDto } from './dto/create-move-trace.dto';
 import { PrismaService } from 'src/common/prisma.service';
 import { ChatGateway } from 'src/chat/chat.gateway';
+import { formatDateTime } from 'src/common/formatDateToIndon';
 
 @Injectable()
 export class MoveTraceService {
@@ -31,19 +32,50 @@ export class MoveTraceService {
         message: 'Booking created by the user, no need to send notification',
       };
     }
-
     const createdAtStr = moveTrace.createdAt.toISOString();
+
+    // Helper untuk menampilkan perubahan
+    const showChange = (before, after, label, formatter = (v) => v) => {
+      const formattedBefore = formatter(before);
+      const formattedAfter = formatter(after);
+
+      if (formattedBefore === formattedAfter) {
+        return `<b>${label}:</b> Tidak berubah (${formattedBefore})`;
+      }
+      return `<b>${label}:</b> ${formattedBefore} → ${formattedAfter}`;
+    };
+
+    // Format perubahan yang terjadi
+    const statusChange = `<b>Status:</b> ${createMoveTraceDto.fromStatus} → ${createMoveTraceDto.toStatus}`;
+
+    const arrivalChange = showChange(
+      createMoveTraceDto.fromArrivalTime,
+      createMoveTraceDto.toArrivalTime,
+      'Target Tiba',
+      formatDateTime,
+    );
+
+    // Gabungkan hanya perubahan yang ada
+    const changes = [statusChange];
+    if (
+      createMoveTraceDto.fromArrivalTime &&
+      createMoveTraceDto.toArrivalTime
+    ) {
+      changes.push(arrivalChange);
+    }
+    if (createMoveTraceDto.detailMovement) {
+      changes.push(`<b>Detail:</b> ${createMoveTraceDto.detailMovement}`);
+    }
+
     const message = `
-<p style="margin:0 0 6px 0;"><strong>📦 Update Riwayat Booking</strong></p>
-<p style="margin:0;">
-<b>Keputusan:</b> ${createMoveTraceDto.doer}<br/>
-<b>Kode Booking:</b> ${booking.code ?? createMoveTraceDto.bookingId}<br/>
-<b>Status:</b> ${createMoveTraceDto.fromStatus} → ${createMoveTraceDto.toStatus}<br/>
-<b>Target Tiba:</b> ${new Date(createMoveTraceDto.fromArrivalTime).toLocaleString()} → ${new Date(createMoveTraceDto.toArrivalTime).toLocaleString()}<br/>
-<b>Detail:</b> ${createMoveTraceDto.detailMovement ?? '-'}
-</p>
-<p style="margin-top:8px; font-size:12px; color:#666;">${new Date(createdAtStr).toLocaleString()}</p>
-`;
+    <p style="margin:0 0 6px 0;"><strong>📦 Update Riwayat Booking</strong></p>
+    <p style="margin:0;">
+    <b>Keputusan:</b> ${createMoveTraceDto.doer}<br/>
+    <b>Kode Booking:</b> ${booking.code ?? createMoveTraceDto.bookingId}<br/>
+    ${changes.join('<br/>')}
+    </p>
+    <p style="margin-top:8px; font-size:12px; color:#666;">${formatDateTime(createdAtStr)}</p>
+    `;
 
     for (const recipientId of uniqueRecipients) {
       await this.chatGateWay.handleSystemNotification({

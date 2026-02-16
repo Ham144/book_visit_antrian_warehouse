@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Clock,
   Truck,
@@ -11,11 +11,10 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, set } from "date-fns";
 import { id } from "date-fns/locale";
 
 // Components
-import DockStatusCard from "@/components/admin/dashboard-component/DockStatusCard";
 import QueueTableRow from "@/components/admin/dashboard-component/QueueTableRow";
 import SparklineChart from "@/components/admin/dashboard-component/SparklineChart";
 import SummaryCard from "@/components/admin/dashboard-component/SummaryCard";
@@ -23,6 +22,10 @@ import { useQuery } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
 import { useUserInfo } from "@/components/UserContext";
 import { ROLE } from "@/types/shared.type";
+import DockStatusSection from "@/components/admin/dashboard-component/DockStatusSection";
+import QueueDetailModal from "@/components/admin/QueueDetailModal";
+import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
+import { toast } from "sonner";
 
 // Types
 export interface DashboardState {
@@ -79,7 +82,6 @@ export interface DashboardState {
     acknowledged: boolean;
     actionRequired: boolean;
   }>;
-
   filters: {
     searchQuery: string;
     selectedStatuses: string[];
@@ -120,6 +122,10 @@ const DashboardAdmin = () => {
     enabled: isAdmin,
   });
 
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
+    null
+  );
+
   const formatRelativeTime = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), {
@@ -146,19 +152,13 @@ const DashboardAdmin = () => {
       status: "normal" as const,
     },
     {
-      metric: "Semua (in_progress dan delayed)",
+      metric: "Telah Datang",
       value: dashboardState?.summaryMetrics?.activeQueue,
       icon: <Truck className="h-5 w-5" />,
       status:
         dashboardState?.summaryMetrics.activeQueue > 20
           ? "warning"
           : ("normal" as const),
-    },
-    {
-      metric: "Telah Selesai Hari ini",
-      value: dashboardState?.summaryMetrics.completedToday,
-      icon: <CheckCircle className="h-5 w-5" />,
-      status: "normal" as const,
     },
     {
       metric: "Belum Juga Datang",
@@ -169,6 +169,13 @@ const DashboardAdmin = () => {
           ? "critical"
           : ("warning" as const),
     },
+    {
+      metric: "Telah Selesai Hari ini",
+      value: dashboardState?.summaryMetrics.completedToday,
+      icon: <CheckCircle className="h-5 w-5" />,
+      status: "normal" as const,
+    },
+
     {
       metric: "Persentase Utilisasi Warehouse anda",
       value: `${dashboardState?.summaryMetrics.dockUtilizationPercent}%`,
@@ -284,9 +291,9 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
             </div>
           </div>
           <div className="p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
               {dashboardState?.dockStatuses?.map((statusData) => (
-                <DockStatusCard key={statusData.dockId} dock={statusData} />
+                <DockStatusSection dock={statusData} />
               ))}
             </div>
           </div>
@@ -330,6 +337,9 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                     Arrival Time
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actual Arrival
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Duration
                   </th>
                 </tr>
@@ -343,6 +353,14 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                       <QueueTableRow
                         key={booking.id || booking.code || index}
                         booking={booking}
+                        onClick={() => {
+                          setSelectedBookingId(booking.id);
+                          (
+                            document.getElementById(
+                              "my-warehouse-action-modal"
+                            ) as HTMLDialogElement
+                          )?.showModal();
+                        }}
                       />
                     ))
                 ) : (
@@ -383,19 +401,12 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                     color="blue"
                   />
                 )}
-                {dashboardState?.kpiData.avgWaitingTime && (
-                  <SparklineChart
-                    data={dashboardState?.kpiData.avgWaitingTime}
-                    title="Avg Waiting Time"
-                    color="orange"
-                  />
-                )}
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                     Dock Throughput
                   </h3>
                   <div className="space-y-3">
-                    {dashboardState?.kpiData.dockThroughput.map(
+                    {dashboardState?.kpiData?.dockThroughput.map(
                       (item, index) => (
                         <div
                           key={index}
@@ -422,6 +433,19 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
           </div>
         </div>
       </div>
+      <QueueDetailModal
+        selectedBookingId={selectedBookingId || ""}
+        setSelectedBookingId={setSelectedBookingId}
+        key={"QueueDetailModalCreate"}
+        mode="create"
+      />
+      <MyWarehouseActionModal
+        key={"MyWarehouseActionModal"}
+        onModifyAndConfirm={() => toast.info("test")}
+        selectedBooking={dashboardState?.queueSnapshot.find(
+          (booking) => booking.id === selectedBookingId
+        )}
+      />
     </div>
   );
 };
