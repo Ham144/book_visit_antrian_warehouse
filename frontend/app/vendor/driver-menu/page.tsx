@@ -6,7 +6,7 @@ import { useUserInfo } from "@/components/UserContext";
 import { Booking } from "@/types/booking.type";
 import { BookingStatus } from "@/types/shared.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {  format, isToday } from "date-fns";
+import { format, isToday } from "date-fns";
 import { id } from "date-fns/locale";
 import {
   CheckCircle,
@@ -23,12 +23,11 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
-
 const DriverMenu = () => {
   const { userInfo, socket } = useUserInfo();
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [selectedPastBooking, setSelectedPastBooking] =
     useState<Booking | null>(null);
@@ -48,16 +47,16 @@ const DriverMenu = () => {
   const today = new Date();
   const startOfDay = new Date(today.setHours(0, 0, 0, 0));
   const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-  
+
   const onTheWayBookingMemo = useMemo(
     () =>
       bookings?.find(
         (booking) =>
           booking.driverUsername === userInfo?.username &&
           new Date(booking.arrivalTime) >= startOfDay &&
-          new Date(booking.arrivalTime) <= endOfDay
+          new Date(booking.arrivalTime) <= endOfDay,
       ),
-    [bookings, startOfDay, endOfDay, userInfo]
+    [bookings, startOfDay, endOfDay, userInfo],
   );
 
   // Query detail booking
@@ -90,11 +89,10 @@ const DriverMenu = () => {
     format(new Date(date), "HH:mm", { locale: id });
 
   const hasArrived = !!bookingDetail?.actualArrivalTime;
-  const isUnloading = bookingDetail?.status == BookingStatus.UNLOADING
-  const isFinished = bookingDetail?.status == BookingStatus.FINISHED
-  const isCanceled = bookingDetail?.status == BookingStatus.CANCELED
-  
-  
+  const isUnloading = bookingDetail?.status == BookingStatus.UNLOADING;
+  const isFinished = bookingDetail?.status == BookingStatus.FINISHED;
+  const isCanceled = bookingDetail?.status == BookingStatus.CANCELED;
+
   const queryClient = useQueryClient();
 
   //socket
@@ -110,13 +108,15 @@ const DriverMenu = () => {
     };
 
     const handleFindAllRefetch = () => {
-      queryClient.invalidateQueries({
-        queryKey: ["bookings", "driver", selectedDate],
-      }).then(() => {
-        queryClient.invalidateQueries({
-          queryKey: ["booking-detail", onTheWayBookingMemo?.id],
+      queryClient
+        .invalidateQueries({
+          queryKey: ["bookings", "driver", selectedDate],
+        })
+        .then(() => {
+          queryClient.invalidateQueries({
+            queryKey: ["booking-detail", onTheWayBookingMemo?.id],
+          });
         });
-      })
     };
 
     if (socket.connected) {
@@ -139,7 +139,6 @@ const DriverMenu = () => {
     };
   }, [socket, queryClient, bookingDetail?.warehouseId]);
 
-
   if (isLoading || loadingDetail) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex items-center justify-center">
@@ -159,52 +158,52 @@ const DriverMenu = () => {
       const now = new Date();
       const timeDiff = arrivalTime.getTime() - now.getTime();
       const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-      
+
       // Jika kurang dari delay tolerance atau sudah lewat, tampilkan petunjuk
-      return minutesDiff <= bookingDetail.Warehouse?.delayTolerance || minutesDiff < 0;
+      return (
+        minutesDiff <= bookingDetail.Warehouse?.delayTolerance ||
+        minutesDiff < 0
+      );
     };
 
-    
-  
     // Helper untuk mendapatkan instruksi berdasarkan status
     const getInstructions = () => {
-      if(isCanceled){
+      if (isCanceled) {
         return {
           title: "Pembongkaran Dibatalkan",
-          subtitle: `${bookingDetail.code} telah dibatalkan`
+          subtitle: `${bookingDetail.code} telah dibatalkan`,
         };
       }
-      
-      if(isFinished){
+
+      if (isFinished) {
         return {
           title: "Telah Selesai",
-          subtitle: `anda ${bookingDetail.code} telah menyelesaikan pembongakaran`
+          subtitle: `anda ${bookingDetail.code} telah menyelesaikan pembongakaran`,
         };
       }
-      
-      if(isUnloading){
+
+      if (isUnloading) {
         return {
           title: "Sedang Pembongkaran",
-          subtitle: `anda ${bookingDetail.code} sedang dalam pembongkaran di ${bookingDetail.Dock.name}`
+          subtitle: `anda ${bookingDetail.code} sedang dalam pembongkaran di ${bookingDetail.Dock.name}`,
         };
       }
-      
+
       if (hasArrived) {
         return {
           title: "SILAHKAN MASUK KE GUDANG",
-          subtitle: `Tunggu instruksi lebih lanjut di ${bookingDetail.Dock?.name || 'Gate'}`
+          subtitle: `Tunggu instruksi lebih lanjut di ${bookingDetail.Dock?.name || "Gate"}`,
         };
       }
 
       return {
         title: "Sedang Menuju Gudang",
-        subtitle: `Silakan menuju gate ${bookingDetail.Dock.name} ${bookingDetail.Warehouse.name} sekitar sebelum pukul ${formatTime(bookingDetail.arrivalTime)}`
-      }
-  
+        subtitle: `Silakan menuju gate ${bookingDetail.Dock.name} ${bookingDetail.Warehouse.name} sekitar sebelum pukul ${formatTime(bookingDetail.arrivalTime)}`,
+      };
     };
-  
+
     const instructions = getInstructions();
-  
+
     return (
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
         {/* Status Banner dengan instruksi */}
@@ -218,12 +217,10 @@ const DriverMenu = () => {
                 {instructions.title}
               </span>
             </div>
-            <p className="text-white/90 text-sm">
-              {instructions.subtitle}
-            </p>
+            <p className="text-white/90 text-sm">{instructions.subtitle}</p>
           </div>
         </div>
-  
+
         {/* Content */}
         <div className="p-6">
           {/* Informasi Jadwal */}
@@ -236,63 +233,84 @@ const DriverMenu = () => {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 font-medium">est. Perkiraan selesai</p>
+                <p className="text-xs text-gray-500 font-medium">
+                  est. Perkiraan selesai
+                </p>
                 <p className="text-lg font-bold text-gray-800">
                   {formatTime(new Date(bookingDetail.estimatedFinishTime))}
                 </p>
               </div>
               <div className="col-span-1">
-                <p className="text-xs text-gray-500 font-medium">LOKASI BONGKAR MUAT</p>
+                <p className="text-xs text-gray-500 font-medium">
+                  LOKASI BONGKAR MUAT
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                   <MapPin className="w-4 h-4 text-teal-600" />
                   <p className="text-lg font-bold text-gray-800">
-                    {bookingDetail.Dock?.name || 'Belum ditentukan'}
+                    {bookingDetail.Dock?.name || "Belum ditentukan"}
                   </p>
                 </div>
               </div>
               <div className="col-span-1 bg-green-300 rounded-lg p-2">
-                <p className="text-xs text-gray-500 font-medium">Kode Booking</p>
+                <p className="text-xs text-gray-500 font-medium">
+                  Kode Booking
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                   <Truck className="w-5 h-6 text-teal-600" />
                   <p className="text-lg font-bold text-gray-800">
-                    {bookingDetail.code || 'Belum ditentukan'}
+                    {bookingDetail.code || "Belum ditentukan"}
                   </p>
                 </div>
               </div>
             </div>
           </div>
           {/* Menambahkan logika untuk DELAYED */}
-  {(() => {
-    if (bookingDetail.status !== 'CANCELED' && bookingDetail.status !== 'FINISHED') {
-      const now = new Date();
-      const arrivalTime = new Date(bookingDetail.arrivalTime);
-      const delayTolerance = bookingDetail.Warehouse?.delayTolerance || 15; // default 15 menit
-      const maxAllowedTime = new Date(arrivalTime.getTime() + delayTolerance * 60 * 1000);
-      
-      if (now > maxAllowedTime && !hasArrived && !bookingDetail.actualArrivalTime) {
-        return (
-          <div className="mt-2 p-2 my-2 bg-orange-50 rounded-lg border border-orange-200">
-            <div className="flex items-center gap-2 text-orange-700">
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm font-medium">TERLAMBAT: Silakan segera menuju gudang</span>
-            </div>
-          </div>
-        );
-      }
-    }
-    return null;
-  })()}
-  
-  
+          {(() => {
+            if (
+              bookingDetail.status !== "CANCELED" &&
+              bookingDetail.status !== "FINISHED"
+            ) {
+              const now = new Date();
+              const arrivalTime = new Date(bookingDetail.arrivalTime);
+              const delayTolerance =
+                bookingDetail.Warehouse?.delayTolerance || 15; // default 15 menit
+              const maxAllowedTime = new Date(
+                arrivalTime.getTime() + delayTolerance * 60 * 1000,
+              );
+
+              if (
+                now > maxAllowedTime &&
+                !hasArrived &&
+                !bookingDetail.actualArrivalTime
+              ) {
+                return (
+                  <div className="mt-2 p-2 my-2 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center gap-2 text-orange-700">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        TERLAMBAT: Silakan segera menuju gudang
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+            }
+            return null;
+          })()}
+
           <VehicleInfo booking={bookingDetail} />
-          
+
           {/* Informasi Gudang */}
           <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
             <div className="flex items-start gap-3">
               <Building2 className="w-5 h-5 text-gray-600 mt-0.5" />
               <div>
-                <p className="font-semibold text-gray-800">{bookingDetail.Warehouse?.name}</p>
-                <p className="text-sm text-gray-600">{bookingDetail.Warehouse?.location}</p>
+                <p className="font-semibold text-gray-800">
+                  {bookingDetail.Warehouse?.name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {bookingDetail.Warehouse?.location}
+                </p>
                 {bookingDetail.driver?.vendorName && (
                   <p className="text-sm text-gray-500 mt-1">
                     Vendor: {bookingDetail.driver.vendorName}
@@ -301,113 +319,131 @@ const DriverMenu = () => {
               </div>
             </div>
           </div>
-              {/* Status real-time */}
-<div className="mt-6 pt-4 border-t border-gray-200">
-  <div className="flex justify-between items-center text-sm">
-    <span className="text-gray-500">Status:</span>
-    <span className={`font-semibold ${
-      bookingDetail.status === 'IN_PROGRESS' ? 'text-teal-600' : 
-      bookingDetail.status === 'UNLOADING' ? 'text-green-600' : 
-      bookingDetail.status === 'FINISHED' ? 'text-gray-600' : 
-      bookingDetail.status === 'CANCELED' ? 'text-red-600' : 
-      'text-orange-600'
-    }`}>
-      {bookingDetail.status === 'IN_PROGRESS' ? 'SEDANG MENUJU' : 
-       bookingDetail.status === 'UNLOADING' ? 'SEDANG BONGKAR MUAT' : 
-       bookingDetail.status === 'FINISHED' ? 'SELESAI' : 
-       bookingDetail.status === 'CANCELED' ? 'DIBATALKAN' : 
-       'TERLAMBAT'}
-    </span>
-  </div>
-  
-  
-  {bookingDetail.actualArrivalTime && (
-    <div className="flex justify-between items-center text-sm mt-2">
-      <span className="text-gray-500">Tiba:</span>
-      <span className="font-medium">
-        {formatTime(new Date(bookingDetail.actualArrivalTime))}
-      </span>
-    </div>
-  )}
-  {bookingDetail.status === BookingStatus.CANCELED && bookingDetail.canceledReason && (
-    <div className="flex justify-between items-center text-sm mt-2">
-      <span className="text-gray-500">Alasan:</span>
-      <span className="font-medium">
-        {bookingDetail.canceledReason}
-      </span>
-    </div>
-  )}
-  {bookingDetail.actualStartTime && (
-    <div className="flex justify-between items-center text-sm mt-1">
-      <span className="text-gray-500">Mulai Bongkar:</span>
-      <span className="font-medium">
-        {formatTime(new Date(bookingDetail.actualStartTime))}
-      </span>
-    </div>
-  )}
-  
-  {bookingDetail.actualFinishTime && (
-    <div className="flex justify-between items-center text-sm mt-1">
-      <span className="text-gray-500">Selesai:</span>
-      <span className="font-medium">
-        {formatTime(new Date(bookingDetail.actualFinishTime))}
-      </span>
-    </div>
-  )}
-        </div>
-          
-                  {/* Tombol Konfirmasi */}
-                  <button
-          onClick={() => !hasArrived && setShowConfirmation(true)}
-          disabled={hasArrived || isConfirming}
-          className={`w-full py-4 rounded-xl font-bold text-lg transition-all mb-4 ${
-            hasArrived
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white shadow-lg hover:shadow-xl active:scale-[0.98]"
-          }`}
-        >
-          {isConfirming ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span>Memproses...</span>
+          {/* Status real-time */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-500">Status:</span>
+              <span
+                className={`font-semibold ${
+                  bookingDetail.status === "IN_PROGRESS"
+                    ? "text-teal-600"
+                    : bookingDetail.status === "UNLOADING"
+                      ? "text-green-600"
+                      : bookingDetail.status === "FINISHED"
+                        ? "text-gray-600"
+                        : bookingDetail.status === "CANCELED"
+                          ? "text-red-600"
+                          : "text-orange-600"
+                }`}
+              >
+                {bookingDetail.status === "IN_PROGRESS"
+                  ? "SEDANG MENUJU"
+                  : bookingDetail.status === "UNLOADING"
+                    ? "SEDANG BONGKAR MUAT"
+                    : bookingDetail.status === "FINISHED"
+                      ? "SELESAI"
+                      : bookingDetail.status === "CANCELED"
+                        ? "DIBATALKAN"
+                        : "TERLAMBAT"}
+              </span>
             </div>
-          ) : hasArrived ? (
-            <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              <span>TELAH TIBA DI LOKASI</span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-1">
-              <span>KONFIRMASI KEDATANGAN DI GUDANG</span>
-              <span className="text-xs font-normal">Tekan tombol saat Anda telah tiba</span>
-            </div>
-          )}
-        </button>
-  
+
+            {bookingDetail.actualArrivalTime && (
+              <div className="flex justify-between items-center text-sm mt-2">
+                <span className="text-gray-500">Tiba:</span>
+                <span className="font-medium">
+                  {formatTime(new Date(bookingDetail.actualArrivalTime))}
+                </span>
+              </div>
+            )}
+            {bookingDetail.status === BookingStatus.CANCELED &&
+              bookingDetail.canceledReason && (
+                <div className="flex justify-between items-center text-sm mt-2">
+                  <span className="text-gray-500">Alasan:</span>
+                  <span className="font-medium">
+                    {bookingDetail.canceledReason}
+                  </span>
+                </div>
+              )}
+            {bookingDetail.actualStartTime && (
+              <div className="flex justify-between items-center text-sm mt-1">
+                <span className="text-gray-500">Mulai Bongkar:</span>
+                <span className="font-medium">
+                  {formatTime(new Date(bookingDetail.actualStartTime))}
+                </span>
+              </div>
+            )}
+
+            {bookingDetail.actualFinishTime && (
+              <div className="flex justify-between items-center text-sm mt-1">
+                <span className="text-gray-500">Selesai:</span>
+                <span className="font-medium">
+                  {formatTime(new Date(bookingDetail.actualFinishTime))}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Tombol Konfirmasi */}
+          <button
+            onClick={() => !hasArrived && setShowConfirmation(true)}
+            disabled={hasArrived || isConfirming}
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-all mb-4 ${
+              hasArrived
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white shadow-lg hover:shadow-xl active:scale-[0.98]"
+            }`}
+          >
+            {isConfirming ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Memproses...</span>
+              </div>
+            ) : hasArrived ? (
+              <div className="flex items-center justify-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                <span>TELAH TIBA DI LOKASI</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-1">
+                <span>KONFIRMASI KEDATANGAN DI GUDANG</span>
+                <span className="text-xs font-normal">
+                  Tekan tombol saat Anda telah tiba
+                </span>
+              </div>
+            )}
+          </button>
+
           {/* Info tambahan */}
           <div className="text-center text-sm text-gray-500 mb-4">
             {!hasArrived && isTimeToGo() && (
-              <p>Tekan tombol di atas saat Anda tiba di depan gate {bookingDetail.Dock?.name}</p>
+              <p>
+                Tekan tombol di atas saat Anda tiba di depan gate{" "}
+                {bookingDetail.Dock?.name}
+              </p>
             )}
           </div>
-  
+
           {bookingDetail.notes && (
             <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-yellow-800 mb-1">Catatan admin vendor</p>
-                  <p className="text-sm text-yellow-700">{bookingDetail.notes}</p>
+                  <p className="font-semibold text-yellow-800 mb-1">
+                    Catatan admin vendor
+                  </p>
+                  <p className="text-sm text-yellow-700">
+                    {bookingDetail.notes}
+                  </p>
                 </div>
               </div>
             </div>
-      
-      )}
-</div>
+          )}
+        </div>
       </div>
     );
   };
-  
+
   const EmptyState = () => (
     <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
       <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -434,7 +470,11 @@ const DriverMenu = () => {
           <h1 className="text-2xl font-bold text-gray-800">Driver Portal</h1>
         </div>
 
-        {onTheWayBookingMemo && bookingDetail ? <BookingCard /> : <EmptyState />}
+        {onTheWayBookingMemo && bookingDetail ? (
+          <BookingCard />
+        ) : (
+          <EmptyState />
+        )}
 
         {onTheWayBookingMemo && (
           <>
@@ -470,7 +510,7 @@ const DriverMenu = () => {
         <button
           onClick={() => {
             const modal = document.getElementById(
-              "booking-list-modal"
+              "booking-list-modal",
             ) as HTMLDialogElement;
             modal?.showModal();
           }}
@@ -539,7 +579,7 @@ const DriverMenu = () => {
                   setSelectedPastBooking(null);
                   (
                     document.getElementById(
-                      "booking-list-modal"
+                      "booking-list-modal",
                     ) as HTMLDialogElement
                   )?.close();
                 }}
@@ -583,7 +623,6 @@ const VehicleInfo = ({ booking }) => (
     </div>
   </div>
 );
-
 
 const DriverInfo = ({ userInfo }) => (
   <div className="mt-6 bg-white rounded-xl shadow p-4">

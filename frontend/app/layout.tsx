@@ -5,6 +5,8 @@ import ToasterProvider from "@/components/ToasterProvider";
 import { Metadata } from "next";
 import Navigation from "@/components/shared-common/navigation";
 import ChatBubble from "@/components/shared-common/ChatBubble";
+import { Suspense } from "react";
+import Loading from "@/components/shared-common/Loading";
 
 export const metadata: Metadata = {
   title: "Catur Queue Realtime",
@@ -25,8 +27,10 @@ export default function RootLayout({
       <body>
         <QueryClientProviderWrapper>
           <UserProvider>
-            <Navigation />
-            <ChatBubble />
+            <Suspense fallback={<Loading />}>
+              <ChatBubble />
+              <Navigation />
+            </Suspense>
             <ToasterProvider>{children}</ToasterProvider>
           </UserProvider>
         </QueryClientProviderWrapper>

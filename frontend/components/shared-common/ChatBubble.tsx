@@ -43,8 +43,9 @@ export function stripHtmlPreview(html: string | null | undefined): string {
 
 export function playMessengerStyleSound() {
   try {
-    const ctx = new (window.AudioContext ||
-      (window as any).webkitAudioContext)();
+    const ctx = new (
+      window.AudioContext || (window as any).webkitAudioContext
+    )();
 
     const now = ctx.currentTime;
 
@@ -52,7 +53,7 @@ export function playMessengerStyleSound() {
       startFreq: number,
       endFreq: number,
       startTime: number,
-      duration: number
+      duration: number,
     ) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -91,7 +92,7 @@ function ChatBubble() {
   const router = useRouter();
   const [newMessage, setNewMessage] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState<string | null>(
-    null
+    null,
   );
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,7 +148,7 @@ function ChatBubble() {
           message,
           recipientId,
           userInfo,
-          selectedRoomId
+          selectedRoomId,
         ),
       onSuccess: (data) => {
         if (data && selectedRoomId && selectedRecipient) {
@@ -240,7 +241,7 @@ function ChatBubble() {
         (old = []) => {
           if (old.some((m) => m.id === message.id)) return old;
           return [...old, message];
-        }
+        },
       );
 
       if (message.roomId === selectedRoomId) {
@@ -289,7 +290,7 @@ function ChatBubble() {
     const now = new Date();
     const messageDate = new Date(date);
     const diffInDays = Math.floor(
-      (now.getTime() - messageDate.getTime()) / (1000 * 3600 * 24)
+      (now.getTime() - messageDate.getTime()) / (1000 * 3600 * 24),
     );
 
     if (diffInDays === 0) {
@@ -384,7 +385,7 @@ function ChatBubble() {
                       onClick={() =>
                         (
                           document.getElementById(
-                            "recipient-profile-menu"
+                            "recipient-profile-menu",
                           ) as HTMLDialogElement
                         ).showModal()
                       }
@@ -399,7 +400,7 @@ function ChatBubble() {
                           onClick={() =>
                             (
                               document.getElementById(
-                                "message-delete-confirmation"
+                                "message-delete-confirmation",
                               ) as HTMLDialogElement
                             ).showModal()
                           }
@@ -421,7 +422,7 @@ function ChatBubble() {
                           onClick={() =>
                             (
                               document.getElementById(
-                                "recipient-profile-menu"
+                                "recipient-profile-menu",
                               ) as HTMLDialogElement
                             ).close()
                           }
@@ -456,7 +457,7 @@ function ChatBubble() {
                                 onClick={() => {
                                   (
                                     document.getElementById(
-                                      "message-delete-confirmation"
+                                      "message-delete-confirmation",
                                     ) as HTMLDialogElement
                                   )?.showModal();
                                 }}
@@ -551,7 +552,7 @@ function ChatBubble() {
                           onClick={() =>
                             (
                               document.getElementById(
-                                "recipient-profile-menu"
+                                "recipient-profile-menu",
                               ) as HTMLDialogElement
                             ).close()
                           }
@@ -653,7 +654,7 @@ function ChatBubble() {
                       <button
                         onClick={() =>
                           toast.info(
-                            "Coba cari akun seseorang di pencarian Messenger"
+                            "Coba cari akun seseorang di pencarian Messenger",
                           )
                         }
                         className="mt-6 px-6 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm hover:shadow-md"
@@ -838,7 +839,7 @@ function ChatBubble() {
                               }
                               if (chatIds.includes(message.id)) {
                                 setSelectedChatIds(
-                                  chatIds.filter((id) => id !== message.id)
+                                  chatIds.filter((id) => id !== message.id),
                                 );
                               } else {
                                 if (!chatIds.length) return;
@@ -888,8 +889,8 @@ function ChatBubble() {
                             isUserMessage
                               ? "bg-[#e7ffdb] text-[#111b21] rounded-[7.5px] rounded-br-[2px]"
                               : isSystemMessage
-                              ? "bg-white text-[#111b21] border border-[#e9edef] rounded-[7.5px] rounded-bl-[2px]"
-                              : "bg-white text-[#111b21] border border-[#e9edef] rounded-[7.5px] rounded-bl-[2px]"
+                                ? "bg-white text-[#111b21] border border-[#e9edef] rounded-[7.5px] rounded-bl-[2px]"
+                                : "bg-white text-[#111b21] border border-[#e9edef] rounded-[7.5px] rounded-bl-[2px]"
                           }
                           shadow-[0_1px_0.5px_rgba(0,0,0,0.08)]
                           hover:shadow-md transition-shadow
@@ -949,7 +950,7 @@ function ChatBubble() {
                                       onClick={() => {
                                         (
                                           document.getElementById(
-                                            "message-menu"
+                                            "message-menu",
                                           ) as HTMLDialogElement
                                         ).showModal();
                                         setSelectedChatIds([message.id]);
@@ -1099,7 +1100,7 @@ function ChatBubble() {
           const res = await ChatApi.deleteMessages(
             chatIds,
             selectedRoomId,
-            selectedRecipient
+            selectedRecipient,
           );
           if (res.success) {
             toast.success(res.message);

@@ -44,7 +44,7 @@ export default function LiveQueuePage() {
   const queryClient = useQueryClient();
   const [selectedDockId, setSelectedDockId] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-    null
+    null,
   );
   const [now, setNow] = useState(() => new Date());
 
@@ -66,7 +66,7 @@ export default function LiveQueuePage() {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
   );
 
   // Handle drag events
@@ -79,7 +79,7 @@ export default function LiveQueuePage() {
 
   function getRelativePosition(
     sourceIndex: number,
-    targetIndex: number
+    targetIndex: number,
   ): "BEFORE" | "AFTER" {
     if (sourceIndex === targetIndex) return "AFTER";
     return sourceIndex < targetIndex ? "AFTER" : "BEFORE";
@@ -115,7 +115,7 @@ export default function LiveQueuePage() {
 
     const sameDock = sourceBooking.dockId === targetDockId;
     const dock: IDock | undefined = docks.find(
-      (d: IDock) => d.id === targetDockId
+      (d: IDock) => d.id === targetDockId,
     );
     if (targetDockId && dock && !dock.isActive) {
       return toast.error("Dock sedang tidak aktif");
@@ -126,7 +126,7 @@ export default function LiveQueuePage() {
       !dock.allowedTypes.includes(sourceBooking.Vehicle?.vehicleType)
     ) {
       return toast.error(
-        `Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle?.vehicleType}`
+        `Gate ${dock.name} Tidak menerima tipe kendaraan ${sourceBooking.Vehicle?.vehicleType}`,
       );
     }
     /* =====================================================
@@ -146,10 +146,10 @@ export default function LiveQueuePage() {
       const dockGroup = dockGroupForSwap;
 
       const sourceIndex = dockGroup.inprogress.findIndex(
-        (b) => b.id === sourceBooking.id
+        (b) => b.id === sourceBooking.id,
       );
       const targetIndex = dockGroup.inprogress.findIndex(
-        (b) => b.id === targetBookingId
+        (b) => b.id === targetBookingId,
       );
 
       if (
@@ -174,7 +174,7 @@ export default function LiveQueuePage() {
         return;
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
     }
@@ -190,7 +190,7 @@ export default function LiveQueuePage() {
 
       if (existingUnloading.length > 0) {
         return toast.error(
-          "Unloading di Gate" + (dock?.name ?? "") + " sedang dilakukan"
+          "Unloading di Gate" + (dock?.name ?? "") + " sedang dilakukan",
         );
       }
       try {
@@ -204,7 +204,7 @@ export default function LiveQueuePage() {
         });
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
@@ -221,7 +221,7 @@ export default function LiveQueuePage() {
     ) {
       setSelectedBookingId(sourceBooking.id!);
       setCanceledReason(
-        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`,
       );
 
       (
@@ -237,7 +237,7 @@ export default function LiveQueuePage() {
     ) {
       setSelectedBookingId(sourceBooking.id!);
       setCanceledReason(
-        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`
+        `Dipindahkan via drag & drop - ${new Date().toLocaleString("id-ID")}`,
       );
 
       (
@@ -261,7 +261,7 @@ export default function LiveQueuePage() {
         });
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
 
@@ -289,7 +289,7 @@ export default function LiveQueuePage() {
         });
       } catch (error: any) {
         toast.error(
-          error?.response?.data?.message || "Gagal memperbarui booking"
+          error?.response?.data?.message || "Gagal memperbarui booking",
         );
       }
 
@@ -326,7 +326,7 @@ export default function LiveQueuePage() {
     date: new Date().toISOString().split("T")[0],
   };
 
-  const [filter, setFilter] = useState<BookingFilter>(bookingFilterQueueInit);
+  const filter = bookingFilterQueueInit;
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["bookings", filter],
@@ -595,7 +595,7 @@ export default function LiveQueuePage() {
                       const value = prev - 1;
                       window.localStorage.setItem(
                         "dockPageStart",
-                        value.toString()
+                        value.toString(),
                       );
                       return value;
                     });
@@ -644,7 +644,7 @@ export default function LiveQueuePage() {
                                 setSelectedDockId(dock.id!);
                                 (
                                   document.getElementById(
-                                    "dock-option-modal"
+                                    "dock-option-modal",
                                   ) as HTMLDialogElement
                                 )?.showModal();
                               }}
@@ -835,7 +835,7 @@ export default function LiveQueuePage() {
                                           }
                                         />
                                       </React.Fragment>
-                                    )
+                                    ),
                                   )}
 
                                   {/* 🔥 DROP ZONE 'LAST' */}
@@ -872,18 +872,18 @@ export default function LiveQueuePage() {
                         const handleMouseMove = (moveEvent) => {
                           const delta = startY - moveEvent.clientY;
                           setHeight(
-                            Math.max(100, Math.min(600, startHeight + delta))
+                            Math.max(100, Math.min(600, startHeight + delta)),
                           );
                         };
 
                         const handleMouseUp = () => {
                           document.removeEventListener(
                             "mousemove",
-                            handleMouseMove
+                            handleMouseMove,
                           );
                           document.removeEventListener(
                             "mouseup",
-                            handleMouseUp
+                            handleMouseUp,
                           );
                         };
 
@@ -959,7 +959,7 @@ export default function LiveQueuePage() {
                       const value = prev + 1;
                       window.localStorage.setItem(
                         "dockPageStart",
-                        value.toString()
+                        value.toString(),
                       );
                       return value;
                     })

@@ -2,7 +2,7 @@
 
 import { Truck, Search, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Booking, BookingFilter } from "@/types/booking.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookingApi } from "@/api/booking.api";
@@ -12,6 +12,7 @@ import { BookingStatus } from "@/types/shared.type";
 import BookingRow from "@/components/shared-common/BookingRow";
 import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
 import PaginationFullTable from "@/components/shared-common/PaginationFullTable";
+import Loading from "@/components/shared-common/Loading";
 
 export default function HistoryPage() {
   const [selectedBookingId, setSelectedBookingId] = useState<string>(null);
@@ -198,11 +199,13 @@ export default function HistoryPage() {
         setInput={setCanceledReason}
         key={"cancel-confirmation"}
       />
-      <MyWarehouseActionModal
-        key={"action-modal"}
-        onModifyAndConfirm={() => toast.error("tidak diizinkan")}
-        selectedBooking={bookings?.find((b) => b.id === selectedBookingId)}
-      />
+      <Suspense fallback={<Loading />}>
+        <MyWarehouseActionModal
+          key={"action-modal"}
+          onModifyAndConfirm={() => toast.error("tidak diizinkan")}
+          selectedBooking={bookings?.find((b) => b.id === selectedBookingId)}
+        />
+      </Suspense>
     </div>
   );
 }

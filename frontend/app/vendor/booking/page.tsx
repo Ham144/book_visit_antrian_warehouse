@@ -46,7 +46,6 @@ export default function BookingPage() {
   const [bookingStep, setBookingStep] = useState<BookingStep>("warehouse");
   const [isBookCompleted, setIsBookCompleted] = useState(false);
   const router = useRouter();
-  const queryClient = useQueryClient();
   const params = new URLSearchParams();
 
   // Filter states
@@ -164,7 +163,7 @@ export default function BookingPage() {
       setBookingStep("driver");
       router.push(`/vendor/booking?warehouseId=${warehouse.id}`);
     },
-    [router]
+    [router],
   );
 
   const handleDriverSelect = useCallback(
@@ -176,7 +175,7 @@ export default function BookingPage() {
       currentUrl.searchParams.set("driverUsername", driver.username);
       router.push(currentUrl.toString());
     },
-    [router]
+    [router],
   );
 
   const handleVehicleSelect = useCallback(
@@ -192,7 +191,7 @@ export default function BookingPage() {
       currentUrl.searchParams.set("vehicleId", vehicle.id);
       router.push(currentUrl.toString());
     },
-    [router]
+    [router],
   );
 
   const handleDockSelection = useCallback(
@@ -202,7 +201,8 @@ export default function BookingPage() {
       const estimatedFinish =
         arrivalTime && formData.Vehicle?.durasiBongkar
           ? new Date(
-              arrivalTime.getTime() + formData.Vehicle.durasiBongkar * 60 * 1000
+              arrivalTime.getTime() +
+                formData.Vehicle.durasiBongkar * 60 * 1000,
             )
           : null;
 
@@ -217,7 +217,7 @@ export default function BookingPage() {
       currentUrl.searchParams.set("dockId", dock.id);
       router.push(currentUrl.toString());
     },
-    [router, formData.Vehicle?.durasiBongkar]
+    [router, formData.Vehicle?.durasiBongkar],
   );
 
   const handleBack = () => {
@@ -262,7 +262,7 @@ export default function BookingPage() {
     window.history.replaceState(
       {},
       "",
-      `${window.location.pathname}?${searchParams.toString()}`
+      `${window.location.pathname}?${searchParams.toString()}`,
     );
   };
 
@@ -336,7 +336,7 @@ export default function BookingPage() {
 
       if (driverUsernameParam && myDrivers && !formData.driverUsername) {
         const driver = myDrivers.find(
-          (d) => d.username === driverUsernameParam
+          (d) => d.username === driverUsernameParam,
         );
         if (driver) {
           handleDriverSelect(driver);
@@ -409,8 +409,8 @@ export default function BookingPage() {
                     isActive
                       ? "border-primary bg-primary text-white"
                       : isCompleted
-                      ? "border-primary bg-primary text-white"
-                      : "border-gray-300 bg-white text-gray-400"
+                        ? "border-primary bg-primary text-white"
+                        : "border-gray-300 bg-white text-gray-400"
                   }`}
                   >
                     {isCompleted ? (
@@ -856,8 +856,8 @@ export default function BookingPage() {
                           isSelected
                             ? "border-primary bg-primary/5 shadow-sm"
                             : !isAllowed
-                            ? "border-gray-200 opacity-50 cursor-not-allowed"
-                            : "border-gray-200 hover:border-primary/30 hover:shadow"
+                              ? "border-gray-200 opacity-50 cursor-not-allowed"
+                              : "border-gray-200 hover:border-primary/30 hover:shadow"
                         }`}
                       >
                         {/* Header */}
@@ -936,8 +936,8 @@ export default function BookingPage() {
                               isSelected
                                 ? "btn-primary"
                                 : !isAllowed
-                                ? "btn-disabled opacity-50"
-                                : "btn-outline btn-primary"
+                                  ? "btn-disabled opacity-50"
+                                  : "btn-outline btn-primary"
                             }`}
                             disabled={!isAllowed}
                           >
@@ -1056,7 +1056,7 @@ export default function BookingPage() {
                           {
                             day: "numeric",
                             month: "short",
-                          }
+                          },
                         ) +
                         " " +
                         new Date(formData.arrivalTime).toLocaleTimeString(
@@ -1064,7 +1064,7 @@ export default function BookingPage() {
                           {
                             hour: "2-digit",
                             minute: "2-digit",
-                          }
+                          },
                         )
                       : "-"}
                   </div>
@@ -1074,7 +1074,7 @@ export default function BookingPage() {
                   <div className="font-medium">
                     {formData.estimatedFinishTime
                       ? new Date(
-                          formData.estimatedFinishTime
+                          formData.estimatedFinishTime,
                         ).toLocaleTimeString("id-ID", {
                           hour: "2-digit",
                           minute: "2-digit",

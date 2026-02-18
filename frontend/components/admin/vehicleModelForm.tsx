@@ -1,11 +1,10 @@
 import { mockVehicleBrands } from "@/lib/mock-data";
 import { Car, Truck, Clock, X } from "lucide-react";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { type Dispatch, type SetStateAction } from "react";
 import type { IVehicle } from "@/types/vehicle";
-import { MutateFunction, useQuery } from "@tanstack/react-query";
+import { MutateFunction } from "@tanstack/react-query";
 import { VehicleType } from "@/types/shared.type";
 import { Toaster } from "sonner";
-import { UserApp, UserInfo } from "@/types/auth";
 
 interface VehicleModalFormProps {
   formData: IVehicle;

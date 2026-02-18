@@ -74,15 +74,17 @@ start 12/11/2025
 
 # Meeting 28-01-2026
 
-[x] add: tampilkan vendor
+[x] add: dashboard vendor versi 1
 [x] add: perlu konfirmasi booking
 [x] add: template mobil per warehouse bukan universal
 [x] add: tracing tiap perubahan arrivalTime
 [x] add: penyempurnaan role
 [x] add: opsi mobil per warehouse bukan global
 [x] add: dock bisa import
-[x] mod: pemberitahuan realtime kepada supir dan vendor
-[x] mod: penyempurnaan dashboard utama
+[x] mod: pemberitahuan dari sistem realtime kepada supir dan vendor terkait
+[x] mod: penyempurnaan dashboard admin versi 1
+[x] fix: perbaiki yang berhubungan dengan useSearch Params
+[] fix: Suspense yang masih di root layout, ini bakal buat app banyak nampil loading
 
 [] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
 Menentukan durasi bongkar mobil =

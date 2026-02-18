@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { Filter, Calendar, Search, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { WarehouseApi } from "@/api/warehouse.api";
@@ -14,13 +14,14 @@ import PaginationFullTable from "@/components/shared-common/PaginationFullTable"
 import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
 import { IDock } from "@/types/dock.type";
 import BookingRow from "@/components/shared-common/BookingRow";
+import Loading from "@/components/shared-common/Loading";
 
 const MyWarehousePage = () => {
   const { userInfo, socket } = useUserInfo();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-    null
+    null,
   );
 
   const bookingFilterQueueInit: BookingFilter = {
@@ -154,7 +155,7 @@ const MyWarehousePage = () => {
   const handleSortChange = (value: string) => {
     const [sortBy, sortOrder] = value.split("-") as [
       BookingFilter["sortBy"],
-      BookingFilter["sortOrder"]
+      BookingFilter["sortOrder"],
     ];
     setFilter({ ...filter, sortBy, sortOrder });
   };
@@ -632,17 +633,21 @@ const MyWarehousePage = () => {
         updateMutation={updateMutation}
         key={"my-warehouse-modal"}
       />
-      <MyWarehouseActionModal
-        selectedBooking={
-          bookings && selectedBookingId
-            ? (bookings as Booking[]).find((b) => b.id === selectedBookingId)
-            : undefined
-        }
-        onModifyAndConfirm={() => {
-          if (!selectedBookingId) return;
-          (document.getElementById("create") as HTMLDialogElement)?.showModal();
-        }}
-      />
+      <Suspense fallback={<Loading />}>
+        <MyWarehouseActionModal
+          selectedBooking={
+            bookings && selectedBookingId
+              ? (bookings as Booking[]).find((b) => b.id === selectedBookingId)
+              : undefined
+          }
+          onModifyAndConfirm={() => {
+            if (!selectedBookingId) return;
+            (
+              document.getElementById("create") as HTMLDialogElement
+            )?.showModal();
+          }}
+        />
+      </Suspense>
       <QueueDetailModal
         selectedBookingId={selectedBookingId || ""}
         setSelectedBookingId={setSelectedBookingId}

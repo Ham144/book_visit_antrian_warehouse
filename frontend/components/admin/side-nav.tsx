@@ -216,7 +216,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
             <nav className="flex-1 no-scrollbar overflow-auto px-2 max-h-screen pb-32 ">
               {adminMenuItems
                 .filter((item) =>
-                  item.roles.some((role) => userInfo?.role === role)
+                  item.roles.some((role) => userInfo?.role === role),
                 )
                 .map((item) => {
                   const Icon = item.icon;
@@ -260,7 +260,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
                 })}
 
               {ITOnlyMenus.filter((item) =>
-                item.roles.some((role) => userInfo?.role === role)
+                item.roles.some((role) => userInfo?.role === role),
               ).map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
@@ -302,7 +302,7 @@ const SideNav = ({ children }: { children: React.ReactNode }) => {
 
               {vendorMenutItems
                 .filter((item) =>
-                  item.roles.some((role) => userInfo?.role === role)
+                  item.roles.some((role) => userInfo?.role === role),
                 )
                 .map((item) => {
                   const Icon = item.icon;

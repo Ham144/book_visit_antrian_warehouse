@@ -58,7 +58,7 @@ const MyWarehouseActionModal = ({
       toast.success("Booking berhasil dikonfirmasi");
       (
         document.getElementById(
-          "my-warehouse-action-modal"
+          "my-warehouse-action-modal",
         ) as HTMLDialogElement
       )?.close();
     },
@@ -99,7 +99,7 @@ const MyWarehouseActionModal = ({
           '"' +
           " yang book ke warehouse " +
           booking.Warehouse.name +
-          ":  "
+          ":  ",
       );
 
       router.push(`?${params.toString()}`);
@@ -130,12 +130,12 @@ const MyWarehouseActionModal = ({
                   selectedBooking.status === BookingStatus.PENDING
                     ? "bg-yellow-100 text-yellow-800"
                     : selectedBooking.status === BookingStatus.IN_PROGRESS
-                    ? "bg-blue-100 text-blue-800"
-                    : selectedBooking.status === BookingStatus.FINISHED
-                    ? "bg-green-100 text-green-800"
-                    : selectedBooking.status === BookingStatus.CANCELED
-                    ? "bg-red-100 text-red-800"
-                    : "bg-gray-100 text-gray-800"
+                      ? "bg-blue-100 text-blue-800"
+                      : selectedBooking.status === BookingStatus.FINISHED
+                        ? "bg-green-100 text-green-800"
+                        : selectedBooking.status === BookingStatus.CANCELED
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {selectedBooking.status.replace("_", " ")}
@@ -158,12 +158,12 @@ const MyWarehouseActionModal = ({
                   if (isPast) {
                     (
                       document.getElementById(
-                        "my-warehouse-action-modal"
+                        "my-warehouse-action-modal",
                       ) as HTMLDialogElement
                     )?.close();
 
                     return toast.error(
-                      "Tidak dapat mengonfirmasi: Arrival Time masa lalu"
+                      "Tidak dapat mengonfirmasi: Arrival Time masa lalu",
                     );
                   }
                   handleUpdateStatus({
@@ -195,7 +195,7 @@ const MyWarehouseActionModal = ({
                         <div className="font-medium text-gray-900">
                           Arrival Time:
                           {new Date(
-                            selectedBooking.arrivalTime
+                            selectedBooking.arrivalTime,
                           ).toLocaleDateString("id-ID", {
                             weekday: "short",
                             day: "numeric",
@@ -205,7 +205,7 @@ const MyWarehouseActionModal = ({
                         </div>
                         <div className="text-gray-500 text-xs mt-1">
                           {new Date(
-                            selectedBooking.arrivalTime
+                            selectedBooking.arrivalTime,
                           ).toLocaleTimeString("id-ID", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -215,7 +215,7 @@ const MyWarehouseActionModal = ({
                               <>
                                 <span className="mx-1">→</span>
                                 {new Date(
-                                  selectedBooking.estimatedFinishTime
+                                  selectedBooking.estimatedFinishTime,
                                 ).toLocaleTimeString("id-ID", {
                                   hour: "2-digit",
                                   minute: "2-digit",
@@ -228,7 +228,7 @@ const MyWarehouseActionModal = ({
                           <div className="text-green-600 text-xs mt-1 font-medium">
                             ✅ Actual:{" "}
                             {new Date(
-                              selectedBooking.actualArrivalTime
+                              selectedBooking.actualArrivalTime,
                             ).toLocaleTimeString("id-ID")}
                           </div>
                         )}
@@ -267,12 +267,12 @@ const MyWarehouseActionModal = ({
                   onClick={() => {
                     (
                       document.getElementById(
-                        "arrival-confirmation"
+                        "arrival-confirmation",
                       ) as HTMLDialogElement
                     )?.showModal();
                     (
                       document.getElementById(
-                        "my-warehouse-action-modal"
+                        "my-warehouse-action-modal",
                       ) as HTMLDialogElement
                     )?.close();
                   }}
@@ -301,12 +301,12 @@ const MyWarehouseActionModal = ({
                   onClick={() => {
                     (
                       document.getElementById(
-                        "cancel-confirmation"
+                        "cancel-confirmation",
                       ) as HTMLDialogElement
                     )?.showModal();
                     (
                       document.getElementById(
-                        "my-warehouse-action-modal"
+                        "my-warehouse-action-modal",
                       ) as HTMLDialogElement
                     )?.close();
                   }}
@@ -340,7 +340,7 @@ const MyWarehouseActionModal = ({
                   onModifyAndConfirm(selectedBooking.id);
                   (
                     document.getElementById(
-                      "my-warehouse-action-modal"
+                      "my-warehouse-action-modal",
                     ) as HTMLDialogElement
                   )?.close();
                 }}
@@ -413,7 +413,7 @@ const MyWarehouseActionModal = ({
               onClick={() => {
                 (
                   document.getElementById(
-                    "my-warehouse-action-modal"
+                    "my-warehouse-action-modal",
                   ) as HTMLElement as HTMLDialogElement
                 )?.close();
                 onChatDriver(selectedBooking);
@@ -453,12 +453,12 @@ const MyWarehouseActionModal = ({
               onClick={() => {
                 (
                   document.getElementById(
-                    "my-warehouse-action-modal"
+                    "my-warehouse-action-modal",
                   ) as HTMLDialogElement
                 )?.close();
                 (
                   document.getElementById(
-                    "move-trace-modal"
+                    "move-trace-modal",
                   ) as HTMLDialogElement
                 )?.showModal();
                 setBookingToShowMoveTrace(selectedBooking);
@@ -491,7 +491,7 @@ const MyWarehouseActionModal = ({
               onClick={() => {
                 (
                   document.getElementById(
-                    "my-warehouse-action-modal"
+                    "my-warehouse-action-modal",
                   ) as HTMLDialogElement
                 )?.close();
               }}

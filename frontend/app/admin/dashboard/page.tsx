@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import {
   Clock,
   Truck,
@@ -11,7 +11,7 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { formatDistanceToNow, set } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
 // Components
@@ -26,6 +26,7 @@ import DockStatusSection from "@/components/admin/dashboard-component/DockStatus
 import QueueDetailModal from "@/components/admin/QueueDetailModal";
 import MyWarehouseActionModal from "@/components/admin/my-warehouse-action-modal";
 import { toast } from "sonner";
+import Loading from "@/components/shared-common/Loading";
 
 // Types
 export interface DashboardState {
@@ -123,7 +124,7 @@ const DashboardAdmin = () => {
   });
 
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-    null
+    null,
   );
 
   const formatRelativeTime = (dateString: string) => {
@@ -357,7 +358,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                           setSelectedBookingId(booking.id);
                           (
                             document.getElementById(
-                              "my-warehouse-action-modal"
+                              "my-warehouse-action-modal",
                             ) as HTMLDialogElement
                           )?.showModal();
                         }}
@@ -424,7 +425,7 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
                             </span>
                           </div>
                         </div>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
@@ -439,13 +440,15 @@ Status aktif memiliki bobot berbeda (Unloading = 100%, In Progress = 80%, Finish
         key={"QueueDetailModalCreate"}
         mode="create"
       />
-      <MyWarehouseActionModal
-        key={"MyWarehouseActionModal"}
-        onModifyAndConfirm={() => toast.info("test")}
-        selectedBooking={dashboardState?.queueSnapshot.find(
-          (booking) => booking.id === selectedBookingId
-        )}
-      />
+      <Suspense fallback={<Loading />}>
+        <MyWarehouseActionModal
+          key={"MyWarehouseActionModal"}
+          onModifyAndConfirm={() => toast.info("fitur belum terhubung")}
+          selectedBooking={dashboardState?.queueSnapshot.find(
+            (booking) => booking.id === selectedBookingId,
+          )}
+        />
+      </Suspense>
     </div>
   );
 };

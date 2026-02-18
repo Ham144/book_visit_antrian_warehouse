@@ -15,10 +15,10 @@ import {
 } from "lucide-react";
 import { useUserInfo } from "../UserContext";
 import { useEffect, useRef, useState } from "react";
-import { redirect, useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { OrganizationApi } from "@/api/organization.api";
 import { WarehouseApi } from "@/api/warehouse.api";
 import { Organization } from "@/types/organization";
