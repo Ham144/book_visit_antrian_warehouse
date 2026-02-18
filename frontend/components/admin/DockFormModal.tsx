@@ -294,69 +294,70 @@ const DockFormModal = ({
                 Hari
               </span>
               <div className="grid grid-cols-7 w-full flex-1 space-x-1 gap-4">
-                {formData.vacants?.map((vacant, index) => (
-                  <div key={vacant.day} className="flex flex-col gap-3">
-                    <label
-                      htmlFor={vacant.day}
-                      className="btn border w-full justify-center"
-                    >
-                      {vacant.day}
-                    </label>
-                    <div id={vacant.day} className="flex flex-col gap-2">
-                      {/* Availability From */}
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-xs">Dari</span>
-                        </label>
-                        <input
-                          type="time"
-                          className="input input-bordered input-sm w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                          value={String(vacant.availableFrom) || null}
-                          onChange={(e) => {
-                            const time = e.target.value;
-                            const updatedVacants = [
-                              ...(formData.vacants || []),
-                            ];
-                            updatedVacants[index] = {
-                              ...updatedVacants[index],
-                              availableFrom: time || null,
-                            };
-                            setFormData({
-                              ...formData,
-                              vacants: updatedVacants,
-                            });
-                          }}
-                        />
-                      </div>
+                {formData?.vacants?.length &&
+                  formData?.vacants?.map((vacant, index) => (
+                    <div key={vacant.day} className="flex flex-col gap-3">
+                      <label
+                        htmlFor={vacant.day}
+                        className="btn border w-full justify-center"
+                      >
+                        {vacant.day}
+                      </label>
+                      <div id={vacant.day} className="flex flex-col gap-2">
+                        {/* Availability From */}
+                        <div className="form-control">
+                          <label className="label py-1">
+                            <span className="label-text text-xs">Dari</span>
+                          </label>
+                          <input
+                            type="time"
+                            className="input input-bordered input-sm w-full bg-white border px-2  focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                            value={String(vacant.availableFrom) || null}
+                            onChange={(e) => {
+                              const time = e.target.value;
+                              const updatedVacants = [
+                                ...(formData.vacants || []),
+                              ];
+                              updatedVacants[index] = {
+                                ...updatedVacants[index],
+                                availableFrom: time || null,
+                              };
+                              setFormData({
+                                ...formData,
+                                vacants: updatedVacants,
+                              });
+                            }}
+                          />
+                        </div>
 
-                      {/* Availability Until */}
-                      <div className="form-control">
-                        <label className="label py-1">
-                          <span className="label-text text-xs">Sampai</span>
-                        </label>
-                        <input
-                          type="time"
-                          className="input input-bordered input-sm w-full bg-white border px-2 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
-                          value={vacant?.availableUntil?.toString() || ""}
-                          onChange={(e) => {
-                            const time = e.target.value;
-                            const updatedVacants = [
-                              ...(formData.vacants || []),
-                            ];
-                            updatedVacants[index] = {
-                              ...updatedVacants[index],
-                              availableUntil: time || null,
-                            };
-                            setFormData({
-                              ...formData,
-                              vacants: updatedVacants,
-                            });
-                          }}
-                        />
+                        {/* Availability Until */}
+                        <div className="form-control">
+                          <label className="label py-1">
+                            <span className="label-text text-xs">Sampai</span>
+                          </label>
+                          <input
+                            type="time"
+                            className="input input-bordered input-sm w-full bg-white border px-2 focus:border-leaf-green-300 focus:ring-2 focus:ring-leaf-green-100 transition-colors"
+                            value={vacant?.availableUntil?.toString() || ""}
+                            onChange={(e) => {
+                              const time = e.target.value;
+                              const updatedVacants = [
+                                ...(formData.vacants || []),
+                              ];
+                              updatedVacants[index] = {
+                                ...updatedVacants[index],
+                                availableUntil: time || null,
+                              };
+                              setFormData({
+                                ...formData,
+                                vacants: updatedVacants,
+                              });
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </label>
           </div>

@@ -6,7 +6,12 @@ import { Authorization } from 'src/common/authorization.decorator';
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 
-  @Authorization('ADMIN_GUDANG', 'USER_ORGANIZATION', 'ADMIN_ORGANIZATION')
+  @Authorization(
+    'ADMIN_GUDANG',
+    'USER_ORGANIZATION',
+    'ADMIN_ORGANIZATION',
+    'ADMIN_VENDOR',
+  )
   @Get('/list')
   findAll() {
     return this.vendorService.findAll();

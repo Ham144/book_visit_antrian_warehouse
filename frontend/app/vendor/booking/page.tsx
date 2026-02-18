@@ -30,7 +30,7 @@ import { Booking } from "@/types/booking.type";
 import { Warehouse } from "@/types/warehouse";
 import { IFilterVehicle, IVehicle } from "@/types/vehicle";
 import { IDock } from "@/types/dock.type";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import PreviewSlotDisplay from "@/components/vendor/PreviewSlotDisplay";
 import { BookingApi } from "@/api/booking.api";
 import { AuthApi } from "@/api/auth";

@@ -15,8 +15,6 @@ export class UserService {
 
   async createAppUser(body: CreateAppUserDto, userInfo: TokenPayload) {
     const { password, homeWarehouseId, vendorName, ...rest } = body;
-
-    console.log(homeWarehouseId);
     if (!homeWarehouseId && !vendorName) {
       throw new BadRequestException(
         'homeWarehouseId atau vendorName salah satu diperlukan',
@@ -44,7 +42,7 @@ export class UserService {
         passwordHash: passwordHash,
         accountType: 'APP',
         vendorName: vendorName || null,
-        homeWarehouseId: homeWarehouse.id,
+        homeWarehouseId: homeWarehouse?.id || null,
         organizations: {
           connect: {
             name: userInfo.organizationName,

@@ -1,12 +1,13 @@
 "use client";
 
 import { AccountType, UserApp, UserInfo } from "@/types/auth";
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { Key, WarehouseIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { AuthApi } from "@/api/auth";
 import { useRouter } from "next/navigation";
+import Loading from "./Loading";
 
 const LoginModal = () => {
   const [accountType, setAccountType] = useState<AccountType>(AccountType.AD);
@@ -81,8 +82,8 @@ const LoginModal = () => {
                 setAccountType(AccountType.AD);
                 setFormData({
                   ...formData,
-                  username: "yafizham",
-                  password: "Catur2025!",
+                  username: "",
+                  password: "",
                 });
               }}
               className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
@@ -172,7 +173,9 @@ const LoginModal = () => {
             </form>
           </div>
         </div>
-        <Toaster key={"login"} position="top-center" />
+        <Suspense fallback={<Loading />}>
+          <Toaster key={"login"} position="top-center" />
+        </Suspense>
       </dialog>
     </>
   );
