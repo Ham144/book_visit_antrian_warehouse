@@ -90,7 +90,7 @@ const MemberManagementPage = () => {
     },
     onError: (er: any) => {
       toast.error(
-        er?.response?.data?.message || "gagal mengupdate data member"
+        er?.response?.data?.message || "gagal mengupdate data member",
       );
     },
   });
@@ -146,7 +146,7 @@ const MemberManagementPage = () => {
                       setTimeout(() => {
                         (
                           document.getElementById(
-                            "UserEditModalForm"
+                            "UserEditModalForm",
                           ) as HTMLDialogElement
                         )?.showModal();
                       }, 0);
@@ -298,7 +298,7 @@ const MemberManagementPage = () => {
                                       setSelectedUser(account);
                                       (
                                         document.getElementById(
-                                          "delete-app-user"
+                                          "delete-app-user",
                                         ) as HTMLDialogElement
                                       )?.showModal();
                                     }}
@@ -337,7 +337,7 @@ const MemberManagementPage = () => {
         key={`UserEditModalForm-${editModalKey}`}
       />
       <ConfirmationModal
-        message="Apakah anda yakin ingin menghapus user ini ?"
+        message="Yakin menghapus user ini ?"
         modalId="delete-app-user"
         onConfirm={handleDeleteAppUser}
         title="konfirmasi delete-app-user?"

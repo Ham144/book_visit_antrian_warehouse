@@ -1,6 +1,7 @@
 import axiosInstance from "@/lib/axios";
 import type {
   IMemberManagement,
+  IUploadUser,
   LoginRequestDto,
   UserApp,
   UserInfo,
@@ -11,7 +12,7 @@ export const AuthApi = {
   loginUserLdap: async (credentials: LoginRequestDto): Promise<UserInfo> => {
     const response = await axiosInstance.post<UserInfo>(
       "/api/user/login/ldap",
-      credentials
+      credentials,
     );
     return response.data;
   },
@@ -19,7 +20,7 @@ export const AuthApi = {
   loginUserAPP: async (credentials: LoginRequestDto): Promise<UserApp> => {
     const response = await axiosInstance.post<UserApp>(
       "/api/user/login/app",
-      credentials
+      credentials,
     );
     return response.data;
   },
@@ -72,7 +73,7 @@ export const AuthApi = {
     }
     const response = await axiosInstance.get(
       "/api/user/list-member-management",
-      { params }
+      { params },
     );
     return response.data;
   },
@@ -98,5 +99,9 @@ export const AuthApi = {
   deleteAppUser: async (id: string) => {
     const res = await axiosInstance.delete("/api/user/delete/" + id);
     return res.data;
+  },
+  upload: async (body: IUploadUser[]) => {
+    const response = await axiosInstance.post("/api/user/upload", body);
+    return response.data;
   },
 };

@@ -22,6 +22,7 @@ import { Auth } from 'src/common/auth.decorator';
 import { TokenPayload } from './dto/token-payload.dto';
 import { Authorization } from 'src/common/authorization.decorator';
 import { ROLE } from 'src/common/shared-enum';
+import { UploadUserDto } from './dto/upload-user.dto';
 
 @Controller('/user')
 export class UserController {
@@ -171,5 +172,14 @@ export class UserController {
   @Delete('/delete/:username')
   async deleteAppUser(@Param('username') username: string) {
     return this.userService.deleteAppUser(username);
+  }
+
+  @Authorization('ADMIN_ORGANIZATION', 'ADMIN_VENDOR')
+  @Post('/upload')
+  async bulkUploadUser(
+    @Body() uploadUserDto: UploadUserDto[],
+    @Auth() userInfo: TokenPayload,
+  ) {
+    return this.userService.bulkUploadUser(uploadUserDto, userInfo);
   }
 }

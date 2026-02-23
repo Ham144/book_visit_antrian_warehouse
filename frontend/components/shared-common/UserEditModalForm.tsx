@@ -24,7 +24,7 @@ import {
   MessageCircleWarning,
 } from "lucide-react";
 import { Dispatch, SetStateAction, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { useUserInfo } from "../UserContext";
 import { IVendor } from "@/types/vendor.type";
 import { VendorApi } from "@/api/vendor.api";
@@ -71,7 +71,7 @@ export default function UserEditModalForm({
 
   const am_i_vendor = userInfo?.vendorName ? true : false;
   const [memberFor, setMemberFor] = useState(() =>
-    formData.vendorName ? MemberFor.VENDOR : MemberFor.MY_ORGANIZATION
+    formData.vendorName ? MemberFor.VENDOR : MemberFor.MY_ORGANIZATION,
   );
 
   const { data: vendors } = useQuery({
@@ -83,7 +83,7 @@ export default function UserEditModalForm({
   const roleOptions = useMemo(
     () =>
       memberFor === MemberFor.VENDOR ? ROLE_OPTIONS_VENDOR : ROLE_OPTIONS_ORG,
-    [memberFor]
+    [memberFor],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -632,6 +632,7 @@ export default function UserEditModalForm({
           </div>
         </form>
       </div>
+      <Toaster />
     </dialog>
   );
 }

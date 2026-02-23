@@ -68,3 +68,14 @@ export interface IMemberManagement {
   vendorName?: string;
   role?: string;
 }
+
+export interface IUploadUser {
+  username: string;
+  password: string; // kalau pakai auth lokal
+  description: string; //ini hanya untuk inisialisasi ROLE saja pas login pertama
+  role: string;
+  isActive: boolean;
+  displayName: string;
+  homeWarehouse: string;
+  vendorName: string;
+}

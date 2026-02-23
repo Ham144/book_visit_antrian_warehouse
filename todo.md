@@ -84,8 +84,12 @@ start 12/11/2025
 [x] mod: pemberitahuan dari sistem realtime kepada supir dan vendor terkait
 [x] mod: penyempurnaan dashboard admin versi 1
 [x] fix: perbaiki yang berhubungan dengan useSearch Params
-[] fix: Suspense yang masih di root layout, ini bakal buat app banyak nampil loading
+[x] fix: tidak bisa logout
+[x] fix: user tidak bisa dihapus
+[x] fix: error petunjuk tidak keluar saat kesalahan membuat account
+[x] add: import app user
 
+[] fix: Suspense yang masih di root layout, ini bakal buat app banyak nampil loading
 [] add: limit kubikasi => pakai template mobil berbeda aja, muatan 20%, 50%:
 Menentukan durasi bongkar mobil =
 vehicle.durasiBongkar × (0.3 + (1 − 0.3) × loadPercent/100)

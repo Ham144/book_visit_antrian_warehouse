@@ -39,7 +39,7 @@ const ForbiddenPage = () => {
             dibatasi hanya untuk pengguna tertentu yang memiliki izin saja.
           </p>
           <a
-            href="/"
+            href="/antrian"
             className="btn btn-primary py-3 items-center hover:bg-green-300 my-3"
           >
             <Home /> Home

@@ -102,7 +102,7 @@ const LoginModal = () => {
                 setFormData({
                   ...formData,
                   username: "",
-                  password: "mockuser",
+                  password: "",
                 });
               }}
               className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${

@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma.service';
 import { CreateAppUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -7,7 +7,9 @@ import { plainToInstance } from 'class-transformer';
 import { UpdateAppUserDto } from './dto/update-user.dto';
 import { TokenPayload } from './dto/token-payload.dto';
 import { Prisma } from '@prisma/client';
-import { ROLE } from 'src/common/shared-enum';
+import { Days, ROLE } from 'src/common/shared-enum';
+import { UploadUserDto } from './dto/upload-user.dto';
+import { Roles } from 'src/common/Role.decorator';
 
 @Injectable()
 export class UserService {
@@ -222,10 +224,113 @@ export class UserService {
   }
 
   async deleteAppUser(username: string) {
-    await this.prismaService.user.delete({
-      where: {
-        username: username,
-      },
+    return await this.prismaService.$transaction(async (tx) => {
+      // 1. RAW QUERY: Hapus/Kosongkan Booking yang nyangkut di user ini
+      // Ini langsung tembak ke Database, bypass validasi skema Prisma yang ribet itu
+      await tx.$executeRawUnsafe(
+        `UPDATE "Booking" SET "driverUsername" = NULL, "createByUsername" = NULL 
+         WHERE "driverUsername" = $1 OR "createByUsername" = $1`,
+        username,
+      );
+
+      // 2. Bersihkan relasi many-to-many (ini biasanya lancar)
+      await tx.user.update({
+        where: { username: username },
+        data: {
+          organizations: { set: [] },
+          warehouseAccess: { set: [] },
+        },
+      });
+
+      // 3. Hapus User-nya
+      return await tx.user.delete({
+        where: { username: username },
+      });
     });
+  }
+
+  async bulkUploadUser(uploadUserDto: UploadUserDto[], userInfo: TokenPayload) {
+    try {
+      const warehouses = await this.prismaService.warehouse.findMany({
+        where: { organization: { name: userInfo.organizationName } },
+        select: { id: true, name: true },
+      });
+
+      // Gunakan loop biasa atau pastikan throw error, bukan return error
+      const results = await Promise.all(
+        uploadUserDto.map(async (data) => {
+          const {
+            password,
+            homeWarehouse: warehouseName,
+            vendorName,
+            ...rest
+          } = data;
+
+          const passwordHash = await bcrypt.hash(password, 10);
+          const matchedWarehouse = warehouses.find(
+            (w) => w.name.toLowerCase() === warehouseName?.toLowerCase(),
+          );
+
+          if (!matchedWarehouse && !vendorName) {
+            // THROW, jangan RETURN. Agar masuk ke catch block
+            throw new Error(
+              `Home Warehouse ${warehouseName} tidak ditemukan untuk user ${rest.username}`,
+            );
+          }
+
+          if (!Object.values(Roles).includes(rest.role) === false) {
+            throw new Error(
+              `Role ${rest.role} tidak ditemukan untuk user ${rest.username}`,
+            );
+          }
+
+          const userData = {
+            username: rest.username,
+            displayName: rest.displayName,
+            description: rest.description,
+            role: rest.role,
+            isActive: rest.isActive,
+            passwordHash: passwordHash,
+            accountType: 'APP',
+            vendor: vendorName
+              ? {
+                  connectOrCreate: {
+                    where: { name: vendorName },
+                    create: {
+                      name: vendorName,
+                      organizationName: userInfo.organizationName,
+                    },
+                  },
+                }
+              : undefined,
+            homeWarehouse: matchedWarehouse
+              ? { connect: { id: matchedWarehouse.id } }
+              : undefined,
+
+            // 2. Warehouse Access (Many-to-Many Relation)
+            // Karena ini array, jika tidak ada warehouse, kita kirim array kosong saja.
+            warehouseAccess: matchedWarehouse
+              ? { connect: [{ id: matchedWarehouse.id }] }
+              : { connect: [] },
+            organizations: {
+              connect: { name: userInfo.organizationName },
+            },
+          };
+
+          // UPSERT MANUAL
+          return this.prismaService.user.upsert({
+            where: { username: rest.username },
+            update: userData,
+            create: userData,
+          });
+        }),
+      );
+
+      return { message: `Berhasil mengupload ${results.length} user` };
+    } catch (error) {
+      console.error('Gagal Bulk Upload:', error.message);
+      // Jika ada satu saja yang gagal, semua akan masuk ke sini
+      throw new BadRequestException(error.message);
+    }
   }
 }

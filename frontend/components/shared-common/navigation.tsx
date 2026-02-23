@@ -60,10 +60,10 @@ export default function Navigation() {
     mutationFn: AuthApi.logout,
     onSuccess: () => {
       setUserInfo(null);
-      window.location.href = "/";
+      window.location.href = "/antrian";
     },
     onError: (er: any) => {
-      window.location.href = "/";
+      window.location.href = "/antrian";
     },
   });
 

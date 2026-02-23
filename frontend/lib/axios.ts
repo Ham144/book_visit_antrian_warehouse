@@ -8,59 +8,52 @@ const axiosInstance = axios.create({
 });
 
 let isRefreshing = false;
-let refreshSubscribers: Array<() => void> = [];
+let refreshSubscribers = [];
 
 function onRefreshed() {
   refreshSubscribers.forEach((cb) => cb());
   refreshSubscribers = [];
 }
 
-// Interceptor ini untuk menangani error 401 dari authenticate, karena getUserInfo dari levelWrapper.jsx hanya dipanggil jika fullreload atau berada di /login untuk mengurangi beban server, karena authenticate cukup terpercaya dengan decode token di middleware tanpa hit database. jika tidak ada interceptor ini, maka kita masih bisa navigasi kemana mana walau token sudah tidak berlaku atau terhapus karena levelWrapper hanya mengecek userInfo di store, jika tidak ada barulah ia akan refetch getUserInfo seperti misalnya fullreload
-// NEW : getUserinfo sekarang sudah melakukan refresh token jika access token kadaluarsa
-
-// Request interceptor to ensure URL is stored in config
+// Request interceptor untuk menyimpan URL di config
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Store the URL for later use in response interceptor
-    if (config.url) {
-      (config as any)._requestUrl = config.url;
+    // Simpan URL menggunakan properti headers atau cara lain yang aman
+    // Kita bisa menyimpannya di config.headers atau menggunakan pendekatan berbeda
+    if (config.url && config.headers) {
+      // Simpan di custom header (tidak akan dikirim ke server karena kita akan hapus nanti)
+      config.headers["X-Request-Url"] = config.url;
     }
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
+// Response interceptor untuk menangani error 401 dan 403
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip if originalRequest is not available
     if (!originalRequest) {
       return Promise.reject(error);
     }
 
-    // Check if it's a 401 or 403 error (token expired or missing)
     const isAuthError = error.response?.status === 401;
     const isForbiddenError = error.response?.status === 403;
 
-    // Get URL from config - handle both relative and absolute URLs
-    // Try multiple ways to get the URL since axios may store it differently
+    // Ambil URL dari headers yang kita simpan atau dari originalRequest.url
     const requestUrl =
-      (originalRequest as any)._requestUrl ||
-      originalRequest.url ||
-      (originalRequest as any)._fullPath ||
-      "";
+      originalRequest.headers?.["X-Request-Url"] || originalRequest.url || "";
     const isRefreshEndpoint = requestUrl.includes("/api/user/refresh-token");
     const isLoginEndpoint = requestUrl.includes("/api/user/login/ldap");
     const isPublicRoute = isLoginEndpoint || isRefreshEndpoint;
 
-    // Only attempt refresh if it's an auth error, not already retried, and not a public route
+    // Handle 401 Unauthorized
     if (isAuthError && !originalRequest._retry && !isPublicRoute) {
       if (isRefreshing) {
-        // Queue the request until refresh is done
         return new Promise((resolve, reject) => {
           refreshSubscribers.push(() => {
             axiosInstance(originalRequest).then(resolve).catch(reject);
@@ -72,57 +65,60 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Use plain axios to avoid interceptor loop
-        // Don't copy headers to avoid sending stale authorization headers
         const res = await axios.post(
           `${BASE_URL}/api/user/refresh-token`,
           {},
           {
             withCredentials: true,
-          }
+          },
         );
 
         if (res.status === 200) {
           isRefreshing = false;
           onRefreshed();
-          // Retry original request with fresh token
-          // Keep _retry flag to prevent infinite loop if retry still fails
-          // Small delay to ensure cookies are set by browser
-          // Browser perlu waktu untuk menyimpan cookie dari response
           await new Promise((resolve) => setTimeout(resolve, 200));
           return axiosInstance(originalRequest);
         }
-      } catch (refreshError: any) {
+      } catch (refreshError) {
         isRefreshing = false;
-        onRefreshed(); // Clear subscribers even on failure
+        onRefreshed();
 
-        // Jika refresh token gagal, redirect ke halaman login (hindari loop saat sudah di '/')
-        const isOnLogin =
-          typeof window !== "undefined" && window.location.pathname === "/";
-        // Clear any stale cookies and redirect to login
-        if (!isOnLogin) {
-          try {
-            // Clear cookies if refresh failed
-            document.cookie = "access_token=; path=/; max-age=0";
-            document.cookie = "refresh_token=; path=/; max-age=0";
-            window.location.href = "/";
-          } catch (_) {}
+        // Cek apakah di browser environment
+        if (typeof window !== "undefined") {
+          const currentPath = window.location.pathname;
+          const isOnLogin =
+            currentPath === "/antrian" || currentPath === "/antrian/";
+
+          if (!isOnLogin) {
+            try {
+              const cookieNames = ["access_token", "refresh_token"];
+              const paths = ["/antrian", "/"];
+
+              cookieNames.forEach((name) => {
+                paths.forEach((path) => {
+                  document.cookie = `${name}=; path=${path}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+                });
+              });
+
+              window.location.href = window.location.origin + "/antrian";
+            } catch (e) {
+              console.error("Redirect error:", e);
+            }
+          }
         }
         return Promise.reject(refreshError);
       } finally {
-        // Ensure isRefreshing is reset even if something unexpected happens
-        if (isRefreshing) {
-          isRefreshing = false;
-        }
+        isRefreshing = false;
       }
     }
 
+    // Handle 403 Forbidden
     if (isForbiddenError) {
       toast.error("Anda tidak memiliki hak akses.");
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;
